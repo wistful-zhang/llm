@@ -1,4 +1,4 @@
-# LLM Interview Notes
+# 大模型面经
 
 一份持续更新的 LLM 面试题笔记，同时也是一个可以直接发布到 GitHub Pages 的网站。
 
