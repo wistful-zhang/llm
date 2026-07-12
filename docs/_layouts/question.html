@@ -1,0 +1,23 @@
+---
+layout: default
+---
+<article class="container question-page">
+  <a class="back-link" href="{{ '/' | relative_url }}">← 返回题库</a>
+  <header class="question-header">
+    <div class="eyebrow">{{ page.category }} · {{ page.difficulty }}</div>
+    <h1>{{ page.title }}</h1>
+    <div class="tag-list" aria-label="标签">
+      {% for tag in page.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+    </div>
+  </header>
+  <div class="prose">{{ content }}</div>
+  <nav class="question-nav" aria-label="题目翻页">
+    {% if page.previous %}
+      <a href="{{ page.previous.url | relative_url }}">← {{ page.previous.title }}</a>
+    {% else %}<span></span>{% endif %}
+    {% if page.next %}
+      <a href="{{ page.next.url | relative_url }}">{{ page.next.title }} →</a>
+    {% endif %}
+  </nav>
+</article>
+

@@ -1,0 +1,61 @@
+---
+title: 题库
+---
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow">LLM INTERVIEW PLAYBOOK</div>
+      <h1>把零散知识，整理成<br><span>能讲清楚的答案。</span></h1>
+      <p>覆盖 LLM 基础、训练对齐、RAG、Agent、工程实践和系统设计。每道题都包含简答、展开思路与常见追问。</p>
+    </div>
+    <div class="stat-card" aria-label="题库统计">
+      <strong>{{ site.questions | size }}</strong>
+      <span>道已整理题目</span>
+      <div class="stat-line"></div>
+      <small>持续更新中</small>
+    </div>
+  </div>
+</section>
+
+<section class="container library">
+  <div class="toolbar">
+    <label class="search-box">
+      <span aria-hidden="true">⌕</span>
+      <input id="question-search" type="search" placeholder="搜索题目、分类或标签…" autocomplete="off">
+    </label>
+    <div class="filters" aria-label="按分类筛选">
+      <button class="filter active" type="button" data-category="all">全部</button>
+      <button class="filter" type="button" data-category="LLM 基础">LLM 基础</button>
+      <button class="filter" type="button" data-category="训练与对齐">训练与对齐</button>
+      <button class="filter" type="button" data-category="RAG">RAG</button>
+      <button class="filter" type="button" data-category="Agent">Agent</button>
+      <button class="filter" type="button" data-category="工程实践">工程实践</button>
+      <button class="filter" type="button" data-category="系统设计">系统设计</button>
+    </div>
+  </div>
+
+  <div id="question-list" class="question-list">
+    {% assign questions = site.questions | sort: 'date' | reverse %}
+    {% for question in questions %}
+      <a class="question-card"
+         href="{{ question.url | relative_url }}"
+         data-category="{{ question.category | escape }}"
+         data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: question.tags | downcase | escape }}">
+        <div class="card-number">{{ forloop.index | prepend: '0' | slice: -2, 2 }}</div>
+        <div class="card-body">
+          <div class="card-meta">
+            <span>{{ question.category }}</span>
+            <span class="difficulty difficulty-{{ question.difficulty }}">{{ question.difficulty }}</span>
+          </div>
+          <h2>{{ question.title }}</h2>
+          <div class="tag-list">
+            {% for tag in question.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+          </div>
+        </div>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+    {% endfor %}
+  </div>
+  <div id="empty-state" class="empty-state" hidden>没有找到匹配的题目，换个关键词试试。</div>
+</section>
+

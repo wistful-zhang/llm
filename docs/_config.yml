@@ -1,0 +1,32 @@
+title: LLM 面试笔记
+description: 从基础原理到系统设计，持续整理高质量 LLM 面试题
+lang: zh-CN
+timezone: Asia/Shanghai
+url: "https://wistful-zhang.github.io"
+author: wistful-zhang
+# 默认按仓库名 llm 发布到 https://<用户名>.github.io/llm/。
+# 如果 GitHub 仓库使用其他名字，请同步修改这里。
+baseurl: "/llm"
+markdown: kramdown
+permalink: pretty
+
+collections:
+  questions:
+    output: true
+    permalink: /questions/:name/
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+  - scope:
+      path: ""
+      type: questions
+    values:
+      layout: question
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - _templates
