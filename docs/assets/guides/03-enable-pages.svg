@@ -15,5 +15,5 @@
   <circle cx="864" cy="296" r="26" fill="#6d5dfc"/><text x="864" y="305" class="num">4</text>
   <rect x="390" y="398" width="660" height="116" rx="14" fill="#f0fdf4" stroke="#86efac"/>
   <text x="418" y="441" class="label">项目已经包含部署工作流</text><text x="418" y="478" class="muted small">不要再点击 Jekyll / Static HTML 的 Configure</text>
-  <text x="390" y="578" class="call">公开题库才执行这一步；私人题库直接跳到 Pages CMS</text>
+  <text x="390" y="578" class="call">公开题库才执行这一步；私有题库直接跳到 Pages CMS</text>
 </svg>

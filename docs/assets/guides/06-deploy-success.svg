@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
   <title id="title">保存后 GitHub Actions 自动发布成功</title>
-  <desc id="desc">GitHub Actions 工作流示意图，显示内容校验、Jekyll 构建和 Pages 部署均成功。</desc>
+  <desc id="desc">GitHub Actions 工作流示意图，公开仓库显示内容校验、Jekyll 构建和 Pages 部署均成功；私有仓库只执行内容校验。</desc>
   <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;fill:#1f2937}.muted{fill:#667085}.small{font-size:20px}.label{font-size:23px;font-weight:700}.title{font-size:30px;font-weight:760}.ok{fill:#087443}.num{fill:#fff;font-size:25px;font-weight:800;text-anchor:middle}</style>
   <rect width="1200" height="680" rx="30" fill="#f4f5f7"/>
   <rect x="55" y="45" width="1090" height="580" rx="20" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
-  <text x="95" y="106" class="title">Deploy question bank to GitHub Pages</text>
+  <text x="95" y="106" class="title">Validate content and deploy public site</text>
   <rect x="930" y="68" width="160" height="48" rx="24" fill="#dcfae6"/><circle cx="960" cy="92" r="12" fill="#17b26a"/><path d="m953 92 5 5 10-12" fill="none" stroke="#fff" stroke-width="3"/><text x="983" y="100" class="ok label">Success</text>
   <line x1="130" y1="168" x2="130" y2="500" stroke="#d0d5dd" stroke-width="5"/>
   <circle cx="130" cy="202" r="22" fill="#17b26a"/><path d="m119 202 8 8 15-18" fill="none" stroke="#fff" stroke-width="5"/><text x="178" y="210" class="label">Validate question content</text><text x="560" y="210" class="muted small">题目字段校验通过</text>
-  <circle cx="130" cy="292" r="22" fill="#17b26a"/><path d="m119 292 8 8 15-18" fill="none" stroke="#fff" stroke-width="5"/><text x="178" y="300" class="label">Build with Jekyll</text><text x="560" y="300" class="muted small">生成网页</text>
-  <circle cx="130" cy="382" r="22" fill="#17b26a"/><path d="m119 382 8 8 15-18" fill="none" stroke="#fff" stroke-width="5"/><text x="178" y="390" class="label">Deploy to GitHub Pages</text><text x="560" y="390" class="muted small">发布完成</text>
-  <circle cx="130" cy="472" r="22" fill="#17b26a"/><path d="m119 472 8 8 15-18" fill="none" stroke="#fff" stroke-width="5"/><text x="178" y="480" class="label">Visit site</text><text x="560" y="480" fill="#4338ca" class="small">https://your-name.github.io/llm-notes/</text>
+  <circle cx="130" cy="292" r="22" fill="#17b26a"/><path d="m119 292 8 8 15-18" fill="none" stroke="#fff" stroke-width="5"/><text x="178" y="300" class="label">Build with Jekyll</text><text x="560" y="300" class="muted small">生成网页（仅公开）</text>
+  <circle cx="130" cy="382" r="22" fill="#17b26a"/><path d="m119 382 8 8 15-18" fill="none" stroke="#fff" stroke-width="5"/><text x="178" y="390" class="label">Deploy to GitHub Pages</text><text x="560" y="390" class="muted small">发布完成（仅公开）</text>
+  <circle cx="130" cy="472" r="22" fill="#17b26a"/><path d="m119 472 8 8 15-18" fill="none" stroke="#fff" stroke-width="5"/><text x="178" y="480" class="label">Visit site</text><text x="560" y="480" fill="#4338ca" class="small">公开网址：your-name.github.io/llm-notes/</text>
   <circle cx="1095" cy="160" r="26" fill="#6d5dfc"/><text x="1095" y="169" class="num">9</text>
-  <rect x="95" y="536" width="995" height="58" rx="12" fill="#f0fdf4"/><text x="126" y="573" class="ok label">保存后等 Actions 变绿，再刷新公开网站</text>
+  <rect x="95" y="536" width="995" height="58" rx="12" fill="#f0fdf4"/><text x="126" y="573" class="ok label">公开：继续部署网页　私有：仅校验内容，部署自动跳过</text>
 </svg>
 

@@ -1,5 +1,3 @@
-media: docs/assets/uploads
-
 content:
   - name: questions
     label: 面试题与解答
@@ -7,10 +5,17 @@ content:
     path: docs/_questions
     format: yaml-frontmatter
     filename:
-      template: "{year}-{month}-{day}-{hour}-{minute}-{second}.md"
+      template: "{year}-{month}-{day}-{hour}-{minute}-{second}-{primary}.md"
       field: false
+    operations:
+      rename: false
+    commit:
+      templates:
+        create: "新增面试题：{filename}"
+        update: "更新面试题：{filename}"
+        delete: "删除面试题：{filename}"
     view:
-      fields: [title, category, difficulty, date]
+      fields: [title, published, category, difficulty, date]
       primary: title
       sort: [date, title, category, difficulty]
       search: [title, category, tags, body]
@@ -23,6 +28,9 @@ content:
         type: string
         required: true
         description: 直接填写完整问题，例如“为什么 KV Cache 能加速推理？”
+        options:
+          minlength: 4
+          maxlength: 160
 
       - name: category
         label: 分类
@@ -46,6 +54,12 @@ content:
         list: true
         description: 每次填写一个标签，可继续添加，例如 Transformer、推理、评估。
 
+      - name: published
+        label: 在网站中显示
+        type: boolean
+        default: true
+        description: 关闭后保存为草稿，不会出现在公开网站；准备好后再打开并保存。
+
       - name: date
         label: 整理日期
         type: date
@@ -68,30 +82,54 @@ content:
     type: file
     path: docs/_data/settings.yml
     format: yaml
+    operations:
+      delete: false
+    commit:
+      templates:
+        update: "更新站点设置"
     fields:
       - name: title
         label: 网站名称
         type: string
         required: true
+        description: 显示在网页左上角和浏览器标题中，建议 2～20 个字。
+        options:
+          minlength: 2
+          maxlength: 30
 
       - name: description
         label: 网站介绍
         type: text
         required: true
+        description: 显示在首页主标题下方，用一句话说明题库内容。
+        options:
+          minlength: 10
+          maxlength: 200
 
       - name: eyebrow
-        label: 首页英文眉题
+        label: 首页顶部小字（可留空）
         type: string
+        description: 显示在首页标题上方，例如 LARGE MODEL INTERVIEW NOTES。
+        options:
+          maxlength: 60
 
       - name: hero_title
-        label: 首页主标题
+        label: 首页标题第一行
         type: string
         required: true
+        description: 首页最大标题的第一部分，建议不超过 18 个字。
+        options:
+          minlength: 2
+          maxlength: 30
 
       - name: hero_highlight
-        label: 首页高亮标题
+        label: 首页彩色第二行
         type: string
         required: true
+        description: 首页标题中使用主题色显示的第二部分。
+        options:
+          minlength: 2
+          maxlength: 30
 
       - name: theme
         label: 主题配色
@@ -114,15 +152,18 @@ content:
       - name: footer
         label: 页脚文字
         type: string
+        description: 显示在每个页面底部，可留空。
+        options:
+          maxlength: 80
 
 settings:
   hide: true
   content:
     merge: true
   commit:
-    identity: user
+    identity: app
     templates:
-      create: "新增面试题：{filename}"
-      update: "更新面试题：{filename}"
-      delete: "删除面试题：{filename}"
-      rename: "重命名面试题：{oldFilename} -> {newFilename}"
+      create: "新增内容：{path}"
+      update: "更新内容：{path}"
+      delete: "删除内容：{path}"
+      rename: "重命名内容：{oldPath} -> {newPath}"

@@ -1,5 +1,5 @@
 name: 提交一道面试题
-description: 向公共题库建议新的题目和参考答案
+description: 向公开题库建议新的题目和参考答案
 title: "[题目] "
 body:
   - type: markdown

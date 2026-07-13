@@ -3,6 +3,7 @@ title: "如何系统地提升 RAG 的召回质量？"
 category: "RAG"
 difficulty: "困难"
 tags: [检索, Rerank, 评估]
+published: true
 date: 2026-07-11
 ---
 
@@ -34,4 +35,3 @@ date: 2026-07-11
 ## 一句话复习
 
 > 优化 RAG 要先评估和归因，再按数据、Query、召回、重排的链路逐层改进。
-

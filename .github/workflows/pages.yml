@@ -1,4 +1,4 @@
-name: Deploy question bank to GitHub Pages
+name: Validate content and deploy public site
 
 on:
   push:
@@ -9,15 +9,14 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  validate:
+    name: Validate content
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,6 +24,19 @@ jobs:
 
       - name: Validate question content
         run: node scripts/validate-content.mjs
+
+  build:
+    name: Build public site
+    if: (github.event.repository.visibility == 'public' && github.event.repository.has_pages == true) || vars.ENABLE_PAGES == 'true'
+    needs: validate
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Configure GitHub Pages
         id: pages
@@ -40,12 +52,16 @@ jobs:
         uses: actions/upload-pages-artifact@v5
 
   deploy:
-    if: github.event_name != 'pull_request'
+    name: Deploy public site
+    if: github.event_name != 'pull_request' && ((github.event.repository.visibility == 'public' && github.event.repository.has_pages == true) || vars.ENABLE_PAGES == 'true')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

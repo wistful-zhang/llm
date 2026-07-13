@@ -1,12 +1,20 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
 const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.url));
-const files = readdirSync(questionsDir).filter((name) => name.endsWith('.md')).sort();
 const allowedDifficulties = new Set(['简单', '中等', '困难']);
 const seenTitles = new Map();
 const errors = [];
+const questionsPathExists = existsSync(questionsDir);
+const questionsPathIsDirectory = questionsPathExists && statSync(questionsDir).isDirectory();
+const files = questionsPathIsDirectory
+  ? readdirSync(questionsDir).filter((name) => name.endsWith('.md')).sort()
+  : [];
+
+if (questionsPathExists && !questionsPathIsDirectory) {
+  errors.push('docs/_questions 必须是目录');
+}
 
 const unquote = (value) => {
   const trimmed = value.trim();
@@ -35,6 +43,7 @@ for (const filename of files) {
   const title = field(frontmatter, 'title');
   const category = field(frontmatter, 'category');
   const difficulty = field(frontmatter, 'difficulty');
+  const published = field(frontmatter, 'published');
   const date = field(frontmatter, 'date');
 
   if (title.length < 4 || title.length > 160) {
@@ -45,6 +54,9 @@ for (const filename of files) {
   }
   if (!allowedDifficulties.has(difficulty)) {
     errors.push(`${filename}: difficulty 必须是“简单”“中等”或“困难”`);
+  }
+  if (published && !['true', 'false'].includes(published)) {
+    errors.push(`${filename}: published 必须是 true 或 false`);
   }
   const parsedDate = new Date(`${date}T00:00:00Z`);
   const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(date) &&

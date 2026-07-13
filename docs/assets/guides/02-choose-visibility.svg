@@ -13,7 +13,7 @@
   <text x="178" y="377" class="label">Public</text><text x="178" y="411" class="muted small">任何人都能看到仓库；适合公开题库和免费 GitHub Pages</text>
   <line x1="126" y1="438" x2="1070" y2="438" stroke="#e4e7ec" stroke-width="2"/>
   <circle cx="144" cy="474" r="13" fill="#fff" stroke="#475467" stroke-width="3"/>
-  <text x="178" y="482" class="label">Private</text><text x="178" y="516" class="muted small">只有本人和受邀协作者可见；私人模式不要启用公开 Pages</text>
+  <text x="178" y="482" class="label">Private</text><text x="178" y="516" class="muted small">只有本人和受邀协作者可见；私有模式不要启用公开 Pages</text>
   <circle cx="1086" cy="315" r="26" fill="#6d5dfc"/><text x="1086" y="324" class="num">2</text>
   <rect x="790" y="558" width="314" height="56" rx="12" fill="#1f883d"/><text x="828" y="594" class="label inverse">Create repository</text>
   <text x="110" y="595" class="purple label">公开 / 私有就在这里选，不在题库后台里</text>
