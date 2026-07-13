@@ -93,6 +93,13 @@ import {
     if (liveStatus) liveStatus.textContent = message;
   };
 
+  const moveFocusTo = (element) => {
+    window.requestAnimationFrame(() => {
+      element.scrollIntoView({ block: 'start', behavior: 'auto' });
+      element.focus({ preventScroll: true });
+    });
+  };
+
   const showStorageWarning = () => {
     if (storageWarningShown || !storageStatus) return;
     storageWarningShown = true;
@@ -262,7 +269,7 @@ import {
     ratingInputs.forEach((input) => { input.checked = input.value === state.pendingRating; });
     nextButton.disabled = !isRating(state.pendingRating);
     nextButton.textContent = state.cursor === state.queue.length - 1 ? '完成本轮' : '下一题';
-    if (moveFocus) answerTitle.focus();
+    if (moveFocus) moveFocusTo(answerTitle);
     announce('参考答案已展开，请完成自我评价。');
   };
 
@@ -301,7 +308,7 @@ import {
       startTimer();
     }
 
-    if (moveFocus) questionTitle.focus();
+    if (moveFocus) moveFocusTo(questionTitle);
     announce(`第 ${state.cursor + 1} 题，共 ${state.queue.length} 题。`);
     persistSession();
   };
@@ -433,7 +440,7 @@ import {
     }
 
     state = null;
-    summaryTitle.focus();
+    moveFocusTo(summaryTitle);
     announce('复盘结果已生成。');
   }
 
