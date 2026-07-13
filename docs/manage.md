@@ -15,8 +15,8 @@ permalink: /manage/
 
 1. 点击上面的按钮，选择 **Sign in with GitHub**。
 2. 安装 Pages CMS GitHub App 时选择 **Only select repositories**。
-3. 只勾选 `wistful-zhang/llm`，不要授予其他仓库权限。
-4. 打开 `llm` 仓库的 `main` 分支，选择“面试题与解答”。
+3. 只勾选你用来保存题库的仓库，不要授予其他仓库权限。
+4. 打开该仓库的 `main` 分支，选择“面试题与解答”。
 5. 点击“New 面试题与解答”，填写表单并保存。
 
 ## 填写建议
@@ -25,5 +25,6 @@ permalink: /manage/
 
 > 管理后台只有获得仓库写入权限的 GitHub 用户才能保存内容。普通网站访客无法修改题库。
 
-</div>
+如果这是从模板创建的新仓库，你还可以在“站点设置”中直接修改网站名称、介绍和首页文案。
 
+</div>
