@@ -8,7 +8,7 @@ title: 题库
       <h1>{{ site.data.settings.hero_title }}<br><span>{{ site.data.settings.hero_highlight }}</span></h1>
       <p>{{ site.data.settings.description }}</p>
     </div>
-    <div class="stat-card" aria-label="题库统计">
+    <div class="stat-card" role="region" aria-label="题库统计">
       <strong>{{ site.questions | size }}</strong>
       <span>道已整理题目</span>
       <div class="stat-line"></div>
@@ -23,7 +23,7 @@ title: 题库
       <span aria-hidden="true">⌕</span>
       <input id="question-search" type="search" aria-label="搜索题目、分类或标签" placeholder="搜索题目、分类或标签…" autocomplete="off">
     </label>
-    <div class="filters" aria-label="按分类筛选">
+    <div class="filters" role="group" aria-label="按分类筛选">
       <button class="filter active" type="button" data-category="all">全部</button>
       {% assign categories = site.questions | map: 'category' | uniq | sort %}
       {% for category in categories %}
