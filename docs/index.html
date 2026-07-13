@@ -1,16 +1,21 @@
 ---
 title: 题库
 ---
+{% assign eyebrow = site.data.settings.eyebrow | default: '' | strip %}
+{% assign hero_title = site.data.settings.hero_title | default: '把零散知识，整理成' %}
+{% assign hero_highlight = site.data.settings.hero_highlight | default: '能讲清楚的答案。' %}
+{% assign hero_description = site.data.settings.description | default: site.description %}
 <section class="hero">
   <div class="container hero-grid">
     <div>
-      <div class="eyebrow">{{ site.data.settings.eyebrow }}</div>
-      <h1>{{ site.data.settings.hero_title }}<br><span>{{ site.data.settings.hero_highlight }}</span></h1>
-      <p>{{ site.data.settings.description }}</p>
+      {% if eyebrow != empty %}<div class="eyebrow">{{ eyebrow | escape }}</div>{% endif %}
+      <h1>{{ hero_title | escape }}<br><span>{{ hero_highlight | escape }}</span></h1>
+      <p>{{ hero_description | escape }}</p>
       <div class="hero-actions">
-        <a class="primary-button" href="{{ '/start/' | relative_url }}">创建我的题库（3 分钟）</a>
-        <a class="secondary-button" href="{{ '/manage/' | relative_url }}">管理我的题库</a>
+        <a class="primary-button" href="#question-list-section">开始浏览题目</a>
+        <a class="secondary-button" href="{{ '/manage/' | relative_url }}">我是题库主人：网页编辑</a>
       </div>
+      <a class="template-cta" href="{{ '/start/' | relative_url }}">我也想创建一份独立题库 →</a>
     </div>
     <div class="stat-card" role="region" aria-label="题库统计">
       <strong>{{ site.questions | size }}</strong>
@@ -25,13 +30,13 @@ title: 题库
   <div class="toolbar">
     <label class="search-box">
       <span aria-hidden="true">⌕</span>
-      <input id="question-search" type="search" aria-label="搜索题目、分类或标签" placeholder="搜索题目、分类或标签…" autocomplete="off">
+      <input id="question-search" type="search" aria-label="搜索题目、答案、分类或标签" placeholder="搜索题目、答案、分类或标签…" autocomplete="off">
     </label>
     <div class="filters" role="group" aria-label="按分类筛选">
-      <button class="filter active" type="button" data-category="all">全部</button>
+      <button class="filter active" type="button" data-filter-all aria-pressed="true">全部</button>
       {% assign categories = site.questions | map: 'category' | uniq | sort %}
       {% for category in categories %}
-        <button class="filter" type="button" data-category="{{ category | escape }}">{{ category }}</button>
+        <button class="filter" type="button" data-category="{{ category | escape }}" aria-pressed="false">{{ category | escape }}</button>
       {% endfor %}
     </div>
   </div>
@@ -39,19 +44,21 @@ title: 题库
   <div id="question-list" class="question-list">
     {% assign questions = site.questions | sort: 'date' | reverse %}
     {% for question in questions %}
+      {% assign search_tags = question.tags | join: ' ' %}
+      {% assign search_body = question.content | strip_html | strip_newlines %}
       <a class="question-card"
          href="{{ question.url | relative_url }}"
          data-category="{{ question.category | escape }}"
-         data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: question.tags | downcase | escape }}">
-        <div class="card-number">{{ forloop.index | prepend: '0' | slice: -2, 2 }}</div>
+         data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: search_tags | append: ' ' | append: search_body | downcase | escape }}">
+        <div class="card-number">{% if forloop.index < 10 %}0{% endif %}{{ forloop.index }}</div>
         <div class="card-body">
           <div class="card-meta">
-            <span>{{ question.category }}</span>
-            <span class="difficulty difficulty-{{ question.difficulty }}">{{ question.difficulty }}</span>
+            <span>{{ question.category | escape }}</span>
+            <span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>
           </div>
-          <h2>{{ question.title }}</h2>
+          <h2>{{ question.title | escape }}</h2>
           <div class="tag-list">
-            {% for tag in question.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+            {% for tag in question.tags %}<span class="tag">{{ tag | escape }}</span>{% endfor %}
           </div>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>

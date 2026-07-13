@@ -10,7 +10,7 @@
 - 保存后自动提交到 GitHub，并触发网站更新
 - 支持全文搜索、分类筛选、响应式页面与题目详情页
 - 自定义分类会自动出现在首页筛选栏，不需要修改模板
-- 后台可切换主题配色并修改全部首页文案
+- 后台可修改网站名称、介绍、首页两行标题、主题配色和页脚
 - 自动校验题目标题、分类、难度、日期和答案内容
 - 不绑定用户名、仓库名或固定域名，适用于任何 GitHub 账号
 - 同时支持公开分享与私人笔记两种使用模式
@@ -19,37 +19,40 @@
 
 推荐使用模板，而不是 Fork：
 
-不熟悉 GitHub 的用户可以直接打开网站中的[新手图解指南](docs/start.md)，按照 6 张操作示意图完成公开/私有选择、Pages 配置和后台新增题目。
+不熟悉 GitHub 的用户可以在网站顶部点击“使用”，按照 6 张操作示意图完成公开 / 私有选择、Pages 配置和后台新增题目；未发布网站时，直接按下面的步骤操作。
 
 1. 在仓库页面点击 **Use this template → Create a new repository**。
 2. 选择自己的 GitHub 账号、仓库名称和可见性。
-3. 公共题库：选择 **Public**，然后在 `Settings → Pages` 中把 Source 设置为 **GitHub Actions**。
-4. 私人题库：选择 **Private**，并且不要启用公开 Pages。
+3. 公开题库：选择 **Public**，然后在 `Settings → Pages` 中把 Source 设置为 **GitHub Actions**。
+4. 私有题库：选择 **Private**，并且不要启用公开 Pages。
 5. 打开 [Pages CMS](https://app.pagescms.org/)，用 GitHub 登录。
 6. 安装 GitHub App 时选择 **Only select repositories**，只授权自己的题库仓库。
 7. 在“站点设置”中修改网站名称和介绍，在“面试题与解答”中新增内容。
 
 GitHub Actions 会自动识别账号和仓库名，因此不需要手动修改 `baseurl`、用户名或网站路径。
 
+如果希望别人也能从你的新题库继续创建独立副本，可以在仓库 **Settings → General** 中开启 **Template repository**。网页中的模板按钮会优先寻找最初的模板来源，不会写死某个用户名。
+
 ## 公开与私有
 
 | 使用方式 | 仓库 | 网站 | 适合场景 |
 | --- | --- | --- | --- |
 | 公开分享 | Public | 启用 GitHub Pages | 面经分享、作品展示、社区协作 |
-| 私人笔记 | Private | 不启用 Pages | 个人复习、包含非公开内容的笔记 |
+| 私有笔记 | Private | 不启用 Pages | 个人复习、包含非公开内容的笔记 |
 | 企业内部 | Private / Internal | Enterprise Cloud 私有 Pages | 企业内部知识库 |
 
 重要提示：私有仓库不自动代表 Pages 网站也是私有的。除 GitHub Enterprise Cloud 提供的私有 Pages 访问控制外，请把发布到 Pages 的内容视为公开信息。不要上传密码、Token、个人隐私、公司机密或受保密协议约束的题目。
 
-另外，公共仓库的 Fork 仍然是公共仓库，不能改成私有。如果想建立独立的私人题库，请使用 **Use this template** 创建私有仓库。
+另外，公开仓库的 Fork 仍然是公开仓库，不能改成私有。如果想建立独立的私有题库，请使用 **Use this template** 创建私有仓库。
 
 ## 在线管理
 
-网站右上角的“管理我的题库”会进入通用的 Pages CMS 管理页。只有获得目标仓库写入权限的 GitHub 用户才能保存；普通访客只能浏览公开题库。
+公开题库可以从网站顶部的“网页编辑”进入 Pages CMS。私有题库没有公开网站入口，请直接收藏 [Pages CMS](https://app.pagescms.org/)。只有获得目标仓库写入权限的 GitHub 用户才能保存。
 
 后台包含两个入口：
 
 - **面试题与解答**：新增、修改或删除题目，自由填写新分类
+- **草稿开关**：关闭“在网站中显示”后只保存草稿，准备好再公开
 - **站点设置**：修改网站名称、介绍、首页文案、主题配色和页脚
 
 第一次完成 GitHub App 授权后，日常维护不需要打开源码。只有修改页面布局、开发新功能或排查底层构建故障时才需要查看代码。
@@ -64,6 +67,7 @@ title: "为什么 KV Cache 能加速推理？"
 category: "LLM 基础"
 difficulty: "中等"
 tags: [推理, Transformer]
+published: true
 date: 2026-07-13
 ---
 ```
@@ -102,9 +106,9 @@ bundle exec jekyll serve --baseurl=""
 
 ## 参与贡献
 
-如果要改进当前公共题库，可以提交 Issue 或 Pull Request。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。如果是建立自己的题库，请使用模板创建独立仓库。
+如果要改进当前公开题库，可以提交 Issue 或 Pull Request。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。如果是建立自己的题库，请使用模板创建独立仓库。
 
 ## License
 
-项目代码与示例内容采用 [MIT License](LICENSE)。提交内容即表示你有权公开该内容，并同意按此许可证分发。
+模板代码与示例内容采用 [MIT License](LICENSE)。你在自己仓库新增的笔记由你管理；只有向本项目提交 Issue 或 Pull Request 的内容，才需要确认拥有公开和分发权限。
 

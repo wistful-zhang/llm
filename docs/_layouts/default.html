@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ page.description | default: site_description | escape }}">
     <meta name="theme-color" content="#101828">
-    <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site_title }}</title>
+    <title>{% if page.title %}{{ page.title | escape }} · {% endif %}{{ site_title | escape }}</title>
     <link rel="canonical" href="{{ canonical_url }}">
     <link rel="icon" type="image/svg+xml" href="{{ '/assets/favicon.svg' | relative_url }}">
     <meta property="og:locale" content="zh_CN">
@@ -34,19 +34,19 @@
     {% endif %}
     <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
   </head>
-  <body class="theme-{{ site.data.settings.theme | default: 'violet' }}">
+  <body class="theme-{{ site.data.settings.theme | default: 'violet' | escape }}">
     <a class="skip-link" href="#main-content">跳到主要内容</a>
     <header class="site-header">
       <div class="container nav-wrap">
         <a class="brand" href="{{ '/' | relative_url }}" aria-label="返回首页">
           <span class="brand-mark">L</span>
-          <span>{{ site_title }}</span>
+          <span class="brand-name">{{ site_title | escape }}</span>
         </a>
         <nav aria-label="主导航">
-          <a href="{{ '/' | relative_url }}">题库</a>
-          <a class="start-link" href="{{ '/start/' | relative_url }}">使用</a>
-          <a class="optional-link" href="{{ '/about/' | relative_url }}">关于</a>
-          <a class="admin-link" href="{{ '/manage/' | relative_url }}">管理我的题库</a>
+          <a href="{{ '/' | relative_url }}"{% if page.url == '/' or page.collection == 'questions' %} aria-current="page"{% endif %}>题库</a>
+          <a class="start-link" href="{{ '/start/' | relative_url }}"{% if page.url == '/start/' %} aria-current="page"{% endif %}>使用</a>
+          <a class="optional-link" href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>关于</a>
+          <a class="admin-link" href="{{ '/manage/' | relative_url }}"{% if page.url == '/manage/' %} aria-current="page"{% endif %}>网页编辑</a>
         </nav>
       </div>
     </header>
@@ -55,7 +55,7 @@
 
     <footer class="site-footer">
       <div class="container footer-wrap">
-        <span>{{ site.data.settings.footer | default: '持续学习，保持好奇。' }}</span>
+        <span>{{ site.data.settings.footer | default: '持续学习，保持好奇。' | escape }}</span>
         <span>
           <a href="{{ '/start/' | relative_url }}">使用指南</a> · {% if site.github.repository_url %}<a href="{{ site.github.repository_url }}">GitHub 仓库</a> · {% endif %}Built with GitHub Pages
         </span>

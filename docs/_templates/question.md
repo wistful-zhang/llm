@@ -3,6 +3,7 @@ title: "在这里填写题目"
 category: "LLM 基础"
 difficulty: "中等"
 tags: [标签一, 标签二]
+published: true
 date: 2026-07-12
 ---
 
@@ -27,4 +28,3 @@ date: 2026-07-12
 ## 一句话复习
 
 > 用一句话留下最值得记住的结论。
-

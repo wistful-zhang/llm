@@ -3,6 +3,7 @@ title: "Self-Attention 为什么要除以 √dₖ？"
 category: "LLM 基础"
 difficulty: "中等"
 tags: [Transformer, Attention]
+published: true
 date: 2026-07-10
 ---
 
@@ -29,4 +30,3 @@ Attention(Q, K, V) = softmax(QKᵀ / √dₖ)V
 ## 一句话复习
 
 > 缩放是为了抵消点积方差随维度增大的影响，避免 Softmax 饱和。
-
