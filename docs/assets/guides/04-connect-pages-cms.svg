@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">登录 Pages CMS 并只授权题库仓库</title>
+  <desc id="desc">Pages CMS 登录和 GitHub App 安装示意图，突出 Sign in with GitHub 与 Only select repositories。</desc>
+  <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;fill:#1f2937}.muted{fill:#667085}.small{font-size:20px}.label{font-size:23px;font-weight:700}.title{font-size:29px;font-weight:760}.num{fill:#fff;font-size:25px;font-weight:800;text-anchor:middle}.inverse{fill:#fff}</style>
+  <rect width="1200" height="680" rx="30" fill="#f4f5f7"/>
+  <rect x="55" y="52" width="500" height="550" rx="22" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
+  <text x="100" y="127" class="title">Sign in to Pages CMS</text><text x="100" y="168" class="muted small">使用 GitHub 身份连接你的题库</text>
+  <rect x="100" y="220" width="410" height="62" rx="12" fill="#101828"/><text x="195" y="260" class="label inverse">Sign in with GitHub</text>
+  <circle cx="510" cy="219" r="25" fill="#6d5dfc"/><text x="510" y="228" class="num">5</text>
+  <rect x="645" y="52" width="500" height="550" rx="22" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
+  <text x="690" y="116" class="title">Install Pages CMS</text><text x="690" y="158" class="muted small">Repository access</text>
+  <circle cx="716" cy="220" r="13" fill="#fff" stroke="#667085" stroke-width="3"/><text x="748" y="228" class="label">All repositories</text>
+  <rect x="676" y="265" width="430" height="190" rx="16" fill="#fafaff" stroke="#6d5dfc" stroke-width="4"/>
+  <circle cx="716" cy="310" r="13" fill="#fff" stroke="#6d5dfc" stroke-width="3"/><circle cx="716" cy="310" r="7" fill="#6d5dfc"/>
+  <text x="748" y="318" class="label">Only select repositories</text>
+  <text x="704" y="365" class="muted small">Select repositories</text><rect x="704" y="382" width="360" height="48" rx="9" fill="#fff" stroke="#98a2b3"/><text x="724" y="413" class="small">llm-notes</text>
+  <circle cx="1090" cy="264" r="25" fill="#6d5dfc"/><text x="1090" y="273" class="num">6</text>
+  <rect x="854" y="495" width="252" height="58" rx="11" fill="#1f883d"/><text x="946" y="532" class="label inverse">Install</text>
+  <text x="100" y="554" class="muted small">首次使用只做一次</text><text x="690" y="584" fill="#4338ca" class="label">只授权题库仓库，更安全</text>
+</svg>
