@@ -69,6 +69,7 @@ GitHub Actions 会自动识别账号和仓库名，因此不需要手动修改 `
 ```yaml
 ---
 title: "为什么 KV Cache 能加速推理？"
+source: "自己的面试速记或公开资料整理"
 category: "LLM 基础"
 difficulty: "中等"
 tags: [推理, Transformer]

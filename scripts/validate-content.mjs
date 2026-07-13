@@ -7,7 +7,9 @@ const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难'])
 const publishableDifficulties = new Set(['简单', '中等', '困难']);
 const allowedReviewStatuses = new Set(['待整理', '待复习', '已掌握']);
 const seenTitles = new Map();
+const seenNormalizedTitles = new Map();
 const errors = [];
+let publishedCount = 0;
 const questionsPathExists = existsSync(questionsDir);
 const questionsPathIsDirectory = questionsPathExists && statSync(questionsDir).isDirectory();
 const files = questionsPathIsDirectory
@@ -32,6 +34,16 @@ const field = (frontmatter, name) => {
   return match ? unquote(match[1]) : '';
 };
 
+const rawField = (frontmatter, name) => {
+  const match = frontmatter.match(new RegExp(`^${name}:\\s*(.+?)\\s*$`, 'm'));
+  return match ? match[1].trim() : '';
+};
+
+const normalizeTitle = (value) => value
+  .normalize('NFKC')
+  .toLocaleLowerCase('zh-CN')
+  .replace(/[\s\p{P}]+/gu, '');
+
 for (const filename of files) {
   const source = readFileSync(join(questionsDir, filename), 'utf8').replace(/^\uFEFF/, '');
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/);
@@ -47,9 +59,10 @@ for (const filename of files) {
   const difficulty = field(frontmatter, 'difficulty');
   const sourceNote = field(frontmatter, 'source');
   const reviewStatus = field(frontmatter, 'review_status');
-  const published = field(frontmatter, 'published');
+  const published = rawField(frontmatter, 'published');
   const date = field(frontmatter, 'date');
   const isPublished = published === 'true';
+  if (isPublished) publishedCount += 1;
 
   if (title.length < 2 || title.length > 160) {
     errors.push(`${filename}: title 长度应为 2～160 个字符`);
@@ -76,7 +89,7 @@ for (const filename of files) {
     errors.push(`${filename}: 发布前必须把 review_status 从“待整理”改为“待复习”或“已掌握”`);
   }
   if (!['true', 'false'].includes(published)) {
-    errors.push(`${filename}: published 必须是 true 或 false`);
+    errors.push(`${filename}: published 必须是未加引号的 YAML 布尔值 true 或 false`);
   }
   const parsedDate = new Date(`${date}T00:00:00Z`);
   const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(date) &&
@@ -95,6 +108,13 @@ for (const filename of files) {
     } else {
       seenTitles.set(title, filename);
     }
+
+    const normalizedTitle = normalizeTitle(title);
+    if (seenNormalizedTitles.has(normalizedTitle)) {
+      errors.push(`${filename}: 题目标题与 ${seenNormalizedTitles.get(normalizedTitle)} 仅有大小写、空格或标点差异`);
+    } else {
+      seenNormalizedTitles.set(normalizedTitle, filename);
+    }
   }
 }
 
@@ -103,5 +123,5 @@ if (errors.length > 0) {
   errors.forEach((error) => console.error(`- ${error}`));
   process.exitCode = 1;
 } else {
-  console.log(`内容校验通过：${files.length} 道题目`);
+  console.log(`内容校验通过：共 ${files.length} 道，已发布 ${publishedCount} 道，草稿 ${files.length - publishedCount} 道`);
 }

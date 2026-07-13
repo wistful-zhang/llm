@@ -5,6 +5,7 @@ title: 题库
 {% assign hero_title = site.data.settings.hero_title | default: '把零散知识，整理成' %}
 {% assign hero_highlight = site.data.settings.hero_highlight | default: '能讲清楚的答案。' %}
 {% assign hero_description = site.data.settings.description | default: site.description %}
+{% assign published_questions = site.questions | where: 'published', true %}
 <section class="hero">
   <div class="container hero-grid">
     <div>
@@ -21,8 +22,8 @@ title: 题库
       </div>
     </div>
     <div class="stat-card" role="region" aria-label="题库统计">
-      <strong>{{ site.questions | size }}</strong>
-      <span>道已整理题目</span>
+      <strong>{{ published_questions | size }}</strong>
+      <span>道已发布题目</span>
       <div class="stat-line"></div>
       <small>可按分类随机抽题</small>
     </div>
@@ -37,7 +38,7 @@ title: 题库
     </label>
     <div class="filters" role="group" aria-label="按分类筛选">
       <button class="filter active" type="button" data-filter-all aria-pressed="true">全部</button>
-      {% assign categories = site.questions | map: 'category' | uniq | sort %}
+      {% assign categories = published_questions | map: 'category' | uniq | sort %}
       {% for category in categories %}
         <button class="filter" type="button" data-category="{{ category | escape }}" aria-pressed="false">{{ category | escape }}</button>
       {% endfor %}
@@ -45,7 +46,7 @@ title: 题库
   </div>
 
   <div id="question-list" class="question-list">
-    {% assign questions = site.questions | sort: 'date' | reverse %}
+    {% assign questions = published_questions | sort: 'date' | reverse %}
     {% for question in questions %}
       {% assign search_tags = question.tags | join: ' ' %}
       {% assign search_body = question.content | strip_html | strip_newlines %}

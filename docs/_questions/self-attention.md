@@ -1,5 +1,6 @@
 ---
 title: "Self-Attention 为什么要除以 √dₖ？"
+source: "经典高频题；技术依据：Attention Is All You Need"
 category: "LLM 基础"
 difficulty: "中等"
 tags: [Transformer, Attention]
@@ -22,6 +23,10 @@ date: 2026-07-10
 Attention(Q, K, V) = softmax(QKᵀ / √dₖ)V
 ```
 
+## 工程实践
+
+混合精度训练时仍要关注 Attention Logits、Softmax 和 Mask 的数值稳定性。缩放解决的是维度带来的典型方差增长，并不能替代稳定的实现、合理初始化和异常值监控。
+
 ## 常见追问
 
 1. 如果不缩放，训练过程中会出现什么现象？
@@ -31,3 +36,7 @@ Attention(Q, K, V) = softmax(QKᵀ / √dₖ)V
 ## 一句话复习
 
 > 缩放是为了抵消点积方差随维度增大的影响，避免 Softmax 饱和。
+
+## 参考资料
+
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762)

@@ -1,5 +1,6 @@
 ---
 title: "怎样提高 LLM Agent 的可靠性？"
+source: "公开面经高频主题；答案依据论文原创整理"
 category: "Agent"
 difficulty: "困难"
 tags: [Tool Calling, Guardrails, Observability]
@@ -36,3 +37,8 @@ Agent 的错误通常可以分为四类：
 ## 一句话复习
 
 > 可靠 Agent 来自可约束、可验证、可恢复、可观测的完整执行链路。
+
+## 参考资料
+
+- [ReAct](https://arxiv.org/abs/2210.03629)
+- [τ-bench](https://arxiv.org/abs/2406.12045)
