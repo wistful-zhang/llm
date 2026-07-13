@@ -3,8 +3,9 @@
   const cards = [...document.querySelectorAll('.question-card')];
   const filters = [...document.querySelectorAll('.filter')];
   const empty = document.querySelector('#empty-state');
+  const status = document.querySelector('#result-status');
 
-  if (!search || cards.length === 0) return;
+  if (!search || !empty) return;
 
   let activeCategory = 'all';
 
@@ -22,7 +23,11 @@
       if (visible) visibleCount += 1;
     });
 
+    empty.textContent = cards.length === 0
+      ? '题库还没有内容，请从管理后台添加第一道题。'
+      : '没有找到匹配的题目，换个关键词试试。';
     empty.hidden = visibleCount !== 0;
+    if (status) status.textContent = `当前显示 ${visibleCount} 道题目`;
   };
 
   search.addEventListener('input', update);
@@ -34,5 +39,6 @@
       update();
     });
   });
-})();
 
+  update();
+})();

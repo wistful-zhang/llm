@@ -26,16 +26,11 @@ content:
 
       - name: category
         label: 分类
-        type: select
+        type: string
         required: true
+        description: 例如 LLM 基础、训练与对齐、RAG、Agent、工程实践、系统设计；也可以输入新分类，首页会自动生成筛选项。
         options:
-          values:
-            - LLM 基础
-            - 训练与对齐
-            - RAG
-            - Agent
-            - 工程实践
-            - 系统设计
+          maxlength: 30
 
       - name: difficulty
         label: 难度
@@ -97,6 +92,24 @@ content:
         label: 首页高亮标题
         type: string
         required: true
+
+      - name: theme
+        label: 主题配色
+        type: select
+        required: true
+        default: violet
+        options:
+          values:
+            - name: violet
+              label: 紫罗兰
+            - name: blue
+              label: 深海蓝
+            - name: green
+              label: 翡翠绿
+            - name: rose
+              label: 珊瑚红
+            - name: amber
+              label: 琥珀橙
 
       - name: footer
         label: 页脚文字

@@ -21,16 +21,14 @@ title: 题库
   <div class="toolbar">
     <label class="search-box">
       <span aria-hidden="true">⌕</span>
-      <input id="question-search" type="search" placeholder="搜索题目、分类或标签…" autocomplete="off">
+      <input id="question-search" type="search" aria-label="搜索题目、分类或标签" placeholder="搜索题目、分类或标签…" autocomplete="off">
     </label>
     <div class="filters" aria-label="按分类筛选">
       <button class="filter active" type="button" data-category="all">全部</button>
-      <button class="filter" type="button" data-category="LLM 基础">LLM 基础</button>
-      <button class="filter" type="button" data-category="训练与对齐">训练与对齐</button>
-      <button class="filter" type="button" data-category="RAG">RAG</button>
-      <button class="filter" type="button" data-category="Agent">Agent</button>
-      <button class="filter" type="button" data-category="工程实践">工程实践</button>
-      <button class="filter" type="button" data-category="系统设计">系统设计</button>
+      {% assign categories = site.questions | map: 'category' | uniq | sort %}
+      {% for category in categories %}
+        <button class="filter" type="button" data-category="{{ category | escape }}">{{ category }}</button>
+      {% endfor %}
     </div>
   </div>
 
@@ -56,5 +54,6 @@ title: 题库
       </a>
     {% endfor %}
   </div>
-  <div id="empty-state" class="empty-state" hidden>没有找到匹配的题目，换个关键词试试。</div>
+  <div id="result-status" class="sr-only" role="status" aria-live="polite"></div>
+  <div id="empty-state" class="empty-state" role="status" hidden>没有找到匹配的题目，换个关键词试试。</div>
 </section>
