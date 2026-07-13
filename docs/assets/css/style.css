@@ -961,9 +961,9 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .practice-summary > h2 { margin: 10px 0 6px; font-size: clamp(2rem, 5vw, 3rem); }
 .practice-summary > p { color: var(--muted); }
 .practice-summary-grid { display: grid; margin: 26px 0 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.practice-summary-grid > div { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
-.practice-summary-grid dd { display: block; margin: 0; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
-.practice-summary-grid dt { color: var(--muted); font-size: .82rem; }
+.practice-summary-grid > div { display: flex; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); flex-direction: column; }
+.practice-summary-grid dd { display: block; margin: 0; font-size: 1.55rem; font-weight: 800; line-height: 1.2; order: 1; }
+.practice-summary-grid dt { color: var(--muted); font-size: .82rem; order: 2; }
 .practice-summary-duration { margin: 8px 2px 0; font-size: .9rem; }
 
 .practice-weak-section { margin-top: 32px; }
