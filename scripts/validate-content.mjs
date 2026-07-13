@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
 const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.url));
-const allowedDifficulties = new Set(['简单', '中等', '困难']);
+const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难']);
+const publishableDifficulties = new Set(['简单', '中等', '困难']);
+const allowedReviewStatuses = new Set(['待整理', '待复习', '已掌握']);
 const seenTitles = new Map();
 const errors = [];
 const questionsPathExists = existsSync(questionsDir);
@@ -43,19 +45,37 @@ for (const filename of files) {
   const title = field(frontmatter, 'title');
   const category = field(frontmatter, 'category');
   const difficulty = field(frontmatter, 'difficulty');
+  const sourceNote = field(frontmatter, 'source');
+  const reviewStatus = field(frontmatter, 'review_status');
   const published = field(frontmatter, 'published');
   const date = field(frontmatter, 'date');
+  const isPublished = published === 'true';
 
-  if (title.length < 4 || title.length > 160) {
-    errors.push(`${filename}: title 长度应为 4～160 个字符`);
+  if (title.length < 2 || title.length > 160) {
+    errors.push(`${filename}: title 长度应为 2～160 个字符`);
   }
   if (!category || category.length > 30) {
     errors.push(`${filename}: category 必填且不能超过 30 个字符`);
   }
-  if (!allowedDifficulties.has(difficulty)) {
-    errors.push(`${filename}: difficulty 必须是“简单”“中等”或“困难”`);
+  if (isPublished && category === '待整理') {
+    errors.push(`${filename}: 发布前必须把 category 从“待整理”改为正式分类`);
   }
-  if (published && !['true', 'false'].includes(published)) {
+  if (!allowedDifficulties.has(difficulty)) {
+    errors.push(`${filename}: difficulty 必须是“待评估”“简单”“中等”或“困难”`);
+  }
+  if (isPublished && !publishableDifficulties.has(difficulty)) {
+    errors.push(`${filename}: 发布前必须把 difficulty 从“待评估”改为正式难度`);
+  }
+  if (sourceNote.length > 80) {
+    errors.push(`${filename}: source 不能超过 80 个字符`);
+  }
+  if (!allowedReviewStatuses.has(reviewStatus)) {
+    errors.push(`${filename}: review_status 必须是“待整理”“待复习”或“已掌握”`);
+  }
+  if (isPublished && reviewStatus === '待整理') {
+    errors.push(`${filename}: 发布前必须把 review_status 从“待整理”改为“待复习”或“已掌握”`);
+  }
+  if (!['true', 'false'].includes(published)) {
     errors.push(`${filename}: published 必须是 true 或 false`);
   }
   const parsedDate = new Date(`${date}T00:00:00Z`);
@@ -65,11 +85,11 @@ for (const filename of files) {
   if (!isValidDate) {
     errors.push(`${filename}: date 必须是有效的 YYYY-MM-DD 日期`);
   }
-  if (!body.trim()) {
-    errors.push(`${filename}: 题目解答不能为空`);
+  if (isPublished && !body.trim()) {
+    errors.push(`${filename}: 发布到网站前必须补充题目解答`);
   }
 
-  if (title) {
+  if (title && isPublished) {
     if (seenTitles.has(title)) {
       errors.push(`${filename}: 题目标题与 ${seenTitles.get(title)} 重复`);
     } else {

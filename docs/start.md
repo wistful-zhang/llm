@@ -7,14 +7,18 @@ permalink: /start/
 
 <div class="onboarding-intro" markdown="1">
 
-<span class="status-badge">首次配置约 5～10 分钟 · 日常新增约 1 分钟</span>
+<span class="status-badge">首次配置约 5～10 分钟 · 日常速记约 1～2 分钟</span>
 
 # 建立自己的大模型面经
 
 第一次需要在 GitHub 创建仓库、选择公开或私有，并连接 Pages CMS。完成后，日常新增、修改和删除题目都不需要打开源码，也不需要 Git 命令。
 
-{% if site.github.repository_url %}<a class="primary-button" href="{{ site.github.repository_url }}" data-template-repository="{{ site.github.repository_nwo | escape }}" target="_blank" rel="noopener noreferrer">打开 GitHub 仓库 ↗</a>{% endif %}
+</div>
 
+<div class="journey-grid" aria-label="选择当前目标">
+  <a class="journey-card" href="{{ '/practice/' | relative_url }}"><strong>我只想先练习</strong><span>直接按分类随机抽题，不需要 GitHub 账号。</span><b>开始模拟面试 →</b></a>
+  <a class="journey-card" href="{{ '/manage/' | relative_url }}#capture-workflow"><strong>我已有自己的题库</strong><span>刚面试完时，直接用网页表单快速记题。</span><b>进入速记流程 →</b></a>
+  <a class="journey-card" href="#mode-choice"><strong>我是第一次创建</strong><span>继续下面 5 步，先决定公开还是私有。</span><b>开始首次配置 ↓</b></a>
 </div>
 
 <div class="guide-alert" role="note" markdown="1">
@@ -26,19 +30,21 @@ permalink: /start/
 ## 先确认你需要哪种模式
 
 <div id="mode-choice" class="path-picker">
-  <article class="path-card path-public">
+  <a class="path-card path-public" href="#public-flow" data-open-details="public-flow">
     <span class="status-badge status-public">Public</span>
     <strong>公开题库</strong>
-    <span>任何人都能通过网址阅读，适合分享面经、作品展示和共同维护。</span>
-    <b>创建时选择 Public</b>
-  </article>
-  <article class="path-card path-private">
+    <span>适合分享整理后的面经。网站和仓库内容都公开；即使题目未发布到网站，草稿源文件仍可见。</span>
+    <b>我选公开 →</b>
+  </a>
+  <a class="path-card path-private" href="#private-flow" data-open-details="private-flow">
     <span class="status-badge status-private">Private</span>
     <strong>私有题库</strong>
-    <span>只有本人和受邀者能查看仓库，适合个人复习或包含非公开信息的笔记。</span>
-    <b>创建时选择 Private</b>
-  </article>
+    <span>只有本人和受邀者能查看仓库，适合保存原始面试速记和个人复习内容；不部署公开网站。</span>
+    <b>我选私有 →</b>
+  </a>
 </div>
+
+{% if site.github.repository_url %}<div class="template-launch"><div><strong>已经选好模式？</strong><br><span>接下来打开模板，在创建页按上面的决定选择 Public 或 Private。</span></div><a class="primary-button" href="{{ site.github.repository_url }}" data-template-repository="{{ site.github.repository_nwo | escape }}" target="_blank" rel="noopener noreferrer">打开模板创建页 ↗</a></div>{% endif %}
 
 ## 1. 从模板创建仓库
 
@@ -135,14 +141,16 @@ permalink: /start/
     <ol>
       <li>在 Pages CMS 的 <strong>Open a project</strong> 中打开仓库和 <code>main</code> 分支。</li>
       <li>进入“面试题与解答”，点击 <strong>Add an entry</strong>（手机端显示 <code>+</code>）。</li>
-      <li>填写题目、分类、难度、标签、日期和解答。</li>
-      <li>暂时不想公开时，关闭“在网站中显示”，先保存为草稿。</li>
-      <li>点击 <strong>Save</strong>（手机端是软盘图标）。</li>
+      <li>第一次可以只填写<strong>面试题目</strong>；日期会自动使用本地当天，答案可以稍后补。</li>
+      <li>系统默认关闭“发布到阅读网站”，分类和难度先使用“待整理 / 待评估”。</li>
+      <li>点击 <strong>Save</strong>（手机端是软盘图标），先保存为待整理内容。</li>
+      <li>准备公开时，补全答案和正式分类、难度，把状态改为“待复习”或“已掌握”，再打开发布开关并保存。</li>
     </ol>
+    <p class="guide-note"><strong>注意：</strong>未发布只代表不在阅读网站显示。Public 仓库中的草稿源文件仍然公开；Private 只适合普通个人非公开笔记。公司机密、未授权题库或受 NDA 约束的内容不要上传到 GitHub。</p>
   </div>
   <figure class="guide-figure">
     <a href="{{ '/assets/guides/05-add-question.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 Pages CMS 新增题目示意图（在新窗口打开）"><img src="{{ '/assets/guides/05-add-question.svg' | relative_url }}" loading="lazy" alt="Pages CMS 新增面试题并点击 Save 的表单示意图"></a>
-    <figcaption>图 5：答案像普通文档一样编辑，不需要手写 Markdown。点击查看大图。</figcaption>
+    <figcaption>图 5：先记题目就能保存，答案和分类可以稍后整理。点击查看大图。</figcaption>
   </figure>
 </div>
 
@@ -150,6 +158,14 @@ permalink: /start/
   <a href="{{ '/assets/guides/06-deploy-success.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 GitHub Actions 成功状态示意图（在新窗口打开）"><img src="{{ '/assets/guides/06-deploy-success.svg' | relative_url }}" loading="lazy" alt="GitHub Actions 内容校验、构建和部署成功示意图"></a>
   <figcaption>图 6：公开模式会继续部署网页；私有模式只校验并保存内容。点击查看大图。</figcaption>
 </figure>
+
+<section class="capture-panel">
+  <span class="status-badge">配置完成后</span>
+  <h2>以后只走两条日常路径</h2>
+  <p><strong>刚面试完：</strong>打开网页后台，先把题目存为待整理内容。<strong>准备复习：</strong>打开模拟面试，按分类随机抽题并复盘薄弱项。</p>
+  <a class="primary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">查看 1～2 分钟速记流程</a>
+  <a class="secondary-button" href="{{ '/practice/' | relative_url }}">开始模拟面试</a>
+</section>
 
 ## 已有仓库想改变模式
 
@@ -175,7 +191,8 @@ permalink: /start/
 ## 常见问题
 
 - **Pages CMS 看不到仓库**：点击账号旁的齿轮或 **Manage GitHub App**，补选仓库并保存。
-- **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 4 个字符。
+- **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
+- **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。
 - **私有题库没有阅读网址**：这是预期行为，请直接收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。
 - **组织账号没有某个按钮**：可能被组织策略限制，需要组织管理员批准。

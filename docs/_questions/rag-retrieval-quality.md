@@ -3,6 +3,7 @@ title: "如何系统地提升 RAG 的召回质量？"
 category: "RAG"
 difficulty: "困难"
 tags: [检索, Rerank, 评估]
+review_status: 已掌握
 published: true
 date: 2026-07-11
 ---

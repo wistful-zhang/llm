@@ -1,0 +1,197 @@
+---
+title: 模拟面试
+description: 按分类随机抽取大模型面试题，计时口述、自我评价并复盘薄弱题。
+permalink: /practice/
+---
+{% assign published_questions = site.questions | sort: 'date' | reverse %}
+<div class="container practice-page">
+  <header class="practice-intro">
+    <span class="status-badge">随机抽题 · 自我复盘</span>
+    <h1>随机模拟面试</h1>
+    <p>系统会从已发布题目中随机出题。先尝试口头回答，再查看参考答案并判断自己能否讲清楚。</p>
+  </header>
+
+  <noscript>
+    <style>#practice-setup{display:none!important}</style>
+    <div class="practice-empty" role="status">
+      <h2>需要启用 JavaScript</h2>
+      <p>随机模拟需要 JavaScript；你仍然可以<a href="{{ '/' | relative_url }}">浏览全部题目</a>。</p>
+    </div>
+  </noscript>
+
+  {% if published_questions.size == 0 %}
+    <section class="practice-empty" role="status">
+      <h2>题库还没有可练习的题目</h2>
+      <p>模拟面试只会使用已发布到网站的题目，草稿不会被抽到。</p>
+      <div class="practice-empty-actions">
+        <a class="primary-button" href="{{ '/' | relative_url }}">返回题库</a>
+        <a class="secondary-button" href="{{ '/manage/' | relative_url }}">我是题库主人：添加题目</a>
+      </div>
+    </section>
+  {% else %}
+    <p id="practice-storage-status" class="practice-storage-status" role="status" hidden></p>
+
+    <section id="practice-setup" class="practice-setup" aria-labelledby="practice-setup-title">
+      <div id="practice-resume" class="practice-resume" hidden>
+        <div>
+          <strong>继续上次未完成的练习？</strong>
+          <span id="practice-resume-text"></span>
+        </div>
+        <div class="practice-inline-actions">
+          <button id="practice-resume-button" class="primary-button" type="button">继续上次练习</button>
+          <button id="practice-discard-resume" class="text-button" type="button">重新开始</button>
+        </div>
+      </div>
+
+      <div class="practice-setup-card">
+        <h2 id="practice-setup-title">选择本轮出题范围</h2>
+        <form id="practice-form" class="practice-form">
+          <label class="practice-field" for="practice-category">
+            <span>出题范围</span>
+            <select id="practice-category" name="category" aria-describedby="practice-pool-status">
+              <option value="">全部分类（{{ published_questions.size }} 题）</option>
+              {% assign categories = published_questions | map: 'category' | uniq | sort %}
+              {% for category in categories %}
+                {% assign category_questions = published_questions | where: 'category', category %}
+                <option value="{{ category | escape }}">{{ category | escape }}（{{ category_questions.size }} 题）</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <details class="practice-options">
+            <summary>更多设置 <span>难度、题数</span></summary>
+            <div class="practice-options-grid">
+              <label class="practice-field" for="practice-difficulty">
+                <span>难度</span>
+                <select id="practice-difficulty" name="difficulty" aria-describedby="practice-pool-status">
+                  <option value="">全部难度</option>
+                  <option value="简单">简单</option>
+                  <option value="中等">中等</option>
+                  <option value="困难">困难</option>
+                </select>
+              </label>
+              <label class="practice-field" for="practice-count">
+                <span>本轮题数</span>
+                <select id="practice-count" name="count" aria-describedby="practice-pool-status">
+                  <option value="3">快速 3 题</option>
+                  <option value="5" selected>最多 5 题（推荐）</option>
+                  <option value="10">完整 10 题</option>
+                </select>
+              </label>
+            </div>
+          </details>
+
+          <p id="practice-pool-status" class="practice-pool-status" role="status" aria-live="polite"></p>
+          <button id="practice-start" class="primary-button practice-start" type="submit">开始模拟面试</button>
+        </form>
+
+        <ol class="practice-method" aria-label="练习方法">
+          <li><b>1</b><span>看题</span></li>
+          <li><b>2</b><span>口述</span></li>
+          <li><b>3</b><span>看答案</span></li>
+          <li><b>4</b><span>自评复盘</span></li>
+        </ol>
+      </div>
+
+      <aside id="practice-last-result" class="practice-last-result" hidden>
+        <div>
+          <strong>上次练习</strong>
+          <span id="practice-last-result-text"></span>
+        </div>
+        <button id="practice-last-weak" class="secondary-button" type="button" hidden>继续练薄弱题</button>
+      </aside>
+
+      <p class="practice-local-note">练习进度只保存在当前浏览器，不会写回 GitHub。题目和答案来自这个网站中已发布的内容。</p>
+    </section>
+
+    <section id="practice-session" class="practice-session" aria-labelledby="practice-question-title" hidden>
+      <div class="practice-session-top">
+        <div class="practice-progress-wrap">
+          <strong id="practice-progress-text">第 1 题，共 1 题</strong>
+          <progress id="practice-progress" value="1" max="1" aria-label="当前题目位置"></progress>
+        </div>
+        <div class="practice-session-tools">
+          <span class="practice-timer-label">思考时间 <b id="practice-timer">00:00</b><small>仅供参考</small></span>
+          <button id="practice-end" class="text-button" type="button" aria-expanded="false" aria-controls="practice-exit-confirm">提前结束</button>
+        </div>
+      </div>
+
+      <article class="practice-question-card">
+        <div class="card-meta">
+          <span id="practice-question-category"></span>
+          <span id="practice-question-difficulty" class="difficulty"></span>
+        </div>
+        <h2 id="practice-question-title" tabindex="-1"></h2>
+        <p class="practice-question-hint">先尝试口头回答。思路讲完整后，再展开参考答案。</p>
+        <div class="practice-question-actions">
+          <button id="practice-reveal" class="primary-button" type="button" aria-expanded="false" aria-controls="practice-answer">我答好了，查看参考答案</button>
+          <button id="practice-skip" class="secondary-button" type="button">暂时跳过</button>
+        </div>
+
+        <section id="practice-answer" class="practice-answer" aria-labelledby="practice-answer-title" hidden>
+          <h2 id="practice-answer-title" tabindex="-1">参考答案</h2>
+          <div id="practice-answer-content" class="prose"></div>
+        </section>
+
+        <fieldset id="practice-rating" class="practice-rating" hidden>
+          <legend>这道题你现在能讲到什么程度？</legend>
+          <div class="practice-rating-options">
+            <label><input type="radio" name="practice-rating" value="mastered"><span><b>能独立讲清楚</b><small>无需参考提示</small></span></label>
+            <label><input type="radio" name="practice-rating" value="prompted"><span><b>需要一些提示</b><small>理解但表达不完整</small></span></label>
+            <label><input type="radio" name="practice-rating" value="unknown"><span><b>还不会</b><small>加入优先复习</small></span></label>
+          </div>
+          <button id="practice-next" class="primary-button practice-next" type="button" disabled>下一题</button>
+        </fieldset>
+      </article>
+
+      <div id="practice-exit-confirm" class="practice-exit-confirm" hidden>
+        <div>
+          <strong>现在结束本轮？</strong>
+          <span>已经处理过的题目会进入复盘，尚未评价的当前题不会计入结果。</span>
+        </div>
+        <div class="practice-inline-actions">
+          <button id="practice-continue" class="primary-button" type="button">继续本轮</button>
+          <button id="practice-confirm-end" class="secondary-button" type="button">结束并查看复盘</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="practice-summary" class="practice-summary" aria-labelledby="practice-summary-title" hidden>
+      <span class="status-badge">自我评价 · 不计算正确率</span>
+      <h2 id="practice-summary-title" tabindex="-1">本轮完成</h2>
+      <p id="practice-summary-lead"></p>
+
+      <dl class="practice-summary-grid" aria-label="本轮练习统计">
+        <div><dd id="practice-summary-completed">0 / 0</dd><dt>已处理题数</dt></div>
+        <div><dd id="practice-summary-mastered">0</dd><dt>能讲清楚</dt></div>
+        <div><dd id="practice-summary-prompted">0</dd><dt>需要提示</dt></div>
+        <div><dd id="practice-summary-review">0</dd><dt>不会 / 跳过</dt></div>
+      </dl>
+      <p class="practice-summary-duration">累计思考时间：<strong id="practice-summary-duration">0 秒</strong></p>
+
+      <section id="practice-weak-section" class="practice-weak-section">
+        <h3 id="practice-weak-title">优先复习</h3>
+        <ol id="practice-weak-list" class="practice-review-list"></ol>
+      </section>
+
+      <div class="practice-summary-actions">
+        <button id="practice-retry-weak" class="primary-button" type="button">只练薄弱题</button>
+        <button id="practice-restart" class="secondary-button" type="button">再随机一轮</button>
+        <a class="text-link" href="{{ '/' | relative_url }}">返回题库</a>
+      </div>
+    </section>
+
+    <div id="practice-live-status" class="sr-only" role="status" aria-live="polite"></div>
+
+    <div id="practice-question-data" data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}" hidden>
+      {% for question in published_questions %}
+        <template
+          data-question-id="{{ question.url | escape }}"
+          data-title="{{ question.title | escape }}"
+          data-category="{{ question.category | escape }}"
+          data-difficulty="{{ question.difficulty | escape }}"
+          data-url="{{ question.url | relative_url | escape }}">{{ question.content | markdownify }}</template>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

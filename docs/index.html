@@ -12,16 +12,19 @@ title: 题库
       <h1>{{ hero_title | escape }}<br><span>{{ hero_highlight | escape }}</span></h1>
       <p>{{ hero_description | escape }}</p>
       <div class="hero-actions">
-        <a class="primary-button" href="#question-list-section">开始浏览题目</a>
-        <a class="secondary-button" href="{{ '/manage/' | relative_url }}">我是题库主人：网页编辑</a>
+        <a class="primary-button" href="{{ '/practice/' | relative_url }}">开始随机模拟面试</a>
+        <a class="secondary-button" href="#question-list-section">浏览全部题目</a>
       </div>
-      <a class="template-cta" href="{{ '/start/' | relative_url }}">我也想创建一份独立题库 →</a>
+      <div class="hero-support-links">
+        <a href="{{ '/manage/' | relative_url }}#capture-workflow">刚面试完？快速记题 →</a>
+        <a href="{{ '/start/' | relative_url }}">第一次使用？创建自己的题库 →</a>
+      </div>
     </div>
     <div class="stat-card" role="region" aria-label="题库统计">
       <strong>{{ site.questions | size }}</strong>
       <span>道已整理题目</span>
       <div class="stat-line"></div>
-      <small>持续更新中</small>
+      <small>可按分类随机抽题</small>
     </div>
   </div>
 </section>
