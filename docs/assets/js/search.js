@@ -1,4 +1,11 @@
 (() => {
+  document.querySelectorAll('[data-open-details]').forEach((link) => {
+    link.addEventListener('click', () => {
+      const details = document.getElementById(link.dataset.openDetails);
+      if (details?.tagName === 'DETAILS') details.open = true;
+    });
+  });
+
   const resolveTemplateLinks = async () => {
     const links = [...document.querySelectorAll('[data-template-repository]')];
     if (links.length === 0) return;

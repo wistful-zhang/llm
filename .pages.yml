@@ -15,10 +15,10 @@ content:
         update: "更新面试题：{filename}"
         delete: "删除面试题：{filename}"
     view:
-      fields: [title, published, category, difficulty, date]
+      fields: [title, published, review_status, category, date]
       primary: title
-      sort: [date, title, category, difficulty]
-      search: [title, category, tags, body]
+      sort: [date, title, review_status, category, difficulty]
+      search: [title, source, category, tags, body]
       default:
         sort: date
         order: desc
@@ -27,16 +27,48 @@ content:
         label: 面试题目
         type: string
         required: true
-        description: 直接填写完整问题，例如“为什么 KV Cache 能加速推理？”
+        description: 刚面试完时先按记忆写下原问题，例如“为什么 KV Cache 能加速推理？”
         options:
-          minlength: 4
+          minlength: 2
           maxlength: 160
+
+      - name: published
+        label: 发布到阅读网站
+        type: boolean
+        default: false
+        description: 默认关闭，先保存为待整理内容。注意：此开关只控制阅读网站是否显示；如果仓库是 Public，草稿源文件仍可在 GitHub 中被看到。
+
+      - name: body
+        label: 当时的速记 / 解答（可稍后补）
+        type: rich-text
+        description: 草稿阶段可以留空，或只写关键词、自己的现场回答、追问和卡住的位置；发布前再整理成完整答案。
+        options:
+          format: markdown
+          switcher: false
+          media: false
+
+      - name: source
+        label: 匿名来源 / 轮次（可留空）
+        type: string
+        description: 例如“应用岗 · 二面”。不要填写公司机密、面试官姓名、联系方式或受保密协议约束的信息。
+        options:
+          maxlength: 80
+
+      - name: review_status
+        label: 整理 / 复习状态
+        type: select
+        required: true
+        default: 待整理
+        description: 手动记录内容与复习进度；发布前改为“待复习”或“已掌握”。模拟面试中的自评只保存在浏览器，不会自动修改这里。
+        options:
+          values: [待整理, 待复习, 已掌握]
 
       - name: category
         label: 分类
         type: string
         required: true
-        description: 例如 LLM 基础、训练与对齐、RAG、Agent、工程实践、系统设计；也可以输入新分类，首页会自动生成筛选项。
+        default: 待整理
+        description: 速记时可保留“待整理”；发布前改为 LLM 基础、训练与对齐、RAG、Agent、工程实践或系统设计等正式分类。
         options:
           maxlength: 30
 
@@ -44,38 +76,23 @@ content:
         label: 难度
         type: select
         required: true
-        default: 中等
+        default: 待评估
         options:
-          values: [简单, 中等, 困难]
+          values: [待评估, 简单, 中等, 困难]
 
       - name: tags
         label: 标签
         type: string
         list: true
-        description: 每次填写一个标签，可继续添加，例如 Transformer、推理、评估。
-
-      - name: published
-        label: 在网站中显示
-        type: boolean
-        default: true
-        description: 关闭后保存为草稿，不会出现在公开网站；准备好后再打开并保存。
+        description: 可选。每次填写一个标签，例如 Transformer、推理、应用岗、二面；请保持匿名。
 
       - name: date
-        label: 整理日期
+        label: 面试 / 记录日期
         type: date
         required: true
+        description: 新增时会自动使用本地当天日期，也可以手动调整。
         options:
           format: yyyy-MM-dd
-
-      - name: body
-        label: 题目解答
-        type: rich-text
-        required: true
-        description: 像普通文档一样输入和排版，可使用标题、列表、加粗、引用和代码块。
-        options:
-          format: markdown
-          switcher: false
-          media: false
 
   - name: site_settings
     label: 站点设置

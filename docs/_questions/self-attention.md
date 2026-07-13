@@ -3,6 +3,7 @@ title: "Self-Attention 为什么要除以 √dₖ？"
 category: "LLM 基础"
 difficulty: "中等"
 tags: [Transformer, Attention]
+review_status: 已掌握
 published: true
 date: 2026-07-10
 ---
