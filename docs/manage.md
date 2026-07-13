@@ -16,11 +16,11 @@ permalink: /manage/
 
 Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和发布不需要打开源码，也不需要 Git 命令。
 
-<div class="journey-grid" aria-label="选择操作">
+<nav class="journey-grid" aria-label="选择操作">
   <a class="journey-card" href="#capture-workflow"><strong>刚面试完</strong><span>先把记得的原题抢救下来，答案可以稍后补。</span><b>约 1～2 分钟速记 →</b></a>
   <a class="journey-card" href="#daily-workflow"><strong>整理已有草稿</strong><span>补答案、正式分类和难度，再决定是否公开。</span><b>进入整理流程 →</b></a>
   <a class="journey-card" href="{{ '/start/' | relative_url }}"><strong>第一次使用</strong><span>先完成仓库可见性、Pages 和后台授权设置。</span><b>查看完整图解 →</b></a>
-</div>
+</nav>
 
 <section id="capture-workflow" class="capture-panel">
   <span class="status-badge">推荐：先速记，再整理</span>

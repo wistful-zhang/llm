@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="{{ site.lang | default: 'zh-CN' }}">
   <head>
     {% assign site_title = site.data.settings.title | default: site.title %}
@@ -33,6 +33,7 @@
       </script>
     {% endif %}
     <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+    {% if page.url == '/practice/' %}<noscript><style>#practice-setup{display:none!important}</style></noscript>{% endif %}
   </head>
   <body class="theme-{{ site.data.settings.theme | default: 'violet' | escape }}">
     <a class="skip-link" href="#main-content">跳到主要内容</a>

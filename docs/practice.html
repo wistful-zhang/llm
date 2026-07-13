@@ -12,7 +12,6 @@ permalink: /practice/
   </header>
 
   <noscript>
-    <style>#practice-setup{display:none!important}</style>
     <div class="practice-empty" role="status">
       <h2>需要启用 JavaScript</h2>
       <p>随机模拟需要 JavaScript；你仍然可以<a href="{{ '/' | relative_url }}">浏览全部题目</a>。</p>
@@ -46,7 +45,7 @@ permalink: /practice/
       <div class="practice-setup-card">
         <h2 id="practice-setup-title">选择本轮出题范围</h2>
         <form id="practice-form" class="practice-form">
-          <label class="practice-field" for="practice-category">
+          <label class="practice-field">
             <span>出题范围</span>
             <select id="practice-category" name="category" aria-describedby="practice-pool-status">
               <option value="">全部分类（{{ published_questions.size }} 题）</option>
@@ -61,7 +60,7 @@ permalink: /practice/
           <details class="practice-options">
             <summary>更多设置 <span>难度、题数</span></summary>
             <div class="practice-options-grid">
-              <label class="practice-field" for="practice-difficulty">
+              <label class="practice-field">
                 <span>难度</span>
                 <select id="practice-difficulty" name="difficulty" aria-describedby="practice-pool-status">
                   <option value="">全部难度</option>
@@ -70,7 +69,7 @@ permalink: /practice/
                   <option value="困难">困难</option>
                 </select>
               </label>
-              <label class="practice-field" for="practice-count">
+              <label class="practice-field">
                 <span>本轮题数</span>
                 <select id="practice-count" name="count" aria-describedby="practice-pool-status">
                   <option value="3">快速 3 题</option>
@@ -121,7 +120,7 @@ permalink: /practice/
           <span id="practice-question-category"></span>
           <span id="practice-question-difficulty" class="difficulty"></span>
         </div>
-        <h2 id="practice-question-title" tabindex="-1"></h2>
+        <h2 id="practice-question-title" tabindex="-1">模拟面试题目</h2>
         <p class="practice-question-hint">先尝试口头回答。思路讲完整后，再展开参考答案。</p>
         <div class="practice-question-actions">
           <button id="practice-reveal" class="primary-button" type="button" aria-expanded="false" aria-controls="practice-answer">我答好了，查看参考答案</button>
@@ -161,7 +160,7 @@ permalink: /practice/
       <h2 id="practice-summary-title" tabindex="-1">本轮完成</h2>
       <p id="practice-summary-lead"></p>
 
-      <dl class="practice-summary-grid" aria-label="本轮练习统计">
+      <dl class="practice-summary-grid">
         <div><dd id="practice-summary-completed">0 / 0</dd><dt>已处理题数</dt></div>
         <div><dd id="practice-summary-mastered">0</dd><dt>能讲清楚</dt></div>
         <div><dd id="practice-summary-prompted">0</dd><dt>需要提示</dt></div>

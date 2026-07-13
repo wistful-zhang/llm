@@ -15,11 +15,11 @@ permalink: /start/
 
 </div>
 
-<div class="journey-grid" aria-label="选择当前目标">
+<nav class="journey-grid" aria-label="选择当前目标">
   <a class="journey-card" href="{{ '/practice/' | relative_url }}"><strong>我只想先练习</strong><span>直接按分类随机抽题，不需要 GitHub 账号。</span><b>开始模拟面试 →</b></a>
   <a class="journey-card" href="{{ '/manage/' | relative_url }}#capture-workflow"><strong>我已有自己的题库</strong><span>刚面试完时，直接用网页表单快速记题。</span><b>进入速记流程 →</b></a>
   <a class="journey-card" href="#mode-choice"><strong>我是第一次创建</strong><span>继续下面 5 步，先决定公开还是私有。</span><b>开始首次配置 ↓</b></a>
-</div>
+</nav>
 
 <div class="guide-alert" role="note" markdown="1">
 
