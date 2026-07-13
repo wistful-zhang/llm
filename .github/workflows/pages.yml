@@ -23,6 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Validate question content
+        run: node scripts/validate-content.mjs
+
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v5
