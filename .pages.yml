@@ -1,0 +1,82 @@
+media: docs/assets/uploads
+
+content:
+  - name: questions
+    label: 面试题与解答
+    type: collection
+    path: docs/_questions
+    format: yaml-frontmatter
+    filename:
+      template: "{year}-{month}-{day}-{hour}-{minute}-{second}.md"
+      field: false
+    view:
+      fields: [title, category, difficulty, date]
+      primary: title
+      sort: [date, title, category, difficulty]
+      search: [title, category, tags, body]
+      default:
+        sort: date
+        order: desc
+    fields:
+      - name: title
+        label: 面试题目
+        type: string
+        required: true
+        description: 直接填写完整问题，例如“为什么 KV Cache 能加速推理？”
+
+      - name: category
+        label: 分类
+        type: select
+        required: true
+        options:
+          values:
+            - LLM 基础
+            - 训练与对齐
+            - RAG
+            - Agent
+            - 工程实践
+            - 系统设计
+
+      - name: difficulty
+        label: 难度
+        type: select
+        required: true
+        default: 中等
+        options:
+          values: [简单, 中等, 困难]
+
+      - name: tags
+        label: 标签
+        type: string
+        list: true
+        description: 每次填写一个标签，可继续添加，例如 Transformer、推理、评估。
+
+      - name: date
+        label: 整理日期
+        type: date
+        required: true
+        options:
+          format: yyyy-MM-dd
+
+      - name: body
+        label: 题目解答
+        type: rich-text
+        required: true
+        description: 像普通文档一样输入和排版，可使用标题、列表、加粗、引用和代码块。
+        options:
+          format: markdown
+          switcher: false
+          media: false
+
+settings:
+  hide: true
+  content:
+    merge: true
+  commit:
+    identity: user
+    templates:
+      create: "新增面试题：{filename}"
+      update: "更新面试题：{filename}"
+      delete: "删除面试题：{filename}"
+      rename: "重命名面试题：{oldFilename} -> {newFilename}"
+

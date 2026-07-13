@@ -74,6 +74,16 @@ nav { display: flex; gap: 24px; }
 nav a { color: #475467; text-decoration: none; }
 nav a:hover { color: var(--accent); }
 
+nav .admin-link {
+  margin: -7px 0;
+  padding: 7px 13px;
+  border-radius: 9px;
+  color: var(--white);
+  background: var(--ink);
+}
+
+nav .admin-link:hover { color: var(--white); background: var(--accent); }
+
 .hero {
   overflow: hidden;
   padding: 90px 0 76px;
@@ -294,6 +304,7 @@ nav a:hover { color: var(--accent); }
 .question-nav a:last-child { text-align: right; }
 
 .standalone-page { max-width: 760px; padding-block: 72px 100px; }
+.manage-page .cms-button { margin: 10px 0 20px; }
 .not-found { padding-block: 120px; text-align: center; }
 .not-found h1 { margin: 10px 0; font-size: clamp(2rem, 5vw, 4rem); }
 .not-found p { color: var(--muted); }
@@ -321,5 +332,6 @@ nav a:hover { color: var(--accent); }
   .question-nav { grid-template-columns: 1fr; }
   .question-nav a:last-child { text-align: left; }
   .footer-wrap { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .nav-wrap nav { gap: 12px; }
+  .nav-wrap nav a:not(.admin-link) { display: none; }
 }
-

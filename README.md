@@ -13,6 +13,14 @@
 
 ## 新增一道题
 
+### 网页后台（推荐）
+
+打开网站右上角的“管理题库”，或直接访问 [Pages CMS](https://app.pagescms.org/)，使用 GitHub 登录并选择 `wistful-zhang/llm`。之后只需填写中文表单和富文本解答，保存时会自动提交到 GitHub，并触发网站更新。
+
+第一次安装 Pages CMS GitHub App 时，建议选择 **Only select repositories**，只授权 `llm` 仓库。
+
+### 手动新增
+
 1. 复制 [`docs/_templates/question.md`](docs/_templates/question.md)。
 2. 放到 `docs/_questions/`，文件名使用简短的英文，例如 `kv-cache.md`。
 3. 填写题目、简答、展开说明和追问。
