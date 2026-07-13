@@ -95,8 +95,17 @@ import {
 
   const moveFocusTo = (element) => {
     window.requestAnimationFrame(() => {
-      element.scrollIntoView({ block: 'start', behavior: 'auto' });
+      const positionElement = () => {
+        const header = document.querySelector('.site-header');
+        const offset = (header?.offsetHeight || 0) + 18;
+        const top = element.getBoundingClientRect().top + window.scrollY - offset;
+        const previousBehavior = document.documentElement.style.scrollBehavior;
+        document.documentElement.style.scrollBehavior = 'auto';
+        window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+        document.documentElement.style.scrollBehavior = previousBehavior;
+      };
       element.focus({ preventScroll: true });
+      positionElement();
     });
   };
 

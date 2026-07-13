@@ -767,6 +767,7 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .practice-page {
   max-width: 920px;
   padding-block: 54px 100px;
+  overflow-anchor: none;
 }
 
 .practice-intro {
