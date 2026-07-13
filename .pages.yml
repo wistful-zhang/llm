@@ -68,6 +68,40 @@ content:
           switcher: false
           media: false
 
+  - name: site_settings
+    label: 站点设置
+    type: file
+    path: docs/_data/settings.yml
+    format: yaml
+    fields:
+      - name: title
+        label: 网站名称
+        type: string
+        required: true
+
+      - name: description
+        label: 网站介绍
+        type: text
+        required: true
+
+      - name: eyebrow
+        label: 首页英文眉题
+        type: string
+
+      - name: hero_title
+        label: 首页主标题
+        type: string
+        required: true
+
+      - name: hero_highlight
+        label: 首页高亮标题
+        type: string
+        required: true
+
+      - name: footer
+        label: 页脚文字
+        type: string
+
 settings:
   hide: true
   content:
@@ -79,4 +113,3 @@ settings:
       update: "更新面试题：{filename}"
       delete: "删除面试题：{filename}"
       rename: "重命名面试题：{oldFilename} -> {newFilename}"
-

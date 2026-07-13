@@ -1,0 +1,35 @@
+name: 报告问题
+description: 报告网页、构建、搜索或管理后台问题
+title: "[Bug] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 请说明发生了什么，以及你原本期望看到什么。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开……
+        2. 点击……
+        3. 看到……
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      placeholder: 例如：Windows 11 / Edge 版本号
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 错误信息或截图
+      description: 请先移除 Token、密码和其他敏感信息。
+

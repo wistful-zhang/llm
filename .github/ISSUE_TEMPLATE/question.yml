@@ -1,0 +1,70 @@
+name: 提交一道面试题
+description: 向公共题库建议新的题目和参考答案
+title: "[题目] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢贡献。请确认内容可以公开，且不包含个人信息、公司机密或受保密协议约束的材料。
+
+  - type: input
+    id: question
+    attributes:
+      label: 面试题目
+      placeholder: 例如：为什么 KV Cache 能加速推理？
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 分类
+      options:
+        - LLM 基础
+        - 训练与对齐
+        - RAG
+        - Agent
+        - 工程实践
+        - 系统设计
+    validations:
+      required: true
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: 难度
+      options:
+        - 简单
+        - 中等
+        - 困难
+    validations:
+      required: true
+
+  - type: textarea
+    id: answer
+    attributes:
+      label: 参考答案
+      description: 请尽量包含核心回答、展开说明和工程实践。
+    validations:
+      required: true
+
+  - type: textarea
+    id: followups
+    attributes:
+      label: 常见追问
+      description: 每行填写一个追问。
+
+  - type: input
+    id: source
+    attributes:
+      label: 参考来源
+      description: 如果引用了资料，请提供公开可访问的链接。
+
+  - type: checkboxes
+    id: compliance
+    attributes:
+      label: 内容确认
+      options:
+        - label: 我有权公开这些内容，且内容不包含秘密、个人隐私或受保密协议约束的材料。
+          required: true
+
