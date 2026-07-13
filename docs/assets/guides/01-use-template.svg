@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">在 GitHub 点击 Use this template</title>
+  <desc id="desc">GitHub 仓库页面示意图，突出显示 Use this template 和 Create a new repository。</desc>
+  <style>
+    text{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;fill:#1f2937}.muted{fill:#667085}.small{font-size:22px}.label{font-size:25px;font-weight:700}.title{font-size:30px;font-weight:750}.num{fill:#fff;font-size:26px;font-weight:800;text-anchor:middle}.call{fill:#4338ca;font-size:25px;font-weight:700}.inverse{fill:#fff}
+  </style>
+  <rect width="1200" height="680" rx="30" fill="#f4f5f7"/>
+  <rect x="48" y="44" width="1104" height="558" rx="20" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
+  <rect x="48" y="44" width="1104" height="58" rx="20" fill="#101828"/>
+  <circle cx="82" cy="73" r="7" fill="#f97066"/><circle cx="106" cy="73" r="7" fill="#fdb022"/><circle cx="130" cy="73" r="7" fill="#32d583"/>
+  <text x="166" y="82" class="small inverse">GitHub 仓库页面（界面示意）</text>
+  <text x="86" y="154" class="muted small">your-name</text><text x="212" y="154" class="muted small">/</text><text x="232" y="154" class="title">llm-notes</text>
+  <text x="86" y="211" class="label">Code</text><text x="168" y="211" class="muted small">Issues</text><text x="251" y="211" class="muted small">Pull requests</text><text x="407" y="211" class="muted small">Actions</text><text x="500" y="211" class="muted small">Settings</text>
+  <line x1="80" y1="232" x2="1120" y2="232" stroke="#e4e7ec" stroke-width="2"/>
+  <rect x="810" y="263" width="283" height="62" rx="12" fill="#1f883d"/>
+  <text x="842" y="302" class="label inverse">Use this template</text><text x="1062" y="302" class="label inverse">▾</text>
+  <rect x="810" y="337" width="283" height="94" rx="12" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
+  <text x="836" y="392" class="label">Create a new repository</text>
+  <circle cx="1088" cy="264" r="26" fill="#6d5dfc"/><text x="1088" y="273" class="num">1</text>
+  <path d="M1076 456 C1055 438 1020 425 980 414" fill="none" stroke="#6d5dfc" stroke-width="5" stroke-linecap="round"/><path d="m978 414 18-3-9 16" fill="#6d5dfc"/>
+  <rect x="85" y="278" width="610" height="218" rx="16" fill="#f9fafb" stroke="#e4e7ec"/>
+  <rect x="115" y="308" width="210" height="28" rx="8" fill="#e4e7ec"/><rect x="115" y="360" width="520" height="18" rx="8" fill="#eef0f3"/><rect x="115" y="398" width="470" height="18" rx="8" fill="#eef0f3"/><rect x="115" y="436" width="390" height="18" rx="8" fill="#eef0f3"/>
+  <text x="78" y="645" class="call">① 点击 Use this template，再选 Create a new repository</text>
+</svg>

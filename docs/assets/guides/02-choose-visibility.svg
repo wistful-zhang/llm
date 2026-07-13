@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">在 GitHub 创建仓库页面选择 Public 或 Private</title>
+  <desc id="desc">GitHub 创建仓库表单示意图，突出显示 Visibility 区域中的 Public 和 Private 单选项。</desc>
+  <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;fill:#1f2937}.muted{fill:#667085}.small{font-size:21px}.label{font-size:24px;font-weight:700}.title{font-size:31px;font-weight:760}.num{fill:#fff;font-size:26px;font-weight:800;text-anchor:middle}.green{fill:#087443}.purple{fill:#6d5dfc}.inverse{fill:#fff}</style>
+  <rect width="1200" height="680" rx="30" fill="#f4f5f7"/>
+  <rect x="70" y="42" width="1060" height="590" rx="20" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
+  <text x="110" y="103" class="title">Create a new repository</text>
+  <text x="110" y="156" class="label">Owner</text><rect x="110" y="174" width="310" height="54" rx="10" fill="#fff" stroke="#98a2b3"/><text x="130" y="209" class="small">your-name ▾</text>
+  <text x="470" y="156" class="label">Repository name</text><rect x="470" y="174" width="520" height="54" rx="10" fill="#fff" stroke="#98a2b3"/><text x="490" y="209" class="small">llm-notes</text>
+  <text x="110" y="294" class="title">Visibility</text>
+  <rect x="96" y="318" width="1008" height="214" rx="18" fill="#fafaff" stroke="#6d5dfc" stroke-width="4"/>
+  <circle cx="144" cy="369" r="13" fill="#fff" stroke="#475467" stroke-width="3"/><circle cx="144" cy="369" r="7" fill="#475467"/>
+  <text x="178" y="377" class="label">Public</text><text x="178" y="411" class="muted small">任何人都能看到仓库；适合公开题库和免费 GitHub Pages</text>
+  <line x1="126" y1="438" x2="1070" y2="438" stroke="#e4e7ec" stroke-width="2"/>
+  <circle cx="144" cy="474" r="13" fill="#fff" stroke="#475467" stroke-width="3"/>
+  <text x="178" y="482" class="label">Private</text><text x="178" y="516" class="muted small">只有本人和受邀协作者可见；私人模式不要启用公开 Pages</text>
+  <circle cx="1086" cy="315" r="26" fill="#6d5dfc"/><text x="1086" y="324" class="num">2</text>
+  <rect x="790" y="558" width="314" height="56" rx="12" fill="#1f883d"/><text x="828" y="594" class="label inverse">Create repository</text>
+  <text x="110" y="595" class="purple label">公开 / 私有就在这里选，不在题库后台里</text>
+</svg>

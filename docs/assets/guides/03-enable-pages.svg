@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">在 GitHub Settings 的 Pages 中选择 GitHub Actions</title>
+  <desc id="desc">GitHub 仓库设置示意图，突出左侧 Pages 和 Source 下拉框中的 GitHub Actions。</desc>
+  <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;fill:#1f2937}.muted{fill:#667085}.small{font-size:21px}.label{font-size:24px;font-weight:700}.title{font-size:31px;font-weight:760}.num{fill:#fff;font-size:26px;font-weight:800;text-anchor:middle}.call{fill:#4338ca;font-size:24px;font-weight:700}.inverse{fill:#fff}</style>
+  <rect width="1200" height="680" rx="30" fill="#f4f5f7"/>
+  <rect x="48" y="42" width="1104" height="590" rx="20" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
+  <rect x="48" y="42" width="1104" height="66" rx="20" fill="#101828"/><text x="86" y="84" class="label inverse">Repository Settings</text>
+  <rect x="48" y="108" width="292" height="524" fill="#f9fafb"/>
+  <text x="82" y="162" class="muted small">General</text><text x="82" y="207" class="muted small">Actions</text><text x="82" y="252" class="muted small">Environments</text>
+  <rect x="66" y="278" width="258" height="54" rx="10" fill="#eeecff"/><text x="82" y="313" class="label">Pages</text>
+  <circle cx="318" cy="279" r="26" fill="#6d5dfc"/><text x="318" y="288" class="num">3</text>
+  <text x="390" y="169" class="title">GitHub Pages</text><text x="390" y="213" class="muted small">Build and deployment</text>
+  <text x="390" y="278" class="label">Source</text>
+  <rect x="390" y="298" width="470" height="60" rx="11" fill="#fff" stroke="#6d5dfc" stroke-width="4"/><text x="414" y="336" class="label">GitHub Actions</text><text x="820" y="336" class="label">▾</text>
+  <circle cx="864" cy="296" r="26" fill="#6d5dfc"/><text x="864" y="305" class="num">4</text>
+  <rect x="390" y="398" width="660" height="116" rx="14" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="418" y="441" class="label">项目已经包含部署工作流</text><text x="418" y="478" class="muted small">不要再点击 Jekyll / Static HTML 的 Configure</text>
+  <text x="390" y="578" class="call">公开题库才执行这一步；私人题库直接跳到 Pages CMS</text>
+</svg>

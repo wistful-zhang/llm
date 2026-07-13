@@ -19,6 +19,8 @@
 
 推荐使用模板，而不是 Fork：
 
+不熟悉 GitHub 的用户可以直接打开网站中的[新手图解指南](docs/start.md)，按照 6 张操作示意图完成公开/私有选择、Pages 配置和后台新增题目。
+
 1. 在仓库页面点击 **Use this template → Create a new repository**。
 2. 选择自己的 GitHub 账号、仓库名称和可见性。
 3. 公共题库：选择 **Public**，然后在 `Settings → Pages` 中把 Source 设置为 **GitHub Actions**。
@@ -43,7 +45,7 @@ GitHub Actions 会自动识别账号和仓库名，因此不需要手动修改 `
 
 ## 在线管理
 
-网站右上角的“管理题库”会进入通用的 Pages CMS 管理页。只有获得目标仓库写入权限的 GitHub 用户才能保存；普通访客只能浏览公开题库。
+网站右上角的“管理我的题库”会进入通用的 Pages CMS 管理页。只有获得目标仓库写入权限的 GitHub 用户才能保存；普通访客只能浏览公开题库。
 
 后台包含两个入口：
 

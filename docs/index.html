@@ -7,6 +7,10 @@ title: 题库
       <div class="eyebrow">{{ site.data.settings.eyebrow }}</div>
       <h1>{{ site.data.settings.hero_title }}<br><span>{{ site.data.settings.hero_highlight }}</span></h1>
       <p>{{ site.data.settings.description }}</p>
+      <div class="hero-actions">
+        <a class="primary-button" href="{{ '/start/' | relative_url }}">创建我的题库（3 分钟）</a>
+        <a class="secondary-button" href="{{ '/manage/' | relative_url }}">管理我的题库</a>
+      </div>
     </div>
     <div class="stat-card" role="region" aria-label="题库统计">
       <strong>{{ site.questions | size }}</strong>
@@ -17,7 +21,7 @@ title: 题库
   </div>
 </section>
 
-<section class="container library">
+<section id="question-list-section" class="container library">
   <div class="toolbar">
     <label class="search-box">
       <span aria-hidden="true">⌕</span>
