@@ -13,6 +13,20 @@ published: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论：** 对 one-hot 标签，交叉熵就是正确 Token 的负对数似然；Perplexity 是平均 NLL 的指数。
+2. **再讲关键机制：** 写出 `L=-1/N Σ log p(x_t|x_<t)` 与 `PPL=exp(L)`，说明按有效 token 平均。
+3. **主动说取舍：** PPL 便于同一 tokenizer 和数据集内比较，但跨 tokenizer、不同预处理时不可直接横比。
+4. **最后落到项目：** 核对 loss mask、对数底和 token 口径，并报告 PPL、有效 token 数和分桶结果；说完停。
+
+**60 秒口述示例：**
+
+> 我会先把三者串起来：最大似然等价于最小化 NLL；标签是 one-hot 时，NLL 就是预测分布和标签的交叉熵；对每个有效 token 的平均 NLL 取指数就是 PPL。PPL 越低表示模型给真实序列更高概率。取舍是它受 tokenizer 和数据分布影响。项目里我会固定切词与 mask，报告总 PPL、有效 token 数和长度、领域分桶。 跨模型比较前我会先核对 tokenizer。
+
+
 ## 核心回答
 
 模型先为词表输出 Logit `z`，Softmax 得到概率 `p_k = exp(z_k) / Σ_j exp(z_j)`。当真实类别是 token `y` 时，One-hot 目标与预测分布的交叉熵为：

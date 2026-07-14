@@ -1,5 +1,5 @@
 title: 大模型面经
-description: 覆盖模型原理、预训练与对齐、RAG、Agent、多模态、推理部署、评测安全和系统设计等方向。每道题都包含简答、展开思路与常见追问。
+description: 覆盖模型原理、训练对齐、RAG、Agent、推理部署、评测安全和系统设计等方向。每道题先教你怎么开口，再提供 60 秒示例、工程取舍和追问接法。
 eyebrow: LARGE MODEL INTERVIEW NOTES
 hero_title: 把零散知识，整理成
 hero_highlight: 能讲清楚的答案。

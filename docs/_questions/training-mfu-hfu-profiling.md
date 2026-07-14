@@ -13,6 +13,19 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：先说 Tokens/s 是业务吞吐，MFU 衡量必要模型计算占峰值比例，HFU 还计入实际重算。
+2. **再讲关键机制**：给出 FLOPs/秒除硬件理论峰值的定义，并说明激活重算为何让 HFU 高于 MFU。
+3. **主动说取舍**：高 HFU 可能只是做了更多重算，不代表有效训练更快；跨模型直接比 Tokens/s 也失真。
+4. **最后落到项目**：按 Step 时间线拆计算、通信、数据和空闲，联合报告 MFU、Samples/s 与有效 Token 成本。
+
+**60 秒口述示例：**
+
+> 我的结论是 Tokens/s 只适合同配置前后对比；MFU 用模型理论必要 FLOPs 除以硬件峰值，回答设备有多少算力真正用于模型；HFU 按实际执行 FLOPs 统计，激活重算也算进去，所以可能高于 MFU。这里要说明 HFU 高不一定更有效。项目中我会先看 GPU 时间线，把 Step 拆成 Kernel、通信、DataLoader 和气泡，再联合报告 MFU、HFU、Samples/s、每个有效 Token 的成本和训练到目标 Loss 的总时间。
+
 ## 核心回答
 
 Tokens/s 是实际处理速度，但不同参数量和序列长度不能直接横比。MFU（Model FLOPs Utilization）用“完成模型规定的有效前向与反向计算所需 FLOPs/s”除以硬件对应精度的理论峰值；HFU（Hardware FLOPs Utilization）则统计硬件实际执行的全部 FLOPs，包括激活重计算等额外工作。

@@ -13,6 +13,19 @@ verified: true
 date: 2026-07-13
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：先用“Stage 1 切优化器、Stage 2 加梯度、Stage 3 再加参数”说清 ZeRO 层级。
+2. **再讲关键机制**：解释 FSDP FULL_SHARD 在计算前 All-Gather 参数、反向后 Reduce-Scatter 梯度。
+3. **主动说取舍**：分片越彻底常驻显存越省，却增加通信、短时峰值、调度与 Checkpoint 复杂度。
+4. **最后落到项目**：先做显存账本，再比较峰值显存、MFU、通信占比、保存恢复时间和扩展效率。
+
+**60 秒口述示例：**
+
+> 我会先给结论：ZeRO-1 只分片优化器状态，ZeRO-2 再分片梯度，ZeRO-3 连参数也分片；FSDP 的 FULL_SHARD 思想接近 ZeRO-3，在模块计算前 All-Gather 当前参数，反向后 Reduce-Scatter 梯度。更强分片能让更大模型放下，但通信、瞬时聚合峰值和 Checkpoint 都更复杂。项目中我会先拆权重、梯度、优化器和激活显存，再比较峰值、MFU、通信占比、保存恢复时间与多机扩展效率。
+
 ## 核心回答
 
 普通数据并行在每张卡复制完整参数、梯度和优化器状态。ZeRO Stage 1 只切分优化器状态，Stage 2 再切分梯度，Stage 3 连参数也切分；阶段越高，单卡常驻模型状态越少，但通信、调度和检查点更复杂。PyTorch FSDP 的 `FULL_SHARD` 策略也对参数、梯度和优化器状态做分片，在模块计算前 All-Gather 所需参数、反向后 Reduce-Scatter 梯度，思想上接近 ZeRO-3，但接口、执行时机和实现生态并不完全等同。
@@ -29,9 +42,9 @@ ZeRO Stage 3 与 FSDP `FULL_SHARD` 会在前向与反向按需聚合参数，因
 
 ## 常见追问
 
-1. ZeRO-2 为什么不能解决“完整参数单卡放不下”？
-2. FSDP 前向计算前为什么需要 All-Gather？
-3. Activation Checkpointing 与 ZeRO 分别优化哪部分显存？
+1. **ZeRO-2 为什么不能解决“完整参数单卡放不下”？** ZeRO-2 只分片优化器状态和梯度，每个 Rank 仍常驻完整参数；参数本身超过单卡容量时需要 ZeRO-3、FULL_SHARD 或模型并行。
+2. **FSDP 前向计算前为什么需要 All-Gather？** 每个 Rank 平时只保存参数分片，模块执行矩阵计算前必须临时聚合完整参数，计算后再释放或重新分片。
+3. **Activation Checkpointing 与 ZeRO 分别优化哪部分显存？** Checkpointing 减少为反向保存的激活并用重算换空间；ZeRO/FSDP 分片参数、梯度和优化器状态，二者可组合。
 
 ## 一句话复习
 

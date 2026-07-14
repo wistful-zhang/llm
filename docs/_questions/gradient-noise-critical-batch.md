@@ -13,6 +13,20 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论：** Gradient Noise Scale 衡量随机梯度噪声相对真实梯度的大小，Critical Batch 是继续增大 batch 开始收益递减的尺度。
+2. **再讲关键机制：** 解释小 batch 方差随 batch 增大下降，以及并行加速从近线性转为样本效率下降。
+3. **主动说取舍：** 大 batch 提升硬件吞吐，却减少单位 token 的更新次数，常需学习率调整且估计本身有噪声。
+4. **最后落到项目：** 做 batch sweep，报告 steps-to-target、tokens-to-target、吞吐和 Noise Scale 趋势；讲完停。
+
+**60 秒口述示例：**
+
+> 我会先给直觉：不同 mini-batch 梯度差异越大，Gradient Noise Scale 越高，也就能从更大 batch 的方差降低中获益。接近 Critical Batch 后再加 batch，墙钟可能更快，但达到同一 loss 需要更多样本，统计效率开始恶化。项目里我会做 batch sweep，同时画每秒 token、达到目标 loss 的 step 与 token 数，并跟踪 Noise Scale，而不是只看 GPU 利用率。 目标是墙钟和样本效率共同最优。
+
+
 ## 核心回答
 
 单样本或小 Batch 梯度可看作真实平均梯度 `G` 加噪声。若梯度协方差为 `Σ`，一种常见的简单 Gradient Noise Scale 近似是 `B_noise≈tr(Σ)/||G||²`：信号越小、样本间方差越大，需要越大的 Batch 才能平均掉噪声。Critical Batch Size 与这个量同阶，表示继续增大 Batch 开始出现明显边际递减的区域，而不是一条对所有训练阶段固定的硬阈值。

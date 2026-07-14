@@ -7,6 +7,7 @@ const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难'])
 const publishableDifficulties = new Set(['简单', '中等', '困难']);
 const allowedReviewStatuses = new Set(['待整理', '待复习', '已掌握']);
 const requiredVerifiedSections = [
+  '面试时怎么答',
   '核心回答',
   '展开说明',
   '工程实践',
@@ -129,6 +130,36 @@ for (const filename of files) {
         errors.push(`${filename}: 已核验题目缺少“## ${section}”章节`);
       }
     });
+
+    const answerGuideSection = (body.split(/^##\s+面试时怎么答\s*$/m)[1] || '')
+      .split(/^##\s+/m)[0];
+    if (!/\*\*60 秒口述示例：\*\*/.test(answerGuideSection)) {
+      errors.push(`${filename}: “面试时怎么答”必须包含“60 秒口述示例”`);
+    }
+    if (!/^>\s+\S+/m.test(answerGuideSection)) {
+      errors.push(`${filename}: “60 秒口述示例”必须使用引用块给出可直接口述的答案`);
+    }
+    const spokenAnswer = answerGuideSection
+      .split(/\r?\n/)
+      .filter((line) => /^>\s*/.test(line))
+      .map((line) => line.replace(/^>\s*/, ''))
+      .join(' ')
+      .replace(/[`*_]/g, '')
+      .trim();
+    if (spokenAnswer.length < 80 || spokenAnswer.length > 260) {
+      errors.push(`${filename}: “60 秒口述示例”应控制在 80～260 个字符，当前为 ${spokenAnswer.length}`);
+    }
+    const answerSteps = answerGuideSection.match(/^\d+\.\s+\*\*[^*]+\*\*(?:[：:]\s*|\s+)\S+/gm) || [];
+    if (answerSteps.length < 4) {
+      errors.push(`${filename}: “面试时怎么答”至少需要 4 个带说明的回答步骤`);
+    }
+
+    const followupSection = (body.split(/^##\s+常见追问\s*$/m)[1] || '')
+      .split(/^##\s+/m)[0];
+    const answeredFollowups = followupSection.match(/^\d+\.\s+\*\*[^*]+\*\*(?:[：:]\s*|\s+)\S+/gm) || [];
+    if (answeredFollowups.length < 3) {
+      errors.push(`${filename}: “常见追问”至少需要 3 个“粗体问题 + 直接回答”`);
+    }
 
     const referenceSection = body.split(/^##\s+参考资料\s*$/m)[1] || '';
     if (!/\[[^\]]+\]\(https:\/\/[^)]+\)/.test(referenceSection)) {

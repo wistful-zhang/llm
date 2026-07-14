@@ -13,6 +13,20 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论：** CUDA Graph 降低重复 launch 开销，模型编译做图级优化，Kernel Fusion 减少中间读写和启动次数，三者优化层级不同。
+2. **再讲关键机制：** 分别解释捕获并重放固定执行图、编译器生成专用代码、融合相邻算子减少 HBM 往返。
+3. **主动说取舍：** 动态图、变长 shape 和数据依赖控制流会导致重新编译或无法捕获，融合过度也可能增加寄存器压力。
+4. **最后落到项目：** 用 profiler 报告 kernel 数、launch 间隙、重编译次数、吞吐和 P95 时延；说完停。
+
+**60 秒口述示例：**
+
+> 我会先分层回答：CUDA Graph 把稳定的一串 GPU 操作捕获后重放，主要省 CPU launch；编译器跨算子优化计算图；Kernel Fusion 把相邻计算放进一个 kernel，少写几次 HBM。它们可以叠加，但要求 shape 和控制流足够稳定。项目里我会用 profiler 比较 kernel 数、launch gap、graph 命中率、重编译次数、吞吐和 P95 延迟。动态路径较多时我会再说明 shape bucket 的使用边界。
+
+
 ## 核心回答
 
 Kernel Fusion 把多个算子合成更少的 GPU Kernel，减少中间张量写回显存和 Launch 次数；模型编译器捕获计算图并做布局、常量折叠、算子选择和 Fusion 等优化；CUDA Graph 则把一串已经确定的 CUDA 操作录制后整体 Replay，重点减少 CPU 调度与逐 Kernel Launch 开销。

@@ -13,6 +13,19 @@ verified: true
 date: 2026-07-13
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：先用 KV Head 数量概括：MHA 每个 Query Head 独立 KV，MQA 全共享，GQA 分组共享；停顿后展开。
+2. **再讲关键机制**：说明共享如何减少 KV Cache 与 Decode 带宽，而 Query 投影和注意力计算仍存在。
+3. **主动说取舍**：比较 MHA 的表达能力、MQA 的效率与 GQA 的折中，并提及并行整除约束。
+4. **最后落到项目**：在目标并发和长度下比较质量、KV GB、TPOT、吞吐与跨卡通信。
+
+**60 秒口述示例：**
+
+> 我的结论是，三者核心差异在 KV Head：MHA 每个 Query Head 有自己的 K/V，MQA 让所有 Query Head 共享一组，GQA 则按组共享。这里停一下，再解释共享会显著减少 KV Cache 和 Decode 的内存带宽，但不会同比消除 Query 计算。取舍上 MHA 容量更充分，MQA 最省，GQA 常用于质量与效率折中；Tensor Parallel 还要求 Head 可合理切分。项目里我会在真实长度和并发下比较任务胜率、每请求 KV GB、P95 TPOT、吞吐和通信占比。
+
 ## 核心回答
 
 三者主要区别是 Query Head 与 Key/Value Head 的共享方式。MHA 为每个 Query Head 配置独立的 K/V Head；MQA 让所有 Query Head 共享同一组 K/V；GQA 把多个 Query Head 分组，每组共享一组 K/V。减少 KV Head 可以缩小 KV Cache 和解码时的内存读取量，MQA 最省，MHA 表达自由度最高，GQA 在质量与推理效率之间折中。
@@ -29,9 +42,9 @@ date: 2026-07-13
 
 ## 常见追问
 
-1. GQA 为什么能显著减小 KV Cache，却不会同比减少全部计算？
-2. 如何把一个 MHA 检查点改造成 GQA？
-3. Tensor Parallel 对 Query Head 和 KV Head 数有什么约束？
+1. **GQA 为什么能显著减小 KV Cache，却不会同比减少全部计算？** 它减少的是需要保存和读取的 KV Head，Query Head 及其投影仍保留，注意力得分计算也不会按相同比例消失。
+2. **如何把一个 MHA 检查点改造成 GQA？** 常把同组 K/V Head 的权重做均值或池化初始化，再继续训练恢复质量；不能只改配置而不处理权重形状。
+3. **Tensor Parallel 对 Query Head 和 KV Head 数有什么约束？** Head 数需与并行分片方式兼容，通常要求可整除或复制少量 KV Head；否则会产生不均衡或额外通信。
 
 ## 一句话复习
 

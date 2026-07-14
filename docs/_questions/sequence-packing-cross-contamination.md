@@ -13,6 +13,19 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：先说 Packing 通过减少 Padding 提升 Token 利用率，但独立样本必须隔离 Attention 和 Loss。
+2. **再讲关键机制**：解释样本边界、Block-diagonal Causal Mask、Position ID 重置和 Label Mask。
+3. **主动说取舍**：实现更复杂、Kernel 兼容性受限；只放 EOS 并不能形成硬隔离，连续文档流则另当别论。
+4. **最后落到项目**：比较有效 Token 比例、Samples/s、显存、Loss 等价性和跨样本泄漏测试，随后停顿。
+
+**60 秒口述示例：**
+
+> 我的结论是 Sequence Packing 把多个短样本装进同一长序列，减少 Padding，从而提高有效 Token 吞吐；但如果样本独立，就不能只加 EOS，还要用 Block-diagonal Causal Mask 阻断跨样本注意力，重置 Position ID，并分别处理 Loss Mask。代价是数据整理和内核实现更复杂。落地时我会先做与未 Packing 的小规模 Loss 等价测试，再比较有效 Token 比例、Samples/s、显存峰值和人工构造的跨样本泄漏率。
+
 ## 核心回答
 
 Sequence Packing 把多个短样本装入同一个固定长度训练块，减少 Padding token 和空算力。若这些样本在语义上必须独立，就要同时维护三类边界：Block-diagonal Causal Mask 阻止跨样本注意力、Position IDs 在每个样本起点重置、Loss Mask 只保留应训练的目标 token。只拼接 `input_ids` 而遗漏任一边界，可能造成隐蔽的数据污染。

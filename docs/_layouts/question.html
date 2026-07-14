@@ -17,7 +17,27 @@ layout: default
       {% for tag in page.tags %}<span class="tag" role="listitem">{{ tag | escape }}</span>{% endfor %}
     </div>
   </header>
-  <div class="prose">{{ content }}</div>
+  <section class="answer-coach" data-question-coach aria-labelledby="answer-coach-title">
+    <div class="answer-coach-copy">
+      <span class="answer-coach-kicker">口述训练</span>
+      <h2 id="answer-coach-title">先自己答 60 秒，再看参考答案</h2>
+      <p>不要背整篇题解。现场优先讲清“结论 → 原理 → 取舍 → 落地”，面试官追问后再展开细节。</p>
+    </div>
+    <ol class="answer-coach-timeline" aria-label="建议时间分配">
+      <li><strong>15 秒</strong><span>先给结论</span></li>
+      <li><strong>25 秒</strong><span>解释机制</span></li>
+      <li><strong>15 秒</strong><span>主动说取舍</span></li>
+      <li><strong>5 秒</strong><span>落到项目</span></li>
+    </ol>
+    <p class="answer-coach-tip"><strong>没有做过怎么办？</strong>可以说“如果让我设计，我会……”，再给验证指标；不要编造项目经历。</p>
+    <div class="answer-coach-actions" data-coach-controls hidden>
+      <button class="primary-button" type="button" data-coach-start>开始 60 秒口述</button>
+      <button class="secondary-button" type="button" data-coach-reveal hidden>查看答题方法</button>
+      <output class="answer-coach-timer" data-coach-timer aria-live="polite">01:00</output>
+    </div>
+    <p class="answer-coach-status" data-coach-status aria-live="polite" hidden>答案当前已显示；点击开始后会暂时隐藏。</p>
+  </section>
+  <div class="prose question-answer" data-question-answer>{{ content }}</div>
   <nav class="question-nav" aria-label="题目翻页">
     {% if page.previous %}
       <a href="{{ page.previous.url | relative_url }}">← {{ page.previous.title | escape }}</a>
@@ -27,3 +47,4 @@ layout: default
     {% endif %}
   </nav>
 </article>
+<script type="module" src="{{ '/assets/js/question-coach.js' | relative_url }}"></script>
