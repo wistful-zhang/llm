@@ -13,6 +13,19 @@ published: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：沿一条数据流口述 Tokenizer、Embedding、Transformer、LM Head、采样，先给全景。
+2. **再讲关键机制**：重点讲 Causal Mask 下的 Prefill 并行、首 Token Logit 和之后的 KV Cache Decode。
+3. **主动说取舍**：区分模型计算、排队、分词和采样开销，避免把首 Token 延迟全归因于 GPU。
+4. **最后落到项目**：给出 TTFT、排队时间、Prefill Tokens/s、显存峰值四项分段指标，再等面试官追问。
+
+**60 秒口述示例：**
+
+> 我会按张量流来答：文本先被 Tokenizer 转成 ID，经 Embedding 和位置编码进入多层 Transformer；Prompt 在 Causal Mask 下完成 Prefill，最后一个有效位置经 LM Head 得到词表 Logit，再采样首 Token，后续进入带 KV Cache 的逐步 Decode。这里我会停一下区分 TTFT 来源。工程上会把排队、分词、Prefill 和网络耗时拆开监控，同时看 Prefill 吞吐和显存峰值，才能判断该扩容还是优化内核。
+
 ## 核心回答
 
 以 Decoder-only 模型为例，系统先用 Chat Template 把角色和消息拼成模型约定的文本，再由 Tokenizer 转成 token ID。Embedding 层把 ID 映射为向量，整段 Prompt 随后依次通过多个 Transformer Block；每个 Block 通常包含因果自注意力、FFN、残差连接和归一化。位置机制的作用点随架构而异：绝对位置向量可在输入侧相加，RoPE 则通常在每层 Attention 中对投影后的 Q/K 旋转。最后一个有效位置的隐藏状态经过最终归一化与 LM Head，得到词表上每个 token 的 Logit，再经解码策略选出第一个新 token。

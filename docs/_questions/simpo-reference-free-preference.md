@@ -13,6 +13,19 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：先说 SimPO 去掉参考模型，但仍需要同一 Prompt 的 chosen/rejected 成对数据。
+2. **再讲关键机制**：用长度归一化平均 Log-prob 作为隐式奖励，并要求偏好答案超过 Margin。
+3. **主动说取舍**：省一份参考模型显存与计算，却减少显式 KL 锚点；长度归一化和 Margin 都需校准。
+4. **最后落到项目**：比较偏好胜率、回答长度、KL 代理、通用能力回归、吞吐和显存，答完停顿。
+
+**60 秒口述示例：**
+
+> 我的结论是 SimPO 是 Reference-free 的偏好优化，但并不是不需要偏好对。它用回答 Token 的平均 Log-prob 作为隐式奖励，让 chosen 比 rejected 至少高出一个 Margin；长度归一化减弱序列总 Log-prob 对长回答天然更负的问题。好处是省去参考模型的前向和显存，风险是缺少显式 KL 锚点。项目中我会扫描 Margin 和缩放系数，同时看人工胜率、长度分布、通用能力回归、吞吐和显存。
+
 ## 核心回答
 
 SimPO 仍使用同一 Prompt 的 preferred/dispreferred 回答对，但把策略自身的平均 token log-probability 当作隐式奖励：`r_θ(x,y)=β/|y| · log π_θ(y|x)`。损失要求 chosen 的隐式奖励不仅高于 rejected，还至少高出目标 Margin `γ`：`L=-log σ(r_θ(x,y_w)-r_θ(x,y_l)-γ)`。

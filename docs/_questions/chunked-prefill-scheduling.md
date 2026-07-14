@@ -13,6 +13,20 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论：** Chunked Prefill 把长 Prompt 的 prefill 切成小块，与 decode 迭代交错调度，以平衡 TTFT 和 TPOT。
+2. **再讲关键机制：** 解释 prefill 计算密集、decode 访存密集，以及 token budget 下块级插队如何减少阻塞。
+3. **主动说取舍：** 块太大会拖慢已有 decode，块太小则调度开销增加、prefill 效率下降。
+4. **最后落到项目：** 扫描 chunk size，报告 TTFT/TPOT P95、吞吐、调度开销和 SLO 达标率；讲完停。
+
+**60 秒口述示例：**
+
+> 我会先说它解决长 Prompt 堵住短 decode 的问题。调度器把 prefill 拆成若干 token 块，在每轮预算里与正在生成的 decode 请求共同批处理，让旧请求持续出 token，新请求也逐步完成预填充。关键取舍是块大小：大块效率高但阻塞重，小块公平却有开销。项目里我会扫描块大小，比较 TTFT、TPOT 的 P95、吞吐和 SLO 达标率。
+
+
 ## 核心回答
 
 完整处理一个长 Prompt 会形成很长的 Prefill 迭代，让同批 Decode 请求长时间收不到下一个 Token。Chunked Prefill 把 Prompt 拆成若干 Token Chunk，分多轮完成，并在每轮剩余预算中安排 Decode，使长 Prefill 不再一次独占 GPU。

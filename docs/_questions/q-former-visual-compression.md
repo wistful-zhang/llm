@@ -13,6 +13,19 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：把 Q-Former 定义成视觉编码器与 LLM 之间的“固定槽位信息瓶颈”。
+2. **再讲关键机制**：说明 Learnable Query 作 Q、图像特征作 K/V，经 Cross-Attention 压成固定数量 Token。
+3. **主动说取舍**：Query 少则省上下文但丢细节，Query 多则增加 LLM 延迟，视觉编码开销仍未消失。
+4. **最后落到项目**：按 OCR、细粒度定位等任务测试 Query 数，对比准确率、视觉 Token 数和首 Token 延迟。
+
+**60 秒口述示例：**
+
+> 我的结论是 Q-Former 用一组可学习 Query，把可变且很长的视觉特征压成固定数量的视觉 Token，再交给语言模型。机制上 Query 提供 Q，冻结或已训练的图像特征提供 K、V，通过 Cross-Attention 提取与语言任务相关的信息。这里要主动说瓶颈：固定槽位可能丢小字和密集目标。项目中我会扫描 Query 数，分别看 OCR、VQA 和定位准确率，以及视觉 Token、显存和 TTFT 的变化。
+
 ## 核心回答
 
 Q-Former 是 BLIP-2 中连接冻结视觉编码器与冻结 LLM 的轻量 Transformer。它维护固定数量的 Learnable Query，Query 通过 Cross-Attention 从视觉编码器产生的大量图像特征中读取任务相关信息，最后输出固定数量的查询表示。这样，无论原始图像产生多少 Patch 特征，传给后续语言模型的接口长度都可由 Query 数控制。

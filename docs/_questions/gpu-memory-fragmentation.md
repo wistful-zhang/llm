@@ -13,6 +13,20 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论：** 有空闲显存仍 OOM 通常是最大连续可用块不足，或缓存分配器中保留但不可复用的碎片过多。
+2. **再讲关键机制：** 区分 allocated、reserved、inactive split，结合内存快照定位变长张量和不同生命周期分配。
+3. **主动说取舍：** 清缓存只能释放未用缓存，不会释放活跃张量；盲调分配器参数可能掩盖泄漏或增加开销。
+4. **最后落到项目：** 复现固定流量，报告峰值 allocated/reserved、最大空闲块、OOM 率和吞吐；讲完停。
+
+**60 秒口述示例：**
+
+> 我会先区分“总空闲”和“可满足当前大块申请”。框架的缓存分配器会保留显存，频繁变长 shape 还会切出不能合并的小块，所以 reserved 很高、allocated 较低也可能 OOM。排查时看 memory snapshot 和张量生命周期，而不是先清缓存。项目里我会固定请求回放，比较峰值 allocated、reserved、inactive split、OOM 率、吞吐和 P95 延迟。 再用快照定位最早出现的异常分配。
+
+
 ## 核心回答
 
 “空闲显存”要先区分口径：`memory_allocated` 是活跃张量占用，`memory_reserved` 是 PyTorch Caching Allocator 向 CUDA 申请并管理的段，驱动工具显示的是进程外部看到的剩余容量。OOM 可能是活跃集合本来就超过容量，也可能是 Reserved 段内虽然有空闲块，却没有满足本次请求的可复用块；还可能有 NCCL、CUDA Graph 或自定义扩展等不被 PyTorch 张量统计完整覆盖的分配。

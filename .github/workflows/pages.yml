@@ -25,8 +25,8 @@ jobs:
       - name: Validate question content
         run: node scripts/validate-content.mjs
 
-      - name: Test interview practice logic
-        run: node --test tests/practice-core.test.mjs
+      - name: Test browser-side practice logic
+        run: node --test tests/*.test.mjs
 
   build:
     name: Build public site

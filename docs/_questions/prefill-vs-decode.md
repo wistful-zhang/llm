@@ -13,6 +13,19 @@ published: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：先说 Prefill 一次处理整段 Prompt、通常算力密集，Decode 每步一个 Token、通常带宽和延迟敏感；停顿后解释。
+2. **再讲关键机制**：从矩阵形状、KV 读写与并行度比较两个阶段，并对应 TTFT 与 TPOT。
+3. **主动说取舍**：指出大 Batch 提升 Prefill 效率却可能阻塞 Decode，短请求与长请求混跑会互扰。
+4. **最后落到项目**：分阶段 Profile 与调度，监控 Prefill FLOPs/带宽、TTFT、TPOT、Goodput 和队列等待。
+
+**60 秒口述示例：**
+
+> 我先给结论：Prefill 对整段输入并行计算，矩阵较大，往往更接近算力受限；Decode 每次只生成一个 Token，要反复读权重和历史 KV，通常更偏内存带宽与调度受限。这里停一下，再把用户指标对应起来：Prefill 主要影响 TTFT，Decode 主要影响 TPOT。取舍是把长 Prompt 合成大 Batch 能提高吞吐，却会让正在生成的请求等待。项目里我会分阶段 Profile，采用连续批处理或分块 Prefill，并报告 TTFT、TPOT、Goodput、HBM 带宽和队列时间。
+
 ## 核心回答
 
 以 Decoder-only 模型为例，**Prefill** 在逻辑上处理整段 Prompt，在每一层为全部输入 token 计算隐藏状态并建立 KV Cache；同层内的 token 可以并行，长 Prompt 往往形成较大的矩阵乘，因此通常更偏计算密集，主要影响首 token 延迟（TTFT）。实现可以用 Chunked Prefill 把它拆成多轮调度，但语义上仍属于输入阶段。**Decode** 每轮只为每个活跃序列生成一个新 token，复用历史 KV Cache，但必须读取越来越长的 K/V；单步矩阵较小、数据搬运占比高，典型在线场景更偏显存带宽密集，主要影响 token 间延迟（ITL/TPOT）。

@@ -13,6 +13,19 @@ verified: true
 date: 2026-07-14
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论**：先报主项：每层 Attention 投影约 `4d²`，普通 FFN 约 `2dd_ff`，再乘层数。
+2. **再讲关键机制**：补 Embedding/LM Head、SwiGLU 三矩阵和长序列 Attention `n²d` 项，训练约为前向数倍。
+3. **主动说取舍**：`6ND` 是矩阵主导下的近似，不含重算、通信、稀疏路由和硬件利用率。
+4. **最后落到项目**：把手算参数与框架统计、估算 FLOPs 与 Profiler 对齐，并报告 MFU 和误差来源。
+
+**60 秒口述示例：**
+
+> 我会先抓主项：隐藏维度 d 时，Q、K、V、O 四个投影约 `4d²`；普通 FFN 上下投影约 `2dd_ff`，SwiGLU 因 gate、value、down 三个矩阵约 `3dd_ff`，乘层数后再加词表 Embedding 和 LM Head。这是主项估算，FLOPs 可用参数参与矩阵乘法的近似快速估，但长序列的 `n²d` 注意力、重算和通信要另算。项目中我会与框架参数统计和 Profiler 对账，再用 MFU 解释理论与实测差距。
+
 ## 核心回答
 
 对隐藏维度 `d`、FFN 中间维度 `d_ff`、层数 `L` 的标准 Dense Decoder，忽略 bias 和 Norm 小项时，每层 MHA 的 Q/K/V/O 投影约为 `4d²`，SwiGLU 的 gate/up/down 三个投影约为 `3dd_ff`，所以主体参数约为 `L(4d²+3dd_ff)`。再加词嵌入和 LM Head；若二者共享，只计约 `Vd`，不共享则约 `2Vd`。

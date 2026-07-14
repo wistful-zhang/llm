@@ -39,9 +39,9 @@ content:
         description: 默认关闭，先保存为待整理内容。注意：此开关只控制阅读网站是否显示；如果仓库是 Public，草稿源文件仍可在 GitHub 中被看到。
 
       - name: body
-        label: 当时的速记 / 解答（可稍后补）
+        label: 现场速记 / 口述答法与解答（可稍后补）
         type: rich-text
-        description: 草稿阶段可以留空，或只写关键词、自己的现场回答、追问和卡住的位置；发布前再整理成完整答案。
+        description: 草稿阶段可以留空；发布前建议按“面试时怎么答、核心回答、展开说明、工程实践、常见追问、一句话复习、参考资料”整理。先写可直接口述的 60 秒回答，不要只堆分析资料。
         options:
           format: markdown
           switcher: false
@@ -68,7 +68,7 @@ content:
         type: string
         required: true
         default: 待整理
-        description: 速记时可保留“待整理”；发布前可选 LLM 基础、NLP 与机器学习、预训练与数据、训练与对齐、训练工程、推理与部署、RAG、Agent、多模态、评测与安全、工程实践、系统设计，也可以输入自己的分类。
+        description: 速记时可保留“待整理”；发布前可选数学基础、LLM 基础、NLP 与机器学习、预训练与数据、训练与对齐、训练工程、推理与部署、RAG、Agent、多模态、评测与安全、工程实践、系统设计，也可以输入自己的分类。
         options:
           maxlength: 30
 

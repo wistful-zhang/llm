@@ -13,6 +13,20 @@ published: true
 date: 2026-07-13
 ---
 
+## 面试时怎么答
+
+建议按“结论 → 原理 → 取舍 → 落地”回答：
+
+1. **先给结论：** 高并发 LLM 服务要按 token 工作量准入，结合连续批处理、优先级队列和背压保护 GPU 与尾延迟。
+2. **再讲关键机制：** 区分 prefill 与 decode 成本，说明请求 token 预算、队列、动态 batch、超时与取消。
+3. **主动说取舍：** 追求最大 batch 能提高吞吐却拉高 TTFT；严格公平又可能降低缓存命中和整体利用率。
+4. **最后落到项目：** 以负载回放报告 QPS/tokens/s、TTFT/TPOT P95、拒绝率、队列长度和成本；讲完停。
+
+**60 秒口述示例：**
+
+> 我会先从容量单位说起：请求数不能代表工作量，准入要估算输入加输出 token。调度层把 prefill 和 decode 分开看，用 Continuous Batching 填满 GPU；入口做限流和背压，超时请求及时取消释放 KV Cache。取舍是吞吐、公平和尾延迟。项目里我会回放真实长度分布，报告 tokens/s、TTFT 与 TPOT P95、拒绝率、队列等待和单位 token 成本。 压测必须复现真实长短请求混合。
+
+
 ## 核心回答
 
 入口先按租户、优先级和预计 token 数做配额与准入控制（Admission Control），同时设置输入、最大输出和并发硬上限，并按实际消耗结算。超载时排队、降级或拒绝；推理层使用迭代级调度和连续批处理（Continuous Batching），在迭代边界移出完成序列，把空出的执行槽位和 KV Block 分配给新序列；KV Cache 用分页或块式管理减少碎片。目标不是单纯提高吞吐，而是在 TTFT、单 token 延迟、吞吐和公平性之间满足 SLO。
@@ -35,9 +49,9 @@ date: 2026-07-13
 
 ## 常见追问
 
-1. Continuous Batching 与静态 Batch 有什么区别？
-2. 为什么应该按 token 而不是只按请求限流？
-3. Prefill 和 Decode 的瓶颈有什么不同？
+1. **Continuous Batching 与静态 Batch 有什么区别？** 静态 Batch 等整批请求结束后才换批；Continuous Batching 在每个生成步移出完成项并加入新请求，减少空槽。
+2. **为什么应该按 token 而不是只按请求限流？** 一个 100-token 请求和一个 100k-token 请求的显存与计算差异巨大，请求数无法准确代表负载和 KV Cache 占用。
+3. **Prefill 和 Decode 的瓶颈有什么不同？** Prefill 对整段 Prompt 并行矩阵计算，通常更计算密集；Decode 每步只生成少量 token，频繁读权重和 KV Cache，常更受带宽限制。
 
 ## 一句话复习
 
