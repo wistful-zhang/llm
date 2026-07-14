@@ -68,7 +68,7 @@ content:
         type: string
         required: true
         default: 待整理
-        description: 速记时可保留“待整理”；发布前改为 LLM 基础、训练与对齐、RAG、Agent、工程实践或系统设计等正式分类。
+        description: 速记时可保留“待整理”；发布前改为 LLM 基础、训练与对齐、RAG、Agent、工程实践、系统设计或多模态等正式分类。
         options:
           maxlength: 30
 
