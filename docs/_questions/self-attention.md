@@ -1,6 +1,7 @@
 ---
 title: "Self-Attention 为什么要除以 √dₖ？"
 source: "经典高频题；技术依据：Attention Is All You Need"
+verified: true
 category: "LLM 基础"
 difficulty: "中等"
 tags: [Transformer, Attention]

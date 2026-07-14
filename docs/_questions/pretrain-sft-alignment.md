@@ -1,6 +1,7 @@
 ---
 title: "预训练、SFT 和偏好对齐分别解决什么问题？"
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
+verified: true
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "简单"

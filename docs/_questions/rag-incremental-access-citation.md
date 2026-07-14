@@ -1,6 +1,7 @@
 ---
 title: "如何让 RAG 支持增量更新、权限过滤和引用溯源？"
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
+verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "中等"
@@ -42,5 +43,5 @@ date: 2026-07-13
 
 ## 参考资料
 
-- 面经主题：[Agent 开发公开面经汇总](https://www.nowcoder.com/discuss/877151327091027968)
+- 面试题主题：[AI Engineering Interview Questions 中的 RAG 更新、引用与访问控制题](https://github.com/amitshekhariitbhu/ai-engineering-interview-questions#retrieval-augmented-generation-rag)
 - 官方资料：[Azure AI Search 增量更新](https://learn.microsoft.com/en-us/azure/search/search-howto-reindex)、[文档级访问控制](https://learn.microsoft.com/en-us/azure/search/search-document-level-access-overview)

@@ -1,6 +1,7 @@
 ---
 title: "如何系统地提升 RAG 的召回质量？"
 source: "公开面经高频主题；答案依据论文原创整理"
+verified: true
 category: "RAG"
 difficulty: "困难"
 tags: [检索, Rerank, 评估]
@@ -11,7 +12,7 @@ date: 2026-07-11
 
 ## 核心回答
 
-先建立可复现的评估集，把问题拆成“该召回的内容是否被找到”和“无关内容是否被过滤”。然后依次检查文档解析与切分、Query 改写、稀疏与稠密混合检索、元数据过滤，以及 Rerank。每次只改变一个环节，用 Recall@K、MRR、nDCG 和端到端答案正确率判断收益。
+这是一道系统排查框架题。先建立可复现的评估集，把问题拆成“该召回的内容是否被找到”和“无关内容是否被过滤”。然后依次检查文档解析与切分、Query 改写、稀疏与稠密混合检索、元数据过滤，以及 Rerank。每次只改变一个环节，用 Recall@K、MRR、nDCG 和端到端答案正确率判断收益。
 
 ## 展开说明
 
@@ -40,5 +41,5 @@ date: 2026-07-11
 
 ## 参考资料
 
-- [Retrieval-Augmented Generation](https://arxiv.org/abs/2005.11401)
-- [Passage Re-ranking with BERT](https://arxiv.org/abs/1901.04085)
+- 面经主题：[Datawhale 真实面试题中的 RAG 检索质量题](https://github.com/datawhalechina/hello-agents/blob/main/Extra-Chapter/Extra01-%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93.md)
+- 技术依据：[Retrieval-Augmented Generation](https://arxiv.org/abs/2005.11401)、[Passage Re-ranking with BERT](https://arxiv.org/abs/1901.04085)、[BEIR](https://arxiv.org/abs/2104.08663)、[Azure RRF 与混合检索](https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking)

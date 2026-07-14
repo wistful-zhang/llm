@@ -1,6 +1,7 @@
 ---
 title: "KV Cache 为什么能加速推理，又带来什么代价？"
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
+verified: true
 review_status: "待复习"
 category: "工程实践"
 difficulty: "中等"

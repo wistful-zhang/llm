@@ -1,6 +1,7 @@
 ---
 title: "Pre-Norm 与 Post-Norm 有什么区别？"
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
+verified: true
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "困难"

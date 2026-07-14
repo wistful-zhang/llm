@@ -1,6 +1,7 @@
 ---
 title: "一个线上大模型应用通常包含哪些核心模块？"
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
+verified: true
 review_status: "待复习"
 category: "系统设计"
 difficulty: "简单"

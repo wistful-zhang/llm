@@ -1,0 +1,50 @@
+---
+title: "什么时候应该使用多 Agent，如何设计协作机制？"
+source: "Datawhale 公开真实面试题整理；答案依据原论文和官方工程文档原创整理"
+review_status: "待复习"
+category: "Agent"
+difficulty: "困难"
+tags:
+  - Multi-Agent
+  - Orchestrator
+  - Coordination
+published: true
+verified: true
+date: 2026-07-13
+---
+
+## 核心回答
+
+多 Agent 适合可并行探索多个方向、需要隔离专业上下文，或不同子任务需要不同工具和权限的复杂任务。常见结构是 Orchestrator-Worker：主 Agent 拆分任务并分配边界清晰的子任务，子 Agent 独立执行后返回结构化结果，主 Agent 负责去重、冲突处理和综合。它会增加通信、token、协调和错误传播成本，简单或强依赖顺序的任务通常不值得拆分。
+
+## 展开说明
+
+设计重点包括：
+
+1. **任务划分**：子任务应尽量独立，并明确输入、输出、完成条件和证据要求。
+2. **拓扑选择**：中心化编排易控制；点对点协商更灵活，但状态一致性和终止更难。
+3. **共享状态**：通过结构化任务表或事件存储同步，避免只靠自然语言转述全部历史。
+4. **冲突处理**：对重复、矛盾和缺失结果设置确定性合并规则或额外验证。
+5. **权限隔离**：每个子 Agent 只获得任务所需的工具和数据范围，不能继承主 Agent 全部权限。
+6. **终止与预算**：限制子 Agent 数量、深度、重试和总成本，防止递归扩张。
+
+多个相同模型并不会自动带来观点独立性；共享训练偏差和错误来源仍可能让它们一致出错。
+
+## 工程实践
+
+先用单 Agent 建立质量、延迟和成本基线，再只拆分能并行且上下文互不依赖的部分。为每个子任务分配 trace_id 和父子关系，要求返回结论、证据、未解决项及置信边界。压测并发峰值、部分子任务超时和结果冲突，验证主 Agent 能降级完成。
+
+## 常见追问
+
+1. Orchestrator-Worker 与多个 Agent 自由对话有什么区别？
+2. 多 Agent 为什么可能比单 Agent 更差？
+3. 如何防止子 Agent 递归创建导致成本失控？
+
+## 一句话复习
+
+> 多 Agent 的价值来自可并行的任务分解和上下文隔离，而不是简单复制更多模型调用。
+
+## 参考资料
+
+- 面经主题：[Datawhale 真实面试题中的多智能体系统](https://github.com/datawhalechina/hello-agents/blob/main/Extra-Chapter/Extra01-%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93.md)
+- 技术依据：[AutoGen](https://arxiv.org/abs/2308.08155)、[Anthropic 多 Agent Research 系统实践](https://www.anthropic.com/engineering/multi-agent-research-system)

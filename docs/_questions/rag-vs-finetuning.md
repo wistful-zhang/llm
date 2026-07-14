@@ -1,6 +1,7 @@
 ---
 title: "RAG 与微调应该如何选择？"
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
+verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "简单"

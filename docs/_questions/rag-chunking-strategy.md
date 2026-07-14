@@ -1,0 +1,48 @@
+---
+title: "RAG 中如何选择 Chunk 大小和重叠长度？"
+source: "Datawhale 公开真实面试题整理；答案依据官方文档原创整理"
+review_status: "待复习"
+category: "RAG"
+difficulty: "简单"
+tags:
+  - Chunking
+  - 文档解析
+  - 上下文
+published: true
+verified: true
+date: 2026-07-13
+---
+
+## 核心回答
+
+Chunk 没有适用于所有语料的固定大小。较小的 Chunk 定位更精确，但容易丢失上下文并增加索引数量；较大的 Chunk 保留更多语义，却可能让关键信息在向量中被稀释，并占用更多生成上下文。Overlap 能缓解边界切断，但会增加存储、重复召回和 token 成本。参数应结合文档结构、典型问题的证据跨度、Embedding 输入限制和评估结果选择。
+
+## 展开说明
+
+常见切分方式包括：
+
+- **固定长度切分**：实现简单，适合结构弱且格式统一的文本，但可能切断句子或表格。
+- **递归或结构化切分**：优先按标题、段落、句子、代码块和表格边界拆分，更容易保持语义完整。
+- **语义切分**：根据相邻内容的语义变化确定边界，质量和计算成本都需要实测。
+- **父子 Chunk**：用小 Chunk 做精确召回，命中后返回较大的父段落补充上下文。
+
+Overlap 应小于 Chunk 本身，并只保留跨边界真正需要的上下文。标题、章节路径、文档 ID 和页码通常应作为元数据或前缀随 Chunk 保存，避免片段离开原文后失去含义。
+
+## 工程实践
+
+在代表性问题集上扫描多个 Chunk 大小和重叠比例，同时记录 Recall@K、上下文精确度、答案正确率、索引体积、查询延迟和输入 token。对表格、代码、合同条款等特殊文档单独设计切分器，并在上下文组装阶段合并相邻命中、消除重复文本。
+
+## 常见追问
+
+1. Chunk 越小，向量检索越准确吗？
+2. 父子检索与直接使用大 Chunk 有什么区别？
+3. 为什么固定百分比的 Overlap 可能造成大量重复？
+
+## 一句话复习
+
+> Chunking 是在检索粒度、语义完整性和上下文成本之间取舍，最佳参数必须用真实问题评估。
+
+## 参考资料
+
+- 面经主题：[Datawhale 真实面试题中的文本切块问题](https://github.com/datawhalechina/hello-agents/blob/main/Extra-Chapter/Extra01-%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93.md)
+- 官方资料：[Azure AI Search 文档切块指南](https://learn.microsoft.com/en-us/azure/search/vector-search-how-to-chunk-documents)、[按文档结构进行语义切块](https://learn.microsoft.com/en-us/azure/search/search-how-to-semantic-chunking)
