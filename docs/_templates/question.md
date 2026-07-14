@@ -1,6 +1,7 @@
 ---
 title: "在这里填写面试题目"
 source: ""
+verified: false
 review_status: "待整理"
 category: "待整理"
 difficulty: "待评估"
@@ -30,3 +31,7 @@ date: YYYY-MM-DD
 ## 一句话复习
 
 > 用一句话留下最值得记住的结论。
+
+## 参考资料
+
+- [资料标题](https://example.com)

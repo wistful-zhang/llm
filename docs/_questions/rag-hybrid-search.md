@@ -1,0 +1,54 @@
+---
+title: "RAG 中如何组合 BM25 与向量检索？"
+source: "公开真实面试题整理；答案依据原论文和官方文档原创整理"
+review_status: "待复习"
+category: "RAG"
+difficulty: "中等"
+tags:
+  - Hybrid Search
+  - BM25
+  - RRF
+published: true
+verified: true
+date: 2026-07-13
+---
+
+## 核心回答
+
+混合检索通常并行执行 BM25 和向量查询，再融合两路候选。BM25 补足编号、罕见实体和精确词匹配，向量检索补足同义表达和语义改写。由于两路原始分数的量纲和范围不同，不能直接相加；常用 Reciprocal Rank Fusion 按名次融合，或在验证集上做分数归一化和学习权重。
+
+## 展开说明
+
+RRF 对文档 d 的典型打分是：
+
+score(d) = Σ 1 / (c + rank_i(d))
+
+其中 rank_i(d) 是文档在第 i 路结果中的名次，c 是降低头部名次过度支配的常数。RRF 不依赖两路原始分数可比，因此实现稳健；但它也会丢掉原分数差距信息。
+
+设计时还要确定：
+
+1. 每一路取多少候选，候选太少会在融合前丢失证据。
+2. 元数据和权限过滤是否在两路一致生效。
+3. 是否对某类查询提高关键词路或向量路权重。
+4. 融合之后是否再用 Cross-Encoder 做精排。
+
+混合检索并非必然优于单路检索；如果语料和查询高度同质，额外一路可能只增加噪声和延迟。
+
+## 工程实践
+
+保留 BM25-only、Dense-only 和 Hybrid 三个可回放基线，按编号查询、实体查询、语义改写等切片比较 Recall@K 与 nDCG。记录每个最终候选来自哪一路和原始名次，便于发现某一路候选深度不足、过滤不一致或融合权重失衡。
+
+## 常见追问
+
+1. 为什么 BM25 分数与余弦相似度不能直接相加？
+2. RRF 中的常数与向量检索 Top-K 是一回事吗？
+3. 混合检索后为什么还可能需要 Reranker？
+
+## 一句话复习
+
+> Hybrid Search 用关键词的精确性补向量的语义泛化，并通过可解释的融合策略合并候选。
+
+## 参考资料
+
+- 面经主题：[公开 Agent 面经中的混合检索与 Rerank 追问](https://www.nowcoder.com/discuss/863430474180333568)
+- 技术依据：[Reciprocal Rank Fusion 原论文](https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf)、[Azure AI Search 的 RRF 说明](https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking)

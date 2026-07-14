@@ -22,6 +22,7 @@ import {
     title: template.dataset.title,
     category: template.dataset.category,
     difficulty: template.dataset.difficulty,
+    verified: template.dataset.verified === 'true',
     url: template.dataset.url,
     template,
   }));
@@ -51,6 +52,7 @@ import {
   const timer = document.querySelector('#practice-timer');
   const categoryBadge = document.querySelector('#practice-question-category');
   const difficultyBadge = document.querySelector('#practice-question-difficulty');
+  const verifiedBadge = document.querySelector('#practice-question-verified');
   const questionTitle = document.querySelector('#practice-question-title');
   const revealButton = document.querySelector('#practice-reveal');
   const skipButton = document.querySelector('#practice-skip');
@@ -299,6 +301,7 @@ import {
     progress.setAttribute('aria-valuetext', `第 ${state.cursor + 1} 题，共 ${state.queue.length} 题`);
     categoryBadge.textContent = question.category;
     difficultyBadge.textContent = question.difficulty;
+    if (verifiedBadge) verifiedBadge.hidden = question.verified !== true;
     questionTitle.textContent = question.title;
     timer.textContent = formatClock(state.currentElapsedMs);
     answerSection.hidden = true;

@@ -300,6 +300,18 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .difficulty-中等 { color: var(--orange); background: #fffaeb; }
 .difficulty-困难 { color: var(--red); background: #fef3f2; }
 
+.verification-badge {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #067647;
+  background: #ecfdf3;
+  font-size: .75rem;
+  font-weight: 750;
+}
+
 .question-card h2 {
   margin: 5px 0 10px;
   font-size: 1.16rem;
@@ -326,6 +338,16 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
   margin: 28px 0 42px;
   padding-bottom: 32px;
   border-bottom: 1px solid var(--line);
+}
+
+.question-provenance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: -8px 0 14px;
+  color: var(--muted);
+  font-size: .82rem;
 }
 
 .question-header h1 {

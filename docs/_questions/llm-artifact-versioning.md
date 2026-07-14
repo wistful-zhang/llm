@@ -1,0 +1,49 @@
+---
+title: "模型、Prompt、数据和索引如何统一版本化并支持回滚？"
+source: "公开 AI 工程面试题库；依据 MLflow 官方版本与数据追踪文档原创整理"
+review_status: "待复习"
+category: "系统设计"
+difficulty: "中等"
+tags:
+  - 版本治理
+  - 数据血缘
+  - Model Registry
+published: true
+verified: true
+date: 2026-07-13
+---
+
+## 核心回答
+
+不要只给“模型”一个版本号，而要为每次发布生成不可变清单，至少绑定模型权重或供应商快照、tokenizer/chat template、适配器、Prompt、工具与输出 Schema、生成参数、安全策略、代码镜像、评测数据版本，以及 RAG 的 embedding、切分配置和索引快照。线上只通过可审计的环境别名（如 candidate、champion）指向清单，Trace 记录实际解析出的不可变 ID。
+
+制品不可变，别名可变；晋级就是在门禁通过后原子切换别名，回滚则切回上一份完整清单。这样可以避免“模型回去了，Prompt 或索引却没回去”的半回滚。
+
+## 展开说明
+
+版本治理需要处理依赖而不只是存文件：
+
+- **内容寻址**：对自有制品保存 digest；托管模型记录供应商实际返回的模型标识与调用日期，不能假设营销名称永远不变。
+- **数据血缘**：训练、评测和索引数据保存来源、查询或快照时间、Schema、清洗代码和 digest，才能解释结果差异。
+- **兼容矩阵**：模型与 tokenizer、LoRA 基座、工具 Schema 和索引 embedding 需声明兼容关系，部署前自动检查。
+- **数据迁移**：会话或任务跨版本时采用双读、双写或显式迁移；回滚前确认旧代码仍能读取新数据格式。
+- **审批与保留**：高风险发布保存评测报告、审批人和变更原因；清理旧制品不能破坏审计或回滚窗口。
+
+## 工程实践
+
+CI 负责构建清单、计算 digest、运行兼容与回归门禁，再注册候选；CD 只部署已注册的不可变 ID。给每个线上响应附内部 release ID，并能从它反查全部依赖、评测和日志。定期做“从清单重建环境”和“切回上一版本”的演练，防止注册表里有记录但底层权重、数据或容器已经无法获取。
+
+## 常见追问
+
+1. Git 版本为什么不足以完整复现一次 LLM 响应？
+2. 可变别名和不可变模型版本分别承担什么职责？
+3. RAG 的 embedding 模型升级时，怎样避免新旧向量混用？
+
+## 一句话复习
+
+> 把模型、Prompt、数据、索引和运行参数绑定成不可变发布清单，用可审计别名晋级和原子回滚。
+
+## 参考资料
+
+- 面试题来源：[AI Engineering Interview Questions 的 Prompt/模型版本与回滚题](https://github.com/amitshekhariitbhu/ai-engineering-interview-questions)
+- 官方依据：[MLflow Model Registry](https://mlflow.org/docs/latest/ml/model-registry/)、[MLflow Dataset Tracking](https://mlflow.org/docs/latest/ml/dataset/)

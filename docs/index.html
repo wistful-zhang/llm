@@ -5,6 +5,8 @@ title: 题库
 {% assign hero_title = site.data.settings.hero_title | default: '把零散知识，整理成' %}
 {% assign hero_highlight = site.data.settings.hero_highlight | default: '能讲清楚的答案。' %}
 {% assign hero_description = site.data.settings.description | default: site.description %}
+{% assign published_questions = site.questions | where: 'published', true %}
+{% assign published_categories = published_questions | map: 'category' | uniq | sort %}
 <section class="hero">
   <div class="container hero-grid">
     <div>
@@ -21,10 +23,10 @@ title: 题库
       </div>
     </div>
     <div class="stat-card" role="region" aria-label="题库统计">
-      <strong>{{ site.questions | size }}</strong>
-      <span>道已整理题目</span>
+      <strong>{{ published_questions | size }}</strong>
+      <span>道已发布题目</span>
       <div class="stat-line"></div>
-      <small>可按分类随机抽题</small>
+      <small>{{ published_categories | size }} 个方向 · 可按分类和难度抽题</small>
     </div>
   </div>
 </section>
@@ -37,15 +39,14 @@ title: 题库
     </label>
     <div class="filters" role="group" aria-label="按分类筛选">
       <button class="filter active" type="button" data-filter-all aria-pressed="true">全部</button>
-      {% assign categories = site.questions | map: 'category' | uniq | sort %}
-      {% for category in categories %}
+      {% for category in published_categories %}
         <button class="filter" type="button" data-category="{{ category | escape }}" aria-pressed="false">{{ category | escape }}</button>
       {% endfor %}
     </div>
   </div>
 
   <div id="question-list" class="question-list">
-    {% assign questions = site.questions | sort: 'date' | reverse %}
+    {% assign questions = published_questions | sort: 'date' | reverse %}
     {% for question in questions %}
       {% assign search_tags = question.tags | join: ' ' %}
       {% assign search_body = question.content | strip_html | strip_newlines %}
@@ -58,6 +59,7 @@ title: 题库
           <div class="card-meta">
             <span>{{ question.category | escape }}</span>
             <span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>
+            {% if question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
           </div>
           <h2>{{ question.title | escape }}</h2>
           <div class="tag-list">

@@ -3,7 +3,7 @@ title: 模拟面试
 description: 按分类随机抽取大模型面试题，计时口述、自我评价并复盘薄弱题。
 permalink: /practice/
 ---
-{% assign published_questions = site.questions | sort: 'date' | reverse %}
+{% assign published_questions = site.questions | where: 'published', true | sort: 'date' | reverse %}
 <div class="container practice-page">
   <header class="practice-intro">
     <span class="status-badge">随机抽题 · 自我复盘</span>
@@ -120,6 +120,7 @@ permalink: /practice/
         <div class="card-meta">
           <span id="practice-question-category"></span>
           <span id="practice-question-difficulty" class="difficulty"></span>
+          <span id="practice-question-verified" class="verification-badge" hidden>✓ 资料核验</span>
         </div>
         <h2 id="practice-question-title" tabindex="-1">模拟面试题目</h2>
         <p class="practice-question-hint">先尝试口头回答。思路讲完整后，再展开参考答案。</p>
@@ -190,6 +191,7 @@ permalink: /practice/
           data-title="{{ question.title | escape }}"
           data-category="{{ question.category | escape }}"
           data-difficulty="{{ question.difficulty | escape }}"
+          data-verified="{{ question.verified | default: false }}"
           data-url="{{ question.url | relative_url | escape }}">{{ question.content | markdownify }}</template>
       {% endfor %}
     </div>

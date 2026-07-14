@@ -1,5 +1,7 @@
 ---
 title: "怎样提高 LLM Agent 的可靠性？"
+source: "公开面经高频主题；答案依据论文原创整理"
+verified: true
 category: "Agent"
 difficulty: "困难"
 tags: [Tool Calling, Guardrails, Observability]
@@ -10,7 +12,7 @@ date: 2026-07-12
 
 ## 核心回答
 
-可靠性不能只靠 Prompt，需要同时约束输入、决策、工具执行和输出。实践中会使用结构化输出与 Schema 校验、最小权限工具、超时和重试、关键操作人工确认、状态持久化，以及覆盖成功和失败路径的评估集。上线后还要记录每一步决策、工具参数与结果，才能定位失败发生在哪一层。
+这是一道端到端排查框架题。可靠性不能只靠 Prompt，需要同时约束输入、决策、工具执行和输出。实践中会使用结构化输出与 Schema 校验、最小权限工具、超时和重试、关键操作人工确认、状态持久化，以及覆盖成功和失败路径的评估集。上线后还要记录每一步决策、工具参数与结果，才能定位失败发生在哪一层。
 
 ## 展开说明
 
@@ -36,3 +38,8 @@ Agent 的错误通常可以分为四类：
 ## 一句话复习
 
 > 可靠 Agent 来自可约束、可验证、可恢复、可观测的完整执行链路。
+
+## 参考资料
+
+- 面经主题：[Datawhale 真实面试题中的 Agent 主要挑战与评估题](https://github.com/datawhalechina/hello-agents/blob/main/Extra-Chapter/Extra01-%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93.md)
+- 技术依据：[ReAct](https://arxiv.org/abs/2210.03629)、[τ-bench](https://arxiv.org/abs/2406.12045)、[OWASP AI Agent Security](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)、[AWS 幂等 API 重试](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/)

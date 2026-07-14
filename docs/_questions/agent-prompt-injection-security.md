@@ -1,0 +1,50 @@
+---
+title: "如何防御 Agent 的间接 Prompt Injection 和工具滥用？"
+source: "Datawhale 公开真实面试题整理；答案依据安全论文和 OWASP 官方文档原创整理"
+review_status: "待复习"
+category: "Agent"
+difficulty: "困难"
+tags:
+  - Prompt Injection
+  - Least Privilege
+  - Tool Security
+published: true
+verified: true
+date: 2026-07-13
+---
+
+## 核心回答
+
+间接 Prompt Injection 是把恶意指令藏在网页、邮件、文档或工具结果中，诱导 Agent 偏离用户目标并调用高权限工具。不能只靠系统 Prompt 或关键词过滤防御，因为模型同时处理自然语言指令与数据。系统应把外部内容视为不可信数据，在模型之外执行身份授权、最小权限、参数校验、网络出口限制和高风险确认，并让每个动作重新绑定原始用户意图。
+
+## 展开说明
+
+防护需要多层组合：
+
+1. **信任分层**：系统规则、用户请求和外部内容标注不同来源，外部文本不能获得更高指令优先级。
+2. **最小权限**：按任务临时授予细粒度工具和资源范围，读工具与写工具分离。
+3. **确定性策略**：在执行器检查租户、对象所有权、参数范围、允许域名和业务前置条件。
+4. **高风险确认**：付款、删除、授权、发送和公开发布在执行前展示规范化动作及影响。
+5. **数据与执行隔离**：读取不可信内容的组件不直接持有高权限工具；必要时只向执行组件传递结构化、可验证结果。
+6. **输出与记忆防护**：阻止敏感数据通过工具参数或链接外泄，未经验证的外部指令不能持久化到记忆。
+
+Guardrail 模型和注入检测器本身也可能被绕过，只能作为纵深防御的一层。
+
+## 工程实践
+
+建立含网页隐藏指令、恶意邮件、RAG 投毒、工具描述污染和跨租户资源 ID 的红队集。日志记录动作提议、策略判定和执行结果，但不记录密钥。为高风险工具设置 Kill Switch、速率上限和只读演练环境，并定期验证授权撤销是否立即生效。
+
+## 常见追问
+
+1. 直接 Prompt Injection 与间接 Prompt Injection 有什么区别？
+2. 为什么把外部内容放在分隔符中仍不能构成安全边界？
+3. 怎样让 Agent 能读邮件但不能被邮件指令诱导付款？
+
+## 一句话复习
+
+> 防御 Agent 注入要把不可信内容与执行权限隔离，并用模型外的授权和动作校验守住最终边界。
+
+## 参考资料
+
+- 面经主题：[Datawhale 真实面试题中的 Agent 安全与可控性](https://github.com/datawhalechina/hello-agents/blob/main/Extra-Chapter/Extra01-%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93.md)
+- 技术依据：[Indirect Prompt Injection 原论文](https://arxiv.org/abs/2302.12173)、[OWASP Prompt Injection Prevention](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)

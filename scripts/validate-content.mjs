@@ -6,8 +6,19 @@ const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.ur
 const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难']);
 const publishableDifficulties = new Set(['简单', '中等', '困难']);
 const allowedReviewStatuses = new Set(['待整理', '待复习', '已掌握']);
+const requiredVerifiedSections = [
+  '核心回答',
+  '展开说明',
+  '工程实践',
+  '常见追问',
+  '一句话复习',
+  '参考资料',
+];
 const seenTitles = new Map();
+const seenNormalizedTitles = new Map();
 const errors = [];
+let publishedCount = 0;
+let verifiedCount = 0;
 const questionsPathExists = existsSync(questionsDir);
 const questionsPathIsDirectory = questionsPathExists && statSync(questionsDir).isDirectory();
 const files = questionsPathIsDirectory
@@ -32,6 +43,16 @@ const field = (frontmatter, name) => {
   return match ? unquote(match[1]) : '';
 };
 
+const rawField = (frontmatter, name) => {
+  const match = frontmatter.match(new RegExp(`^${name}:\\s*(.+?)\\s*$`, 'm'));
+  return match ? match[1].trim() : '';
+};
+
+const normalizeTitle = (value) => value
+  .normalize('NFKC')
+  .toLocaleLowerCase('zh-CN')
+  .replace(/[\s\p{P}]+/gu, '');
+
 for (const filename of files) {
   const source = readFileSync(join(questionsDir, filename), 'utf8').replace(/^\uFEFF/, '');
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/);
@@ -47,9 +68,13 @@ for (const filename of files) {
   const difficulty = field(frontmatter, 'difficulty');
   const sourceNote = field(frontmatter, 'source');
   const reviewStatus = field(frontmatter, 'review_status');
-  const published = field(frontmatter, 'published');
+  const published = rawField(frontmatter, 'published');
+  const verified = rawField(frontmatter, 'verified');
   const date = field(frontmatter, 'date');
   const isPublished = published === 'true';
+  const isVerified = verified === 'true';
+  if (isPublished) publishedCount += 1;
+  if (isVerified) verifiedCount += 1;
 
   if (title.length < 2 || title.length > 160) {
     errors.push(`${filename}: title 长度应为 2～160 个字符`);
@@ -69,6 +94,15 @@ for (const filename of files) {
   if (sourceNote.length > 80) {
     errors.push(`${filename}: source 不能超过 80 个字符`);
   }
+  if (isVerified && !isPublished) {
+    errors.push(`${filename}: verified: true 只能用于已发布题目`);
+  }
+  if (verified && !['true', 'false'].includes(verified)) {
+    errors.push(`${filename}: verified 必须是未加引号的 YAML 布尔值 true 或 false`);
+  }
+  if (isVerified && !sourceNote) {
+    errors.push(`${filename}: 已核验题目必须填写 source，说明面经主题或题目来源`);
+  }
   if (!allowedReviewStatuses.has(reviewStatus)) {
     errors.push(`${filename}: review_status 必须是“待整理”“待复习”或“已掌握”`);
   }
@@ -76,7 +110,7 @@ for (const filename of files) {
     errors.push(`${filename}: 发布前必须把 review_status 从“待整理”改为“待复习”或“已掌握”`);
   }
   if (!['true', 'false'].includes(published)) {
-    errors.push(`${filename}: published 必须是 true 或 false`);
+    errors.push(`${filename}: published 必须是未加引号的 YAML 布尔值 true 或 false`);
   }
   const parsedDate = new Date(`${date}T00:00:00Z`);
   const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(date) &&
@@ -88,12 +122,32 @@ for (const filename of files) {
   if (isPublished && !body.trim()) {
     errors.push(`${filename}: 发布到网站前必须补充题目解答`);
   }
+  if (isVerified) {
+    requiredVerifiedSections.forEach((section) => {
+      const heading = new RegExp(`^##\\s+${section}\\s*$`, 'm');
+      if (!heading.test(body)) {
+        errors.push(`${filename}: 已核验题目缺少“## ${section}”章节`);
+      }
+    });
+
+    const referenceSection = body.split(/^##\s+参考资料\s*$/m)[1] || '';
+    if (!/\[[^\]]+\]\(https:\/\/[^)]+\)/.test(referenceSection)) {
+      errors.push(`${filename}: “参考资料”至少需要一条 HTTPS 可核验链接`);
+    }
+  }
 
   if (title && isPublished) {
     if (seenTitles.has(title)) {
       errors.push(`${filename}: 题目标题与 ${seenTitles.get(title)} 重复`);
     } else {
       seenTitles.set(title, filename);
+    }
+
+    const normalizedTitle = normalizeTitle(title);
+    if (seenNormalizedTitles.has(normalizedTitle)) {
+      errors.push(`${filename}: 题目标题与 ${seenNormalizedTitles.get(normalizedTitle)} 仅有大小写、空格或标点差异`);
+    } else {
+      seenNormalizedTitles.set(normalizedTitle, filename);
     }
   }
 }
@@ -103,5 +157,5 @@ if (errors.length > 0) {
   errors.forEach((error) => console.error(`- ${error}`));
   process.exitCode = 1;
 } else {
-  console.log(`内容校验通过：${files.length} 道题目`);
+  console.log(`内容校验通过：共 ${files.length} 道，已发布 ${publishedCount} 道，已核验 ${verifiedCount} 道，草稿 ${files.length - publishedCount} 道`);
 }

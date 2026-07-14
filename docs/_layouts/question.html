@@ -2,10 +2,17 @@
 layout: default
 ---
 <article class="container question-page">
+  {% assign source_note = page.source | default: '' | strip %}
   <a class="back-link" href="{{ '/' | relative_url }}">← 返回题库</a>
   <header class="question-header">
     <div class="eyebrow">{{ page.category | escape }} · {{ page.difficulty | escape }}</div>
     <h1>{{ page.title | escape }}</h1>
+    {% if page.verified == true or source_note != empty %}
+      <div class="question-provenance">
+        {% if page.verified == true %}<span class="verification-badge">✓ 资料核验</span>{% endif %}
+        {% if source_note != empty %}<span>来源说明：{{ source_note | escape }}</span>{% endif %}
+      </div>
+    {% endif %}
     <div class="tag-list" role="list" aria-label="标签">
       {% for tag in page.tags %}<span class="tag" role="listitem">{{ tag | escape }}</span>{% endfor %}
     </div>

@@ -1,0 +1,46 @@
+---
+title: "Agent 常见的规划策略有哪些，如何选择？"
+source: "Datawhale 公开真实面试题整理；答案依据原论文原创整理"
+review_status: "待复习"
+category: "Agent"
+difficulty: "中等"
+tags:
+  - Planning
+  - Plan-and-Execute
+  - Tree of Thoughts
+published: true
+verified: true
+date: 2026-07-13
+---
+
+## 核心回答
+
+常见策略包括先生成完整计划再执行、执行一步后根据 Observation 重规划，以及对多个候选路径做搜索。计划稳定、依赖清晰的任务适合 Plan-and-Execute；环境变化快或信息逐步出现时适合 ReAct 式交替规划；分支少但错误早期决策代价高时，可考虑 Tree of Thoughts 一类搜索。规划深度越高，通常成本和延迟也越高，不应无条件增加。
+
+## 展开说明
+
+- **Plan-and-Execute**：先把目标拆成子任务，再依次执行，结构清晰，但初始假设错误会影响后续步骤。
+- **Interleaved Planning**：每次执行后根据真实反馈更新下一步，适应性强，但容易局部循环或失去全局目标。
+- **Tree Search**：生成并评价多个候选状态，允许回溯，适合可比较中间状态的任务；分支因子和深度会快速增加调用量。
+- **层级规划**：高层保留里程碑，低层只规划当前可执行动作，兼顾全局目标与局部反馈。
+
+计划是待验证的假设，不是执行授权。每一步仍需检查前置条件、权限和结果；高风险动作不能因为出现在计划中就自动获准。
+
+## 工程实践
+
+把计划存成带 ID、依赖、状态、输入和完成条件的结构化任务图。工具返回后只更新受影响节点，并限制重规划次数。评估除最终成功率外，还看计划可执行率、无效步骤、回滚次数、工具调用量和成本；先与无规划或简单 Workflow 基线比较。
+
+## 常见追问
+
+1. Plan-and-Execute 与 ReAct 各适合什么环境？
+2. Tree of Thoughts 为什么会显著增加推理成本？
+3. 如何避免模型生成看似完整但无法执行的计划？
+
+## 一句话复习
+
+> 规划方式要匹配任务的不确定性和可验证反馈，计划越复杂并不自动意味着成功率越高。
+
+## 参考资料
+
+- 面经主题：[Datawhale 真实面试题中的 Agent 规划能力](https://github.com/datawhalechina/hello-agents/blob/main/Extra-Chapter/Extra01-%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93.md)
+- 技术依据：[Plan-and-Solve Prompting](https://arxiv.org/abs/2305.04091)、[Tree of Thoughts](https://arxiv.org/abs/2305.10601)、[ReAct](https://arxiv.org/abs/2210.03629)
