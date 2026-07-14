@@ -1,0 +1,41 @@
+---
+title: "SimCSE 如何用对比学习训练句向量？"
+source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
+review_status: "待复习"
+category: "NLP 与机器学习"
+difficulty: "困难"
+tags:
+  - SimCSE
+  - 对比学习
+  - Sentence Embedding
+published: true
+verified: true
+date: 2026-07-14
+---
+
+## 核心回答
+
+无监督 SimCSE 把同一句话通过带独立 Dropout 的编码器前向两次，得到一对正样本；同批其他句子作为负样本，用带温度的对比损失拉近正对、推远负对。监督版使用自然语言推断数据：蕴含句作正例，矛盾句可作困难负例。其关键不是普通数据增强，而是用最小扰动构造一致语义并改善句向量空间。
+
+## 展开说明
+
+对一个 anchor，InfoNCE 让正例相似度相对于批内候选的 Softmax 概率最大。温度越低，模型越关注最相近的负例，梯度也更尖锐。批量越大负例越多，但同批中可能存在语义相同的“假负例”；监督信号和困难负例能提升区分力，也可能因标注域偏差伤害迁移。
+
+## 工程实践
+
+训练时确认两次前向的 Dropout Mask 独立，分布式训练需决定是否跨卡收集负例，并正确处理梯度。用语义文本相似度和目标检索集共同评估，监控正负相似度分布、各向异性和假负例。推理时关闭 Dropout，固定 Pooling 与归一化配方。
+
+## 常见追问
+
+1. **如果关闭 Dropout，无监督 SimCSE 会怎样？** 两个视图几乎完全相同，学习信号退化，论文中性能明显下降。
+2. **批量越大一定越好吗？** 更多负例通常有利，但计算、通信和假负例比例也增加，需要验证最优规模。
+3. **为什么矛盾句适合作困难负例？** 它与原句词汇和主题相近却语义冲突，迫使模型学习比表面重合更细的区分。
+
+## 一句话复习
+
+> 无监督 SimCSE 用同句两次 Dropout 作正对、批内句子作负对；监督版再用蕴含和矛盾关系强化语义空间。
+
+## 参考资料
+
+- 面试主题：[LLM Interview Questions](https://github.com/llmgenai/LLMInterviewQuestions)
+- 技术依据：[SimCSE: Simple Contrastive Learning of Sentence Embeddings](https://arxiv.org/abs/2104.08821)

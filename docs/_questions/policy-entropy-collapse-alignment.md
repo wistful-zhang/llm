@@ -1,0 +1,45 @@
+---
+title: "强化对齐中策略熵为什么会下降，如何识别与缓解模式坍缩？"
+source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
+review_status: "待复习"
+category: "训练与对齐"
+difficulty: "困难"
+tags:
+  - Policy Entropy
+  - 模式坍缩
+  - RLHF
+published: true
+verified: true
+date: 2026-07-14
+---
+
+## 核心回答
+
+策略熵描述给定上下文时输出分布的不确定性。强化对齐会提高高奖励 Token 或轨迹的概率、压低其他模式，因此训练中常能观察到熵和输出多样性下降；但这不是所有算法、模型和阶段都必然遵循的单调规律。若下降过快，模型可能只输出少数模板，探索不足、回答多样性和部分能力一起退化。不能把“熵低”单独等同于坍缩，应结合奖励、相对参考策略的 KL、输出多样性、任务质量和不同 Prompt 切片判断。
+
+## 展开说明
+
+Token 级熵可写为 `H(π(·|s)) = -Σ_a π(a|s) log π(a|s)`，通常对生成位置和 Batch 求平均。它受词表、Tokenizer、温度和上下文难度影响，跨模型绝对值不可直接比较。序列模式坍缩也不一定被平均 Token 熵充分捕获：模型可能局部仍有词汇变化，却总采用同一种论证结构、拒答模板或长度。
+
+PPO 的概率比裁剪限制单次更新，参考模型 KL 约束长期漂移，二者都可能间接减缓坍缩，但并不保证策略保持足够覆盖。熵奖励可鼓励探索，却可能与确定格式和事实性目标冲突；系数过大还会让回答变得随机。实际训练应把熵看成诊断信号，并由独立质量评测决定是否干预。
+
+## 工程实践
+
+训练曲线同时记录 Token 熵、KL、Clip Fraction、奖励、回答长度、重复率和独立任务分数，并按位置、领域与安全类别切片。定期从固定 Prompt 以相同采样配置生成多份回答，比较 distinct-n、语义聚类数量和人工偏好。发现坍缩时，可降低学习率或更新轮数、提高 KL 约束、加入适量熵奖励、改善奖励模型与 Prompt 覆盖、混入通用 SFT 数据并在退化前早停；每种手段都要回归格式与安全指标。
+
+## 常见追问
+
+1. **策略熵越高，模型就越好吗？** 不是。过高可能代表不确定或随机；目标是在任务质量和必要多样性之间取得可验证的平衡。
+2. **KL 很小是否说明没有模式坍缩？** 不一定。平均 KL 会掩盖少数关键 Prompt 的大变化，参考策略本身也可能缺少某些模式，需要做分布切片和行为评测。
+3. **为什么只看 distinct-n 不够？** 表面词汇可以不同而语义模板相同；应结合语义聚类、长度、任务正确性和人工判断。
+
+## 一句话复习
+
+> 对齐会自然降低部分策略熵；只有当熵、覆盖和独立能力共同退化时才说明坍缩，缓解要同时约束更新并改善奖励与数据。
+
+## 参考资料
+
+- [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
+- [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155)
+- [Understanding the Effects of RLHF on LLM Generalisation and Diversity](https://arxiv.org/abs/2310.06452)
+- [The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models](https://arxiv.org/abs/2505.22617)

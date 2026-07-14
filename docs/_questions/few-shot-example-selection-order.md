@@ -1,0 +1,41 @@
+---
+title: "Few-shot 示例的选择与顺序为什么会影响结果？"
+source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
+review_status: "待复习"
+category: "LLM 基础"
+difficulty: "中等"
+tags:
+  - Few-shot
+  - 示例选择
+  - Prompt
+published: true
+verified: true
+date: 2026-07-14
+---
+
+## 核心回答
+
+Few-shot 示例既在说明任务，也会改变模型对标签、格式、语言风格和局部分布的判断。相关但多样的示例通常比随机示例有效；类别不平衡、错误答案、与查询冲突的格式会产生偏置。Transformer 对位置敏感，同一批示例换顺序也可能改变输出，尤其当模型偏向靠近问题的示例或标签先验时，因此示例集合和顺序都应作为可评测配置。
+
+## 展开说明
+
+自动选择可按 Embedding 相似度召回，再做多样性、标签覆盖和长度约束；仅选最相似项会堆积近重复示例。研究表明 Prompt 的示例顺序可能造成很大方差，不能只报告一次排列的最好结果。示例还会占据上下文，过多时可能把关键指令挤远或引入相互矛盾的模式。
+
+## 工程实践
+
+建立零样本、固定 Few-shot、动态检索 Few-shot 三个基线；在多种随机顺序和真实输入切片上报告均值与最差值。示例只能来自允许的训练/知识池，不能按测试标签挑选；对动态示例做去重、敏感信息过滤和 Prompt Injection 检查，并记录示例 ID 方便复现。
+
+## 常见追问
+
+1. **最相似的 k 个示例为什么可能不好？** 它们可能高度重复、覆盖同一标签或包含相同错误，缺乏对决策边界的展示。
+2. **示例一般放在指令前还是后？** 没有跨模型通用答案，应遵循 Chat Template 并实测；关键是角色边界清楚、格式一致且不让示例改写系统规则。
+3. **怎样降低顺序敏感性？** 使用更明确的标签定义、平衡示例、测试多种排列，必要时对多 Prompt 结果集成或做校准。
+
+## 一句话复习
+
+> Few-shot 既定义任务又塑造局部分布；按相关性、多样性和标签覆盖选例，并把顺序方差纳入评测。
+
+## 参考资料
+
+- 面试主题：[LLMs Interview Questions](https://github.com/Devinterview-io/llms-interview-questions)
+- 技术依据：[Fantastically Ordered Prompts and Where to Find Them](https://arxiv.org/abs/2104.08786)、[What Makes Good In-Context Examples](https://arxiv.org/abs/2209.01975)

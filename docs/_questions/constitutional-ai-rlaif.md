@@ -1,0 +1,44 @@
+---
+title: "Constitutional AI 与 RLAIF 如何减少人工偏好标注？"
+source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
+review_status: "待复习"
+category: "训练与对齐"
+difficulty: "中等"
+tags:
+  - Constitutional AI
+  - RLAIF
+  - 安全对齐
+published: true
+verified: true
+date: 2026-07-14
+---
+
+## 核心回答
+
+Constitutional AI 把期望行为写成一组自然语言原则，并让模型依据原则进行自我批评、修订和偏好判断。论文流程包含两个关键阶段：先从有害提示的初始回答生成 critique 与 revision，用修订结果做监督学习；再让 AI 按 Constitution 比较候选回答，训练偏好模型并进行基于 AI Feedback 的强化学习，即 RLAIF。
+
+它减少的是逐条人工比较回答的需求，不是完全去除人类。人仍需定义原则、选择冲突处理方式、审核高风险案例和做独立评测；AI Judge 也会继承模型偏见、位置偏差与自我偏好。
+
+## 展开说明
+
+在监督阶段，模型先指出回答违反了哪条原则，再产生更符合原则的版本。这比只给拒答标签提供更丰富的修正信号。在强化阶段，同一 Prompt 的多个回答由另一个模型结合原则排序，形成 AI preference；后续奖励建模与策略优化在形式上可类似 RLHF。
+
+Constitution 的质量决定优化方向。原则过于抽象会导致 Judge 不一致，原则相互冲突则需要优先级或上下文规则。模型还可能学会表面引用安全措辞而非真正改善行为，因此必须用未参与反馈生成的红队集和人工评估检验。
+
+## 工程实践
+
+对每条原则建立版本、适用范围、正反例和冲突优先级；保存 critique、revision、Judge 理由及置信度。使用不同模型或不同 Prompt 做交叉 Judge，抽检分歧与高风险样本。上线前分别衡量 helpfulness、harmlessness、过度拒答和事实性，避免单一安全分数掩盖可用性退化。
+
+## 常见追问
+
+1. **RLAIF 与 RLHF 的主要差别是什么？** 核心差别是偏好标签主要来自受原则约束的 AI Judge，而不是逐对人类标注；后续奖励建模和策略优化可以相似。
+2. **Constitution 越长越好吗？** 不一定。原则过多、重复或冲突会降低判断一致性，应追求可执行、可测试且有优先级的规则。
+3. **为什么仍需要人类评估？** AI Feedback 可能复制自身盲点或偏爱相似文风，独立人工与红队评测用于发现这种闭环偏差。
+
+## 一句话复习
+
+> Constitutional AI 用明确原则驱动自我修订和 AI 偏好标注，以减少逐条人工反馈，但原则设计与独立人审仍不可缺少。
+
+## 参考资料
+
+- [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073)
