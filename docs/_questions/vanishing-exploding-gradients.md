@@ -1,0 +1,41 @@
+---
+title: "梯度消失和爆炸为什么发生，如何诊断与缓解？"
+source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
+review_status: "待复习"
+category: "NLP 与机器学习"
+difficulty: "中等"
+tags:
+  - 梯度
+  - 初始化
+  - 残差连接
+published: true
+verified: true
+date: 2026-07-14
+---
+
+## 核心回答
+
+深层网络的梯度是许多局部 Jacobian 的乘积；若其典型奇异值长期小于 1，梯度会指数衰减，长期大于 1 则会爆炸。饱和激活、不合适初始化、过深的无残差路径和数值精度都会加剧问题。常用缓解手段包括保持方差的初始化、非饱和激活、残差连接、合适归一化、学习率调整和梯度裁剪。
+
+## 展开说明
+
+梯度消失使早层几乎不更新，爆炸会产生损失尖峰、`Inf/NaN` 或优化器状态污染。Xavier 初始化试图让前向激活和反向梯度的方差跨层保持稳定；ReLU 常配合 He 初始化。残差连接提供接近恒等的梯度路径，但并不保证任何深度和学习率都稳定。
+
+## 工程实践
+
+按层记录参数范数、梯度 RMS/最大值、更新量与参数量之比，并定位首个出现非有限值的算子。梯度裁剪能限制爆炸后的更新，不能修复持续的错误缩放；混合精度还要检查 loss scaling。LLM 出现 loss spike 时应同时排查异常 batch、Attention logits、归一化统计和并行通信。
+
+## 常见追问
+
+1. **梯度裁剪解决梯度消失吗？** 不能，它只限制过大的梯度；消失需要从初始化、结构、激活和尺度传播处理。
+2. **按值裁剪和按范数裁剪有何不同？** 按值逐元素截断会改变方向，按全局范数缩放通常保留整体梯度方向。
+3. **残差连接为什么有帮助？** `x + F(x)` 的 Jacobian 含有恒等项，为梯度提供不完全依赖多层变换乘积的路径。
+
+## 一句话复习
+
+> 梯度问题来自深层 Jacobian 连乘的尺度失控；初始化、残差、归一化保稳定，裁剪只负责限制爆炸更新。
+
+## 参考资料
+
+- 面试主题：[LLM Interview Questions](https://github.com/llmgenai/LLMInterviewQuestions)
+- 技术依据：[Understanding the difficulty of training deep feedforward neural networks](https://proceedings.mlr.press/v9/glorot10a.html)、[Deep Residual Learning](https://arxiv.org/abs/1512.03385)

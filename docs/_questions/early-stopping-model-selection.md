@@ -1,0 +1,41 @@
+---
+title: "Early Stopping 如何使用，为什么反复看验证集也会过拟合？"
+source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
+review_status: "待复习"
+category: "NLP 与机器学习"
+difficulty: "中等"
+tags:
+  - Early Stopping
+  - 模型选择
+  - 验证集
+published: true
+verified: true
+date: 2026-07-14
+---
+
+## 核心回答
+
+Early Stopping 定期评估验证指标，在连续若干次没有足够改善后停止，并恢复历史最佳检查点。它既节省计算，也可限制模型继续贴合训练噪声。关键参数包括监控指标、评估频率、最小改善量和 patience。若团队根据同一验证集反复改模型、提示词和数据，决策过程会逐渐适应该集合，验证分数也会产生选择偏差。
+
+## 展开说明
+
+验证指标有随机波动，patience 太小可能在暂时平台期提前停止，太大则失去正则和节省作用。应保存“最佳”而非“最后”检查点，并明确指标方向。多次搜索中选出的最高分含有赢家诅咒；增加搜索次数而不增加独立证据，最佳验证分数通常越来越乐观。
+
+## 工程实践
+
+根据指标噪声确定评估间隔和 patience，记录每次实验的完整学习曲线。先用开发集迭代，再用冻结的保留集做里程碑评测；重要结论运行多个随机种子并报告置信区间。LLM 任务还应监控能力、安全和格式等多个约束，避免只优化单一平均分。
+
+## 常见追问
+
+1. **Early Stopping 应监控训练损失还是验证指标？** 通常监控最贴近上线目标的验证指标；训练损失只能说明拟合过程。
+2. **停止后为什么要恢复最佳检查点？** 触发 patience 时最后一次参数通常已越过历史最佳验证点。
+3. **怎样减少对验证集过拟合？** 限制试验自由度、保留独立测试集、使用嵌套评测或多份时间切片，并对最终候选做少量复核。
+
+## 一句话复习
+
+> Early Stopping 用验证曲线决定何时停并恢复最佳点；同一验证集被反复用于决策，也会被团队层面的搜索过拟合。
+
+## 参考资料
+
+- 面试主题：[LLMs Interview Questions](https://github.com/Devinterview-io/llms-interview-questions)
+- 技术依据：[Deep Learning Book：Regularization for Deep Learning](https://www.deeplearningbook.org/contents/regularization.html)

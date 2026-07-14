@@ -1,0 +1,41 @@
+---
+title: "交叉验证与超参数搜索如何避免选择偏差和数据泄漏？"
+source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
+review_status: "待复习"
+category: "NLP 与机器学习"
+difficulty: "中等"
+tags:
+  - 交叉验证
+  - 超参数搜索
+  - 数据泄漏
+published: true
+verified: true
+date: 2026-07-14
+---
+
+## 核心回答
+
+K 折交叉验证轮流用一折验证、其余折训练，以减少单次随机切分带来的估计波动。预处理、特征选择和采样必须在每个训练折内重新拟合。若用同一组交叉验证结果选择超参数又报告其最佳分数，会产生选择偏差；需要无偏泛化估计时，用外层评测、内层调参的嵌套交叉验证，或保留完全独立的测试集。
+
+## 展开说明
+
+分类可用 Stratified K-Fold 保持类别比例，同一用户或文档族应使用 Group K-Fold，时序任务则采用只用过去预测未来的滚动切分。随机搜索通常比等预算网格搜索更有效覆盖重要维度，贝叶斯优化适合单次试验昂贵的场景，但无论搜索算法多聪明，都不能反复利用最终测试集。
+
+## 工程实践
+
+将切分索引、随机种子、数据版本和整个 Pipeline 固化；报告各折均值、标准差和最差折，而不是只报最佳一次。大模型全量 K 折成本过高时，可用固定的开发集做快速筛选，再对少数候选做多种子或多个时间窗复核，最后只触碰一次保留集。
+
+## 常见追问
+
+1. **为什么普通 K 折不适合时间序列？** 它可能让未来样本进入训练折、过去进入验证折，破坏真实预测方向并泄漏未来信息。
+2. **嵌套交叉验证的外层和内层各做什么？** 内层选择超参数，外层只评估该选择流程在未见数据上的表现。
+3. **做了交叉验证还需要测试集吗？** 若交叉验证同时参与大量方案决策，最好仍保留独立测试集作为最终一次性评估。
+
+## 一句话复习
+
+> 交叉验证减少切分偶然性，嵌套或独立测试集隔离调参与评测；所有会学习统计量的步骤都必须留在训练折内部。
+
+## 参考资料
+
+- 面试主题：[Machine Learning System Design Questions](https://github.com/alirezadir/machine-learning-interviews/blob/main/src/MLSD/ml-system-design.md)
+- 技术依据：[scikit-learn：Cross-validation](https://scikit-learn.org/stable/modules/cross_validation.html)、[Nested versus non-nested cross-validation](https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html)
