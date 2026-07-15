@@ -15,16 +15,11 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+回答重点放在统计维度，不必先背公式。BatchNorm 对同一通道跨 Batch（以及空间位置）统计，推理依赖运行均值方差；LayerNorm 对每个样本或 Token 的隐藏维统计。再用语言模型的小 Batch、变长序列和自回归推理说明为什么 Transformer 偏好 LayerNorm。
 
-1. **先给结论：** BatchNorm 对一个特征跨 batch 统计，LayerNorm 对单个样本/Token 的隐藏维统计；后者不依赖其他样本，更适合变长序列和自回归。
-2. **再讲关键机制：** 写出减均值除标准差再乘 γ 加 β，重点说明统计轴和训练/推理统计来源。
-3. **主动说取舍：** BatchNorm 在大 batch 视觉任务上有有益噪声且高效；LayerNorm 对小 batch 稳定，但也会改变特征尺度信息。
-4. **最后落到项目：** 检查小 batch、变长输入和 train/eval 一致性，报告收敛、吞吐与分布漂移；说完停。
+**可以这样答：**
 
-**60 秒口述示例：**
-
-> 我会先抓统计维度：BatchNorm 对同一通道跨 batch 和空间位置算均值方差，推理依赖 running statistics；LayerNorm 对每个样本或 token 的隐藏维单独归一化，训练推理公式一致。语言模型 batch 小、长度变化且自回归时不能依赖其他样本，所以更常用 LayerNorm。项目里我会看小 batch 稳定性、train/eval 差异、收敛步数、吞吐和漂移切片。
+> BatchNorm 对同一通道跨 Batch 和空间位置计算均值方差，训练时依赖当前 Batch，推理时通常使用运行统计；LayerNorm 对单个样本或单个 Token 的隐藏维做归一化，训练和推理使用同一公式。语言模型的 Batch 大小和序列长度经常变化，自回归推理也不应依赖其他样本，因此 Transformer 更常使用 LayerNorm 或 RMSNorm。
 
 ## 核心回答
 

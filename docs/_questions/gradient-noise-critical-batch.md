@@ -15,17 +15,11 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+用“方差降低的边际收益”解释即可：Batch 增大能减少随机梯度噪声，但接近 Critical Batch 后，再加 Batch 对收敛步数的改善迅速变小，样本效率反而恶化。不要把它当固定常数，它会随模型、数据和训练阶段变化。若追问怎么找，做 Batch Sweep，同时比较墙钟与达到同一 loss 所需 Token。
 
-1. **先给结论：** Gradient Noise Scale 衡量随机梯度噪声相对真实梯度的大小，Critical Batch 是继续增大 batch 开始收益递减的尺度。
-2. **再讲关键机制：** 解释小 batch 方差随 batch 增大下降，以及并行加速从近线性转为样本效率下降。
-3. **主动说取舍：** 大 batch 提升硬件吞吐，却减少单位 token 的更新次数，常需学习率调整且估计本身有噪声。
-4. **最后落到项目：** 做 batch sweep，报告 steps-to-target、tokens-to-target、吞吐和 Noise Scale 趋势；讲完停。
+**可以这样答：**
 
-**60 秒口述示例：**
-
-> 我会先给直觉：不同 mini-batch 梯度差异越大，Gradient Noise Scale 越高，也就能从更大 batch 的方差降低中获益。接近 Critical Batch 后再加 batch，墙钟可能更快，但达到同一 loss 需要更多样本，统计效率开始恶化。项目里我会做 batch sweep，同时画每秒 token、达到目标 loss 的 step 与 token 数，并跟踪 Noise Scale，而不是只看 GPU 利用率。 目标是墙钟和样本效率共同最优。
-
+> Gradient Noise Scale 描述不同 Mini-batch 梯度相对真实梯度的波动大小，噪声越大，增大 Batch 越可能从方差降低中获益。Critical Batch 是这种收益开始明显饱和的区域：再增大 Batch 也许能提高并行吞吐，却不能等比例减少达到同一 loss 所需的更新，样本效率会下降。它不是固定常数，会随模型、数据和训练阶段变化。
 
 ## 核心回答
 

@@ -2,8 +2,8 @@
 title: 题库
 ---
 {% assign eyebrow = site.data.settings.eyebrow | default: '' | strip %}
-{% assign hero_title = site.data.settings.hero_title | default: '把零散知识，整理成' %}
-{% assign hero_highlight = site.data.settings.hero_highlight | default: '能讲清楚的答案。' %}
+{% assign hero_title = site.data.settings.hero_title | default: '大模型面试题，' %}
+{% assign hero_highlight = site.data.settings.hero_highlight | default: '一道一道讲明白。' %}
 {% assign hero_description = site.data.settings.description | default: site.description %}
 {% assign published_questions = site.questions | where: 'published', true %}
 {% assign published_categories = published_questions | map: 'category' | uniq | sort %}

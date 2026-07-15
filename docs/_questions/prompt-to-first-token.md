@@ -15,16 +15,13 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+沿数据流讲最清楚：文本变 Token ID，进入 Embedding 和多层 Transformer，最后一个有效位置经 LM Head 得到 Logits，采样出首 Token。一定要点出这段整序列计算叫 Prefill，后续才是复用 KV Cache 的 Decode。
 
-1. **先给结论**：沿一条数据流口述 Tokenizer、Embedding、Transformer、LM Head、采样，先给全景。
-2. **再讲关键机制**：重点讲 Causal Mask 下的 Prefill 并行、首 Token Logit 和之后的 KV Cache Decode。
-3. **主动说取舍**：区分模型计算、排队、分词和采样开销，避免把首 Token 延迟全归因于 GPU。
-4. **最后落到项目**：给出 TTFT、排队时间、Prefill Tokens/s、显存峰值四项分段指标，再等面试官追问。
+若面试官转向工程延迟，把排队、分词、Prefill、采样和网络拆开即可，避免把 TTFT 全归因于 GPU 计算。
 
-**60 秒口述示例：**
+**可以这样答：**
 
-> 我会按张量流来答：文本先被 Tokenizer 转成 ID，经 Embedding 和位置编码进入多层 Transformer；Prompt 在 Causal Mask 下完成 Prefill，最后一个有效位置经 LM Head 得到词表 Logit，再采样首 Token，后续进入带 KV Cache 的逐步 Decode。这里我会停一下区分 TTFT 来源。工程上会把排队、分词、Prefill 和网络耗时拆开监控，同时看 Prefill 吞吐和显存峰值，才能判断该扩容还是优化内核。
+> Prompt 先经 Tokenizer 变成 Token ID，再经过词嵌入、位置表示和多层带因果掩码的 Transformer。整段输入可以并行完成 Prefill，最后一个有效位置经 LM Head 映射到词表 Logits，经过采样得到首 Token；后续生成则复用 KV Cache 逐步 Decode。线上 TTFT 还包含排队、分词和网络时间，因此需要分段观测才能找到真正瓶颈。
 
 ## 核心回答
 

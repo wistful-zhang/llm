@@ -1,8 +1,8 @@
 title: 大模型面经
-description: 覆盖模型原理、训练对齐、RAG、Agent、推理部署、评测安全和系统设计等方向。每道题先教你怎么开口，再提供 60 秒示例、工程取舍和追问接法。
-eyebrow: LARGE MODEL INTERVIEW NOTES
-hero_title: 把零散知识，整理成
-hero_highlight: 能讲清楚的答案。
+description: 按模型原理、训练与对齐、RAG、Agent、推理部署、评测安全和系统设计等方向整理。每题包含参考说法、知识点和常见追问。
+eyebrow: LLM INTERVIEW QUESTION BANK
+hero_title: 大模型面试题，
+hero_highlight: 一道一道讲明白。
 theme: violet
-footer: 持续学习，保持好奇。
+footer: 内容持续整理，欢迎补充和纠错。
 

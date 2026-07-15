@@ -32,12 +32,15 @@ import { DEFAULT_ANSWER_SECONDS, formatCountdown } from './question-coach-core.m
     coach.classList.remove('is-practicing');
     revealButton.hidden = true;
     startButton.hidden = false;
-    startButton.textContent = '重新练一次';
-    status.textContent = '答案已显示：先看“面试时怎么答”，再按需展开原理和工程细节。';
+    startButton.textContent = '再答一次';
+    status.textContent = '参考内容已显示：先对照“面试时怎么答”，再看完整知识点。';
 
     const answerGuide = [...answer.querySelectorAll('h2')]
       .find((heading) => heading.textContent.trim() === '面试时怎么答');
-    (answerGuide || answer).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const answerTarget = answerGuide || answer;
+    answerTarget.tabIndex = -1;
+    answerTarget.focus({ preventScroll: true });
+    answerTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const startPractice = () => {
@@ -49,7 +52,7 @@ import { DEFAULT_ANSWER_SECONDS, formatCountdown } from './question-coach-core.m
     coach.classList.add('is-practicing');
     startButton.hidden = true;
     revealButton.hidden = false;
-    status.textContent = '正在口述：先结论，再原理和取舍，最后补项目或验证指标。';
+    status.textContent = '正在口述：直接回答这道题，用自己的话把关键点讲清楚。';
     coach.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     timerId = window.setInterval(() => {
@@ -57,7 +60,7 @@ import { DEFAULT_ANSWER_SECONDS, formatCountdown } from './question-coach-core.m
       updateTimer();
       if (remainingSeconds <= 0) {
         stopTimer();
-        status.textContent = '时间到。先用一句话收尾，再查看答题方法对照。';
+        status.textContent = '时间到。如果已经说清楚就收尾，再看参考说法对照。';
         revealButton.focus();
       }
     }, 1000);

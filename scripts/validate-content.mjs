@@ -1,6 +1,11 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import {
+  hasDirectorLanguage,
+  hasValidSpokenAnswerLength,
+  parseAnswerGuide,
+} from './answer-guide-style.mjs';
 
 const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.url));
 const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难']);
@@ -17,6 +22,7 @@ const requiredVerifiedSections = [
 ];
 const seenTitles = new Map();
 const seenNormalizedTitles = new Map();
+const guidancePrefixOwners = new Map();
 const errors = [];
 let publishedCount = 0;
 let verifiedCount = 0;
@@ -133,25 +139,56 @@ for (const filename of files) {
 
     const answerGuideSection = (body.split(/^##\s+面试时怎么答\s*$/m)[1] || '')
       .split(/^##\s+/m)[0];
-    if (!/\*\*60 秒口述示例：\*\*/.test(answerGuideSection)) {
-      errors.push(`${filename}: “面试时怎么答”必须包含“60 秒口述示例”`);
+    const {
+      markerCount,
+      guidanceOnly,
+      spokenSection,
+      spokenAnswer,
+      guidanceText,
+    } = parseAnswerGuide(answerGuideSection);
+    if (markerCount !== 1) {
+      errors.push(`${filename}: “面试时怎么答”必须且只能包含一次“可以这样答”`);
     }
-    if (!/^>\s+\S+/m.test(answerGuideSection)) {
-      errors.push(`${filename}: “60 秒口述示例”必须使用引用块给出可直接口述的答案`);
+    if (!/^>\s+\S+/m.test(spokenSection)) {
+      errors.push(`${filename}: “可以这样答”必须使用引用块给出可直接口述的答案`);
     }
-    const spokenAnswer = answerGuideSection
-      .split(/\r?\n/)
-      .filter((line) => /^>\s*/.test(line))
-      .map((line) => line.replace(/^>\s*/, ''))
-      .join(' ')
-      .replace(/[`*_]/g, '')
-      .trim();
-    if (spokenAnswer.length < 80 || spokenAnswer.length > 260) {
-      errors.push(`${filename}: “60 秒口述示例”应控制在 80～260 个字符，当前为 ${spokenAnswer.length}`);
+    if (!hasValidSpokenAnswerLength(spokenAnswer)) {
+      errors.push(`${filename}: 参考口述应控制在 80～240 个字符，当前为 ${spokenAnswer.length}`);
     }
-    const answerSteps = answerGuideSection.match(/^\d+\.\s+\*\*[^*]+\*\*(?:[：:]\s*|\s+)\S+/gm) || [];
-    if (answerSteps.length < 4) {
-      errors.push(`${filename}: “面试时怎么答”至少需要 4 个带说明的回答步骤`);
+    if (guidanceText.length < 60 || guidanceText.length > 700) {
+      errors.push(`${filename}: 题目专属答题提示应控制在 60～700 个字符，当前为 ${guidanceText.length}`);
+    }
+
+    const guidanceParagraphs = guidanceOnly
+      .split(/\r?\n\s*\r?\n/)
+      .map((paragraph) => paragraph
+        .replace(/^[\s>*#-]+/gm, '')
+        .replace(/[`*_]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim())
+      .filter(Boolean);
+    guidanceParagraphs.forEach((paragraph) => {
+      const prefix = paragraph
+        .normalize('NFKC')
+        .toLocaleLowerCase('zh-CN')
+        .replace(/[\s\p{P}]+/gu, '')
+        .slice(0, 12);
+      if (prefix.length < 12) return;
+      const owners = guidancePrefixOwners.get(prefix) || new Set();
+      owners.add(filename);
+      guidancePrefixOwners.set(prefix, owners);
+    });
+
+    if (/[。！？；，][ \t]+\S/.test(answerGuideSection)) {
+      errors.push(`${filename}: “面试时怎么答”包含中文标点后的多余空格`);
+    }
+
+    const mechanicalGuide = /建议按“结论 → 原理 → 取舍 → 落地”回答|^\d+\.\s+\*\*(?:先给结论|再讲关键机制|主动说取舍|最后落到项目)[：:]?\*\*/m;
+    if (mechanicalGuide.test(answerGuideSection)) {
+      errors.push(`${filename}: “面试时怎么答”仍在使用旧的固定四步模板，请按当前题型自然组织`);
+    }
+    if (hasDirectorLanguage(answerGuideSection, spokenAnswer)) {
+      errors.push(`${filename}: “面试时怎么答”包含讲解脚本的元话术，请直接回答问题`);
     }
 
     const followupSection = (body.split(/^##\s+常见追问\s*$/m)[1] || '')
@@ -180,6 +217,12 @@ for (const filename of files) {
     } else {
       seenNormalizedTitles.set(normalizedTitle, filename);
     }
+  }
+}
+
+for (const [prefix, owners] of guidancePrefixOwners) {
+  if (owners.size >= 3) {
+    errors.push(`答题提示前缀“${prefix}…”在 ${owners.size} 道已核验题目中重复，请改成题目专属表达（${[...owners].slice(0, 5).join('、')}）`);
   }
 }
 

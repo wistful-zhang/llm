@@ -15,17 +15,11 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+这三个概念要按优化层次区分：CUDA Graph 复用一串 GPU Launch，编译器在计算图层做跨算子优化，Kernel Fusion 把多个操作合进同一个 Kernel 以减少 HBM 往返。说明它们可以叠加后，主动讲动态 Shape 和控制流会导致图失配或重编译。追问排查时再看 Launch Gap、Kernel 数和重编译次数。
 
-1. **先给结论：** CUDA Graph 降低重复 launch 开销，模型编译做图级优化，Kernel Fusion 减少中间读写和启动次数，三者优化层级不同。
-2. **再讲关键机制：** 分别解释捕获并重放固定执行图、编译器生成专用代码、融合相邻算子减少 HBM 往返。
-3. **主动说取舍：** 动态图、变长 shape 和数据依赖控制流会导致重新编译或无法捕获，融合过度也可能增加寄存器压力。
-4. **最后落到项目：** 用 profiler 报告 kernel 数、launch 间隙、重编译次数、吞吐和 P95 时延；说完停。
+**可以这样答：**
 
-**60 秒口述示例：**
-
-> 我会先分层回答：CUDA Graph 把稳定的一串 GPU 操作捕获后重放，主要省 CPU launch；编译器跨算子优化计算图；Kernel Fusion 把相邻计算放进一个 kernel，少写几次 HBM。它们可以叠加，但要求 shape 和控制流足够稳定。项目里我会用 profiler 比较 kernel 数、launch gap、graph 命中率、重编译次数、吞吐和 P95 延迟。动态路径较多时我会再说明 shape bucket 的使用边界。
-
+> CUDA Graph 把一段稳定的 GPU 操作捕获后重复回放，主要减少 CPU 提交和 Kernel Launch 开销；模型编译在计算图层做常量传播、布局和算子选择；Kernel Fusion 则把相邻操作合进同一 Kernel，减少中间张量读写 HBM。三者可以叠加，但都更喜欢稳定 Shape 和控制流，动态路径通常需要 Shape Bucket 或回退机制。
 
 ## 核心回答
 

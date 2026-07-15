@@ -15,17 +15,11 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+从长 Prompt 阻塞正在 Decode 的请求切入：Chunked Prefill 把预填充分块，让每轮 Token Budget 同时容纳 Decode 和一部分 Prefill。块大小是追问重点，大块更接近高效 Prefill，却拉长单轮迭代；小块更公平，但调度和 Kernel 开销上升。回答应把 TTFT、TPOT 与吞吐放在同一张权衡图里。
 
-1. **先给结论：** Chunked Prefill 把长 Prompt 的 prefill 切成小块，与 decode 迭代交错调度，以平衡 TTFT 和 TPOT。
-2. **再讲关键机制：** 解释 prefill 计算密集、decode 访存密集，以及 token budget 下块级插队如何减少阻塞。
-3. **主动说取舍：** 块太大会拖慢已有 decode，块太小则调度开销增加、prefill 效率下降。
-4. **最后落到项目：** 扫描 chunk size，报告 TTFT/TPOT P95、吞吐、调度开销和 SLO 达标率；讲完停。
+**可以这样答：**
 
-**60 秒口述示例：**
-
-> 我会先说它解决长 Prompt 堵住短 decode 的问题。调度器把 prefill 拆成若干 token 块，在每轮预算里与正在生成的 decode 请求共同批处理，让旧请求持续出 token，新请求也逐步完成预填充。关键取舍是块大小：大块效率高但阻塞重，小块公平却有开销。项目里我会扫描块大小，比较 TTFT、TPOT 的 P95、吞吐和 SLO 达标率。
-
+> Chunked Prefill 把长 Prompt 的 Prefill 拆成多个 Token 块，在每次调度迭代中与已有请求的 Decode Token 一起组成批次。这样长输入不会独占 GPU 很久，正在生成的请求可以持续出 Token。块太大会加重 Decode 阻塞，块太小又增加调度和 Kernel 开销，因此需要在真实长短请求分布下按 TTFT、TPOT 和吞吐共同选择。
 
 ## 核心回答
 
