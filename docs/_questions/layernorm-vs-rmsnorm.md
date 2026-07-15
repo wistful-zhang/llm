@@ -28,7 +28,19 @@ LayerNorm 对单个 token 的隐藏维度先减均值，再除以标准差，随
 
 ## 展开说明
 
-若隐藏向量为 `x`，LayerNorm 规范化的是 `(x - mean(x)) / sqrt(var(x) + eps)`；RMSNorm 使用 `x / sqrt(mean(x²) + eps)`。前者同时去除平移和尺度变化，后者主要控制尺度。二者一般都沿 hidden dimension 计算，而不是像 BatchNorm 那样依赖同一 Batch 的其他样本，因此更适合变长序列和小 Batch。
+若隐藏向量为 $$x$$，LayerNorm 规范化的是：
+
+$$
+\frac{x-\operatorname{mean}(x)}{\sqrt{\operatorname{var}(x)+\varepsilon}}
+$$
+
+RMSNorm 使用：
+
+$$
+\frac{x}{\sqrt{\operatorname{mean}(x^2)+\varepsilon}}
+$$
+
+前者同时去除平移和尺度变化，后者主要控制尺度。二者一般都沿 hidden dimension 计算，而不是像 BatchNorm 那样依赖同一 Batch 的其他样本，因此更适合变长序列和小 Batch。
 
 “使用哪种 Norm”与“Norm 放在残差分支前还是后”是两个独立问题。RMSNorm 可以用于 Pre-Norm，LayerNorm 也可以用于 Pre-Norm；不能把 RMSNorm 与 Pre-Norm 当成同一个概念。
 

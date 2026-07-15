@@ -26,7 +26,7 @@ date: 2026-07-14
 
 以 Vision Transformer 为例，图片先经过尺寸调整和归一化，再被切成固定大小的 Patch。每个 Patch 展平后通过线性层映射成一个向量，加上位置表示后送入视觉 Transformer；视觉编码器输出的 Patch 特征就可以作为视觉 Token。实现中 Patch Embedding 常用卷积核和步长都等于 Patch 大小的卷积完成，它与“切块、展平、线性投影”等价。
 
-若输入尺寸为 `H × W`、Patch 边长为 `P`，且尺寸可整除，则 Patch 数约为 `N = (H/P) × (W/P)`。分类 ViT 常在序列前加入 `CLS` Token 并用它做全局分类；生成式 VLM 往往保留多个 Patch Token，再通过 Projector、Pooling 或 Resampler 接给语言模型，因此不一定保留或只使用 `CLS`。
+若输入尺寸为 $$H\times W$$、Patch 边长为 $$P$$，且尺寸可整除，则 Patch 数约为 $$N=(H/P)\times(W/P)$$。分类 ViT 常在序列前加入 `CLS` Token 并用它做全局分类；生成式 VLM 往往保留多个 Patch Token，再通过 Projector、Pooling 或 Resampler 接给语言模型，因此不一定保留或只使用 `CLS`。
 
 ## 展开说明
 
@@ -46,7 +46,7 @@ date: 2026-07-14
 
 ## 常见追问
 
-1. **为什么可以用卷积实现 Patch Embedding？** 卷积核和步长都设为 `P` 时，每个互不重叠窗口会产生一个投影向量，等价于对每个 Patch 使用共享线性层。
+1. **为什么可以用卷积实现 Patch Embedding？** 卷积核和步长都设为 $$P$$ 时，每个互不重叠窗口会产生一个投影向量，等价于对每个 Patch 使用共享线性层。
 2. **分辨率如何影响视觉 Token 数？** 在 Patch 大小不变时，Token 数近似与图像面积成正比；高和宽各翻倍会让 Patch 数约翻四倍。
 3. **VLM 一定使用 `CLS` Token 吗？** 不一定；许多生成式 VLM 需要保留空间细节，会使用 Patch Token 或压缩后的多 Token 表示。
 4. **Patch 越小是否一定越好？** 不是；小 Patch 保留更多细节，但显著增加视觉计算、LLM 上下文和训练数据需求。

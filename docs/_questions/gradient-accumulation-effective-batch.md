@@ -24,7 +24,7 @@ date: 2026-07-14
 
 ## 核心回答
 
-若每个数据并行 Rank 的 Micro Batch 为 `b`，累积 `a` 次后更新一次，数据并行规模为 `d`，则按样本计的有效 Batch 通常是 `B = b × a × d`。梯度累积让多次 Forward/Backward 的梯度先留在参数上，最后才做一次 Optimizer Step，主要用更多计算轮次换更低峰值激活显存。
+若每个数据并行 Rank 的 Micro Batch 为 $$b$$，累积 $$a$$ 次后更新一次，数据并行规模为 $$d$$，则按样本计的有效 Batch 通常是 $$B=b\times a\times d$$。梯度累积让多次 Forward/Backward 的梯度先留在参数上，最后才做一次 Optimizer Step，主要用更多计算轮次换更低峰值激活显存。
 
 在 DDP 中，中间累积步可用 `no_sync()` 避免每次 All-Reduce，最后一步再同步。Loss 的归一化必须和目标全局平均一致；变长 SFT 若各 Micro Batch 的有效 Token 数不同，简单每步除以固定累积次数可能产生偏差，应累计 Loss Sum 与有效 Token 数后统一归一化。
 
@@ -46,7 +46,7 @@ date: 2026-07-14
 ## 常见追问
 
 1. **为什么累积 8 步不代表显存可以支持 8 倍模型？**  它主要减少单步激活与输入占用，参数、梯度和 Optimizer State 仍常驻；模型本体超出显存时还需要分片、量化或 Offload。
-2. **DDP 中每个累积步都 All-Reduce 有什么问题？**  数学上可以得到相近结果，但会把通信次数放大 `a` 倍；`no_sync()` 让中间梯度留在本地，最后一步统一同步。
+2. **DDP 中每个累积步都 All-Reduce 有什么问题？**  数学上可以得到相近结果，但会把通信次数放大 $$a$$ 倍；`no_sync()` 让中间梯度留在本地，最后一步统一同步。
 3. **为什么变长样本不能总是把每步平均 Loss 再平均？**  每个 Micro Batch 的有效 Token 数不同，平均的平均会给小 Batch 过高权重；应按总有效 Token 对 Loss Sum 加权。
 
 ## 一句话复习

@@ -29,10 +29,15 @@ date: 2026-07-14
 
 数据并行（DP）复制模型、切分训练样本，并在反向时聚合梯度；张量并行（TP）把单层矩阵沿输入或输出维度切到多卡，层内需要频繁集合通信；流水线并行（PP）按连续层切分模型，用多个 micro-batch 填充各阶段，但会产生流水线气泡。3D 并行把三者组合：
 
-```text
-world_size = DP_degree × TP_degree × PP_degree  （未再叠加 CP、EP 等维度时）
-global_batch = micro_batch × DP_degree × 每步累积的 micro-batch 数
-```
+$$
+\begin{aligned}
+N_{\mathrm{devices}}
+  &= d_{\mathrm{DP}} \times d_{\mathrm{TP}} \times d_{\mathrm{PP}},
+  && \text{未计 CP、EP 等维度时}, \\
+B_{\mathrm{global}}
+  &= B_{\mathrm{micro}} \times d_{\mathrm{DP}} \times n_{\mathrm{acc}}
+\end{aligned}
+$$
 
 常见思路是用 TP 解决单层放不下，用 PP 解决整组层放不下，再用 DP 扩展数据吞吐；实际组合必须结合显存、互联拓扑、Batch 和通信实测。
 
@@ -44,7 +49,7 @@ global_batch = micro_batch × DP_degree × 每步累积的 micro-batch 数
 - **TP** 切层内张量，Transformer 多个子层需要 All-Reduce、Reduce-Scatter 或 All-Gather，适合节点内高速互联。
 - **PP** 切层，阶段之间传递激活及其梯度；若阶段计算不平衡，最快阶段也必须等待最慢阶段。
 
-对简单 fill-drain 流水线，`p` 个阶段、`m` 个 micro-batch 的理想化气泡比例约为 `(p-1)/(m+p-1)`；增大 `m` 可降低气泡比例，但会改变激活、调度和有效 Batch。3D 并行不是卡数的任意因式分解：TP 过大会让层内通信占主导，PP 过大会增加气泡，DP 过小则难以利用数据并行吞吐。
+对简单 fill-drain 流水线，$$p$$ 个阶段、$$m$$ 个 micro-batch 的理想化气泡比例约为 $$\frac{p-1}{m+p-1}$$；增大 $$m$$ 可降低气泡比例，但会改变激活、调度和有效 Batch。3D 并行不是卡数的任意因式分解：TP 过大会让层内通信占主导，PP 过大会增加气泡，DP 过小则难以利用数据并行吞吐。
 
 ## 工程实践
 

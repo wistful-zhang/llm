@@ -32,7 +32,7 @@ date: 2026-07-14
 
 ## 展开说明
 
-设输入长度为 `L`，单层全注意力在 Prefill 中需要形成 `L × L` 的注意力关系，经典实现的计算量随 `L²` 增长；同时会写入全部输入 token 的 K/V。Decode 到第 `t` 个位置时，新 Query 只占一个位置，但仍需与前 `t-1` 个 Key 做注意力并读取对应 Value，所以单步注意力约随当前上下文长度线性增长。若连续生成 `T` 个 token，总 Decode 工作量还会累积，而不是“有 KV Cache 后与长度无关”。
+设输入长度为 $$L$$，单层全注意力在 Prefill 中需要形成 $$L \times L$$ 的注意力关系，经典实现的计算量随 $$L^2$$ 增长；同时会写入全部输入 token 的 K/V。Decode 到第 $$t$$ 个位置时，新 Query 只占一个位置，但仍需与前 $$t-1$$ 个 Key 做注意力并读取对应 Value，所以单步注意力约随当前上下文长度线性增长。若连续生成 $$T$$ 个 token，总 Decode 工作量还会累积，而不是“有 KV Cache 后与长度无关”。
 
 两阶段还会争抢不同资源：长 Prefill 容易阻塞已经在 Decode 的交互请求；Decode 请求数量多时，KV Cache 容量与内存带宽又会限制并发。因此现代调度器常使用 Chunked Prefill，把长输入切成若干块，与 Decode token 交错调度。
 
@@ -42,7 +42,7 @@ date: 2026-07-14
 
 ## 常见追问
 
-1. **为什么 Prefill 可以并行而自回归 Decode 不能一次生成所有 token？** Prompt 已经全部已知，同层各位置可并行计算；未来输出尚未确定，第 `t+1` 个 token 依赖第 `t` 个 token 的采样结果。
+1. **为什么 Prefill 可以并行而自回归 Decode 不能一次生成所有 token？** Prompt 已经全部已知，同层各位置可并行计算；未来输出尚未确定，第 $$t+1$$ 个 token 依赖第 $$t$$ 个 token 的采样结果。
 2. **TTFT 是否只等于 Prefill 时间？** 不是。TTFT 还包含排队、Tokenizer/多模态预处理、调度、网络和首轮采样等时间。
 3. **KV Cache 是否把 Decode 复杂度变成常数？** 不会。它消除了历史 token 的重复前向计算，但新 Query 仍需读取并关注历史 K/V。
 

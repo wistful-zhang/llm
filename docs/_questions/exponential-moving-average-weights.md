@@ -16,17 +16,35 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-先给 EMA 更新式和有效窗口直觉：`θ_ema←βθ_ema+(1-β)θ`，`β` 越大越平滑、也越滞后，有效窗口约为 `1/(1-β)`。再与一段区间内等权平均的 Polyak Averaging 区分。追问训练恢复时，记得 EMA 权重本身也要进入 Checkpoint。
+先给 EMA 更新式和有效窗口直觉：
+
+$$
+\theta_{\mathrm{EMA}}\leftarrow\beta\theta_{\mathrm{EMA}}+(1-\beta)\theta
+$$
+
+$$\beta$$ 越大越平滑、也越滞后，有效窗口约为 $$1/(1-\beta)$$。再与一段区间内等权平均的 Polyak Averaging 区分。追问训练恢复时，记得 EMA 权重本身也要进入 Checkpoint。
 
 **可以这样答：**
 
-> 参数 EMA 每步按 `θ_ema←βθ_ema+(1-β)θ_t` 更新，对近期参数赋更高权重，同时平滑优化噪声；有效时间窗口大约是 `1/(1-β)`。Polyak Averaging 通常对选定区间的迭代参数做等权平均。EMA 可能让验证更稳定，但 `β` 太大时会跟不上快速变化；训练恢复时必须同时保存当前权重、EMA 权重和更新步数。
+> 参数 EMA 每步按下式更新：
+>
+> $$
+> \theta_{\mathrm{EMA}}\leftarrow\beta\theta_{\mathrm{EMA}}+(1-\beta)\theta_t
+> $$
+>
+> 它提高近期参数权重并平滑噪声；有效窗口约为 $$1/(1-\beta)$$。Polyak Averaging 对选定区间等权平均。EMA 可让验证更稳定，但 $$\beta$$ 太大时会滞后；恢复训练时必须保存当前权重、EMA 权重和更新步数。
 
 ## 核心回答
 
-EMA 更新为 `θ_t^{EMA}=βθ_{t-1}^{EMA}+(1-β)θ_t`，较早权重的系数按 β 的幂指数衰减。β 越接近 1，平均窗口越长、短期噪声越小，但对模型快速变化响应越慢。训练评估或发布时可以临时换入 EMA 参数，优化器仍继续更新原始参数。
+EMA 更新为：
 
-Polyak/Ruppert Averaging 常对后期迭代做算术平均 `θ̄_T=(1/T)Σ_t θ_t`，理论分析与 EMA 的非均匀权重不同。工程中“weight averaging”有时混用名称，面试时应先确认具体公式。
+$$
+\theta_t^{\mathrm{EMA}}=\beta\theta_{t-1}^{\mathrm{EMA}}+(1-\beta)\theta_t
+$$
+
+较早权重的系数按 $$\beta$$ 的幂指数衰减。$$\beta$$ 越接近 1，平均窗口越长、短期噪声越小，但对模型快速变化响应越慢。训练评估或发布时可以临时换入 EMA 参数，优化器仍继续更新原始参数。
+
+Polyak/Ruppert Averaging 常对后期迭代做算术平均 $$\bar{\theta}_T=\frac{1}{T}\sum_t\theta_t$$，理论分析与 EMA 的非均匀权重不同。工程中“weight averaging”有时混用名称，面试时应先确认具体公式。
 
 ## 展开说明
 

@@ -28,7 +28,7 @@ date: 2026-07-14
 
 Q-Former 是 BLIP-2 中连接冻结视觉编码器与冻结 LLM 的轻量 Transformer。它维护固定数量的 Learnable Query，Query 通过 Cross-Attention 从视觉编码器产生的大量图像特征中读取任务相关信息，最后输出固定数量的查询表示。这样，无论原始图像产生多少 Patch 特征，传给后续语言模型的接口长度都可由 Query 数控制。
 
-在一次 Cross-Attention 中，`Q` 来自 Learnable Query 经过前序 Self-Attention 等层更新后的当前隐藏状态，并非每层都直接使用最初的 Query 参数；`K` 和 `V` 来自冻结图像编码器的输出。若有 `M` 个 Query、`N` 个视觉特征，则主要注意力映射形状为 `M × N`，输出仍是 `M` 个向量。它是有损的信息瓶颈：减少后续 LLM 的视觉 Token，并不意味着视觉编码器读取图像或 Q-Former 关注全部图像特征的成本消失。
+在一次 Cross-Attention 中，$$Q$$ 来自 Learnable Query 经过前序 Self-Attention 等层更新后的当前隐藏状态，并非每层都直接使用最初的 Query 参数；$$K$$ 和 $$V$$ 来自冻结图像编码器的输出。若有 $$M$$ 个 Query、$$N$$ 个视觉特征，则主要注意力映射形状为 $$M \times N$$，输出仍是 $$M$$ 个向量。它是有损的信息瓶颈：减少后续 LLM 的视觉 Token，并不意味着视觉编码器读取图像或 Q-Former 关注全部图像特征的成本消失。
 
 ## 展开说明
 

@@ -24,7 +24,13 @@ date: 2026-07-14
 
 ## 核心回答
 
-单样本或小 Batch 梯度可看作真实平均梯度 `G` 加噪声。若梯度协方差为 `Σ`，一种常见的简单 Gradient Noise Scale 近似是 `B_noise≈tr(Σ)/||G||²`：信号越小、样本间方差越大，需要越大的 Batch 才能平均掉噪声。Critical Batch Size 与这个量同阶，表示继续增大 Batch 开始出现明显边际递减的区域，而不是一条对所有训练阶段固定的硬阈值。
+单样本或小 Batch 梯度可看作真实平均梯度 $$G$$ 加噪声。若梯度协方差为 $$\Sigma$$，一种常见的简单 Gradient Noise Scale 近似是：
+
+$$
+B_{\mathrm{noise}}\approx\frac{\operatorname{tr}(\Sigma)}{\lVert G\rVert_2^2}
+$$
+
+信号越小、样本间方差越大，需要越大的 Batch 才能平均掉噪声。Critical Batch Size 与这个量同阶，表示继续增大 Batch 开始出现明显边际递减的区域，而不是一条对所有训练阶段固定的硬阈值。
 
 在临界值以下，增大 Batch 往往能减少达到目标 loss 所需的优化步数并提高并行度；超过后，每步梯度已经较稳定，继续加样本主要增加计算，步数不再近似同比下降。于是硬件吞吐可能继续上升，训练的样本效率却下降。
 

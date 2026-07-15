@@ -28,11 +28,11 @@ date: 2026-07-14
 
 DoReMi 把预训练语料划分为若干 Domain，用一个较小的 Proxy Model 学习采样权重，再把得到的平均权重用于训练大模型。它不是简单偏向当前损失最高的 Domain，而是相对一个 Reference Model 计算各 Domain 的 excess loss，并采用 Group DRO 风格的更新：提高仍未学好的 Domain 权重，同时避免只因某个 Domain 天生熵高就长期过采样。
 
-可将第 `i` 个 Domain 的信号概括为 `e_i(θ)=L_i(θ)-L_i(θ_ref)`。训练 Proxy 时交替降低加权模型损失，并以指数梯度方式更新 Domain 权重 `q_i`；最终对训练过程中的 `q` 做平均和归一化，得到目标混合。准确目标还包含论文定义的截断或平滑，不能把单步最高权重直接当最终比例。
+可将第 $$i$$ 个 Domain 的信号概括为 $$e_i(\theta) = L_i(\theta) - L_i(\theta_{\mathrm{ref}})$$。训练 Proxy 时交替降低加权模型损失，并以指数梯度方式更新 Domain 权重 $$q_i$$；最终对训练过程中的 $$q$$ 做平均和归一化，得到目标混合。准确目标还包含论文定义的截断或平滑，不能把单步最高权重直接当最终比例。
 
 ## 展开说明
 
-若只用原始 `L_i` 做最坏组优化，包含更多噪声或本身更难预测的 Domain 可能永远占据最高权重。Reference Model 提供同域基线，excess loss 更关注当前模型相对基线落后的部分。Exponentiated-gradient 更新可写成近似形式 `q_i ← q_i exp(η e_i)` 后投影到概率单纯形，并设置最小权重以保留覆盖。
+若只用原始 $$L_i$$ 做最坏组优化，包含更多噪声或本身更难预测的 Domain 可能永远占据最高权重。Reference Model 提供同域基线，excess loss 更关注当前模型相对基线落后的部分。Exponentiated-gradient 更新可写成近似形式 $$q_i \leftarrow q_i \exp(\eta e_i)$$ 后投影到概率单纯形，并设置最小权重以保留覆盖。
 
 DoReMi 的工程吸引力是先在便宜 Proxy 上优化配比，论文实验显示这些权重可迁移到更大模型。但迁移依赖 Domain 定义、Tokenizer、架构和数据质量足够一致；Proxy 太小看不出某类数据的后期收益，或 Target 出现新能力阶段时，最优比例可能改变。
 

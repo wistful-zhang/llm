@@ -16,21 +16,28 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-MLE 与 MAP 用同一条 Bayes 公式回答最简洁：MLE 只最大化 `log p(D|θ)`，MAP 还加 `log p(θ)`。举高斯先验对应 L2、Laplace 先验对应 L1 的例子，再说明数据足够多时先验影响减弱、小样本时 MAP 更稳但错误先验会引入偏差。
+MLE 与 MAP 用同一条 Bayes 公式回答最简洁：MLE 只最大化 $$\log p(D \mid \theta)$$，MAP 还加 $$\log p(\theta)$$。举高斯先验对应 L2、Laplace 先验对应 L1 的例子，再说明数据足够多时先验影响减弱、小样本时 MAP 更稳但错误先验会引入偏差。
 
 **可以这样答：**
 
-> MLE 选择让观测数据最可能的参数，只最大化 `log p(D|θ)`；MAP 选择后验概率最大的参数，按 Bayes 公式等于似然再加 `log p(θ)`。高斯先验对应类似 L2 正则，Laplace 先验对应类似 L1。小样本时 MAP 往往更稳，但错误先验会带来偏差；数据足够多时，两者通常逐渐接近。
+> MLE 选择让观测数据最可能的参数，只最大化 $$\log p(D \mid \theta)$$；MAP 选择后验概率最大的参数，按 Bayes 公式等于似然再加 $$\log p(\theta)$$。高斯先验对应类似 L2 正则，Laplace 先验对应类似 L1。小样本时 MAP 往往更稳，但错误先验会带来偏差；数据足够多时，两者通常逐渐接近。
 
 ## 核心回答
 
-MLE 为 `θ_MLE=argmax_θ p(D|θ)`，通常把独立样本的似然乘积转为 log-likelihood 求和。MAP 为 `θ_MAP=argmax_θ p(θ|D)`。由 Bayes 公式 `p(θ|D)∝p(D|θ)p(θ)`，所以 MAP 等价于最大化 `log p(D|θ)+log p(θ)`。
+MLE 为 $$\theta_{\mathrm{MLE}} = \operatorname*{arg\,max}_{\theta} p(D \mid \theta)$$，通常把独立样本的似然乘积转为 log-likelihood 求和。MAP 为 $$\theta_{\mathrm{MAP}} = \operatorname*{arg\,max}_{\theta} p(\theta \mid D)$$。由 Bayes 公式 $$p(\theta \mid D) \propto p(D \mid \theta)\,p(\theta)$$，所以 MAP 等价于最大化 $$\log p(D \mid \theta) + \log p(\theta)$$。
 
-若参数先验是零均值高斯，负 log 先验与 `||θ||²` 成正比，对应 L2 正则；Laplace 先验对应 L1。先验让 MAP 在有限数据下约束不合理的大参数，但数据量增大后固定先验的相对作用减弱。
+若参数先验是零均值高斯，负 log 先验与 $$\lVert \theta \rVert_2^2$$ 成正比，对应 L2 正则；Laplace 先验对应 L1。先验让 MAP 在有限数据下约束不合理的大参数，但数据量增大后固定先验的相对作用减弱。
 
 ## 展开说明
 
-MAP 只返回后验分布的众数点，并没有表达参数不确定性。完整贝叶斯预测会对后验积分：`p(y|x,D)=∫p(y|x,θ)p(θ|D)dθ`，计算更贵但可利用整个后验。连续参数下“密度最大”还会受参数化影响。
+MAP 只返回后验分布的众数点，并没有表达参数不确定性。完整贝叶斯预测会对后验积分：
+
+$$
+p(y \mid x,D)
+= \int p(y \mid x,\theta)\,p(\theta \mid D)\,\mathrm{d}\theta
+$$
+
+这类计算更贵，但能利用整个后验。连续参数下“密度最大”还会受参数化影响。
 
 神经网络分类交叉熵或语言模型 NLL 正是条件似然的负对数。加入 Weight Decay 可具有先验解释，但优化器实现、归一化和参数组会使它与简单 MAP 推导存在工程差异。
 

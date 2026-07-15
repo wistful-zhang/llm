@@ -28,7 +28,7 @@ date: 2026-07-14
 
 Tokens/s 是实际处理速度，但不同参数量和序列长度不能直接横比。MFU（Model FLOPs Utilization）用“完成模型规定的有效前向与反向计算所需 FLOPs/s”除以硬件对应精度的理论峰值；HFU（Hardware FLOPs Utilization）则统计硬件实际执行的全部 FLOPs，包括激活重计算等额外工作。
 
-启用 Activation Checkpointing 时，重算会提高硬件实际工作量，因此 HFU 可能高于 MFU；这不代表更多重算提高了有效训练效率。对稠密 Decoder，一个常用粗估是每训练 Token 约 `6N` FLOPs，但长上下文注意力、Embedding、MoE 激活参数和具体反向实现会使该近似失真。
+启用 Activation Checkpointing 时，重算会提高硬件实际工作量，因此 HFU 可能高于 MFU；这不代表更多重算提高了有效训练效率。对稠密 Decoder，一个常用粗估是每训练 Token 约 $$6N$$ FLOPs，但长上下文注意力、Embedding、MoE 激活参数和具体反向实现会使该近似失真。
 
 ## 展开说明
 
