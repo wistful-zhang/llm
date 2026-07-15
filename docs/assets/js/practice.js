@@ -281,7 +281,7 @@ import {
     nextButton.disabled = !isRating(state.pendingRating);
     nextButton.textContent = state.cursor === state.queue.length - 1 ? '完成本轮' : '下一题';
     if (moveFocus) moveFocusTo(answerTitle);
-    announce('答题方法与参考答案已展开，请对照后完成自我评价。');
+    announce('答题提示与参考回答已展开，请对照后完成自我评价。');
   };
 
   const renderQuestion = ({ moveFocus = true } = {}) => {

@@ -8,7 +8,7 @@ permalink: /practice/
   <header class="practice-intro">
     <span class="status-badge">随机抽题 · 自我复盘</span>
     <h1>随机模拟面试</h1>
-    <p>系统会从已发布题目中随机出题。先按 60 秒结构口头回答，再查看答题方法与参考答案，判断自己能否讲清楚。</p>
+    <p>系统会从已发布题目中随机出题。先用自己的话回答，再看参考说法和完整题解，判断自己是否真的讲清楚。</p>
   </header>
 
   <noscript>
@@ -111,7 +111,7 @@ permalink: /practice/
           <progress id="practice-progress" value="1" max="1" aria-label="当前题目位置"></progress>
         </div>
         <div class="practice-session-tools">
-          <span class="practice-timer-label">思考时间 <b id="practice-timer">00:00</b><small>仅供参考</small></span>
+          <span class="practice-timer-label">本题用时 <b id="practice-timer">00:00</b><small>不用硬凑 60 秒</small></span>
           <button id="practice-end" class="text-button" type="button" aria-expanded="false" aria-controls="practice-exit-confirm">提前结束</button>
         </div>
       </div>
@@ -123,14 +123,14 @@ permalink: /practice/
           <span id="practice-question-verified" class="verification-badge" hidden>✓ 资料核验</span>
         </div>
         <h2 id="practice-question-title" tabindex="-1">模拟面试题目</h2>
-        <p class="practice-question-hint">先按“结论 → 原理 → 取舍 → 落地”口述；讲到 60 秒左右先停，再展开答题方法对照。</p>
+        <p class="practice-question-hint">直接回答题目：原理题讲因果，设计题讲约束，项目题讲真实证据。参考说法不是标准台词，说清楚即可。</p>
         <div class="practice-question-actions">
-          <button id="practice-reveal" class="primary-button" type="button" aria-expanded="false" aria-controls="practice-answer">我答好了，查看答题方法</button>
+          <button id="practice-reveal" class="primary-button" type="button" aria-expanded="false" aria-controls="practice-answer">我说完了，看参考说法</button>
           <button id="practice-skip" class="secondary-button" type="button">暂时跳过</button>
         </div>
 
         <section id="practice-answer" class="practice-answer" aria-labelledby="practice-answer-title" hidden>
-          <h2 id="practice-answer-title" tabindex="-1">答题方法与参考答案</h2>
+          <h2 id="practice-answer-title" tabindex="-1">答题提示与参考回答</h2>
           <div id="practice-answer-content" class="prose"></div>
         </section>
 
@@ -168,7 +168,7 @@ permalink: /practice/
         <div><dt>需要提示</dt><dd id="practice-summary-prompted">0</dd></div>
         <div><dt>不会 / 跳过</dt><dd id="practice-summary-review">0</dd></div>
       </dl>
-      <p class="practice-summary-duration">累计思考时间：<strong id="practice-summary-duration">0 秒</strong></p>
+      <p class="practice-summary-duration">累计答题时间：<strong id="practice-summary-duration">0 秒</strong></p>
 
       <section id="practice-weak-section" class="practice-weak-section">
         <h3 id="practice-weak-title">优先复习</h3>

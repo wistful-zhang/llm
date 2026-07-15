@@ -15,16 +15,13 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+先纠正“只是改维度”的说法：视觉编码器和 LLM 即使维度相同，表示空间也未必对齐，Projector 还承担语义映射。接着比较 Linear、MLP 与带压缩能力的 Resampler 或 Learnable Query。
 
-1. **先给结论**：先说 Projector 不只做维度匹配，更负责把视觉特征映射到 LLM 可消费的表示空间。
-2. **再讲关键机制**：说明视觉编码器输出经 Linear/MLP 或 Resampler 变换后作为视觉 Token 接入 LLM。
-3. **主动说取舍**：Linear 轻但容量有限，MLP 更强也更贵；普通逐 Token Projector 并不会压缩 Token 数。
-4. **最后落到项目**：固定视觉与语言骨干，对比 VQA/OCR/定位分数、视觉 Token、TTFT 和可训练参数量。
+面试官常问它是否会减少视觉 Token。普通逐 Token Projector 不会，只有额外池化或重采样结构才会；这也是 Linear、MLP 与 Q-Former、Resampler 最容易混淆的边界。
 
-**60 秒口述示例：**
+**可以这样答：**
 
-> 我的结论是即使视觉特征维度碰巧等于 LLM 隐藏维度，也不代表两个语义空间已经对齐，所以通常需要 Projector。最简单是逐 Token 线性层，MLP 提供更强非线性；若还要压缩视觉序列，则需 Pooling、Learnable Query 或 Resampler。取舍是容量越大，训练参数和延迟越高。项目中我会冻结相同骨干做 Projector 消融，比较 VQA、OCR 和定位分数、视觉 Token 数、TTFT、显存与训练参数量。
+> Vision Encoder 输出的特征维度和语义空间通常都与 LLM 不一致，因此需要 Projector 把视觉表示映射成语言模型可消费的视觉 Token。线性层只做轻量映射，MLP 能学习更强的非线性对齐；如果还要缩短视觉序列，则需加入池化、Q-Former 或 Resampler。普通逐 Token Projector 只改变表示，不会自动减少视觉 Token 数，这是它与视觉压缩模块的边界。
 
 ## 核心回答
 

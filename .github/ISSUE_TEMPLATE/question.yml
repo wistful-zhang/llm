@@ -44,7 +44,7 @@ body:
     id: answer
     attributes:
       label: 口述答法与参考答案
-      description: 请先给一段可直接说出口的 60 秒回答，再补核心知识、工程取舍和容易丢分的点。
+      description: 请先直接回答这道题，写得像面试现场会说的话；再补核心知识、工程取舍和容易丢分的点。不要套固定话术，也不要编项目数据。
     validations:
       required: true
 

@@ -15,16 +15,11 @@ date: 2026-07-13
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+MHA、MQA、GQA 用 KV Head 数一眼区分：MHA 每个 Query Head 独立 K/V，MQA 全部共享，GQA 分组共享。随后解释共享为何降低 KV Cache 与 Decode 带宽，但不会同比减少 Query 计算；GQA 是常见折中，追问时再谈质量和 Tensor Parallel 的 Head 整除。
 
-1. **先给结论**：先用 KV Head 数量概括：MHA 每个 Query Head 独立 KV，MQA 全共享，GQA 分组共享；停顿后展开。
-2. **再讲关键机制**：说明共享如何减少 KV Cache 与 Decode 带宽，而 Query 投影和注意力计算仍存在。
-3. **主动说取舍**：比较 MHA 的表达能力、MQA 的效率与 GQA 的折中，并提及并行整除约束。
-4. **最后落到项目**：在目标并发和长度下比较质量、KV GB、TPOT、吞吐与跨卡通信。
+**可以这样答：**
 
-**60 秒口述示例：**
-
-> 我的结论是，三者核心差异在 KV Head：MHA 每个 Query Head 有自己的 K/V，MQA 让所有 Query Head 共享一组，GQA 则按组共享。这里停一下，再解释共享会显著减少 KV Cache 和 Decode 的内存带宽，但不会同比消除 Query 计算。取舍上 MHA 容量更充分，MQA 最省，GQA 常用于质量与效率折中；Tensor Parallel 还要求 Head 可合理切分。项目里我会在真实长度和并发下比较任务胜率、每请求 KV GB、P95 TPOT、吞吐和通信占比。
+> 三者的核心差别是 KV Head 数：MHA 为每个 Query Head 保留独立 K/V，MQA 让所有 Query Head 共享一组，GQA 则按组共享。共享 KV 会明显减少 KV Cache 和 Decode 内存带宽，但 Query 投影仍然存在。MHA 表达能力更充分，MQA 最省，GQA 常作为质量与效率的折中。
 
 ## 核心回答
 

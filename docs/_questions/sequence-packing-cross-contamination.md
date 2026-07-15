@@ -15,16 +15,13 @@ date: 2026-07-14
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+先讲收益：把多条短样本塞进同一固定长度序列，减少 Padding，提升有效 Token 比例。然后立刻补上正确性条件——不同样本之间必须用 Block-diagonal Causal Mask 隔开，位置与损失边界也要处理。
 
-1. **先给结论**：先说 Packing 通过减少 Padding 提升 Token 利用率，但独立样本必须隔离 Attention 和 Loss。
-2. **再讲关键机制**：解释样本边界、Block-diagonal Causal Mask、Position ID 重置和 Label Mask。
-3. **主动说取舍**：实现更复杂、Kernel 兼容性受限；只放 EOS 并不能形成硬隔离，连续文档流则另当别论。
-4. **最后落到项目**：比较有效 Token 比例、Samples/s、显存、Loss 等价性和跨样本泄漏测试，随后停顿。
+深挖通常会问 EOS 是否足够。答案是否定的：仅插 EOS 仍允许后一个样本注意前一个样本，造成跨样本污染；需要框架或内核真正支持分段边界。
 
-**60 秒口述示例：**
+**可以这样答：**
 
-> 我的结论是 Sequence Packing 把多个短样本装进同一长序列，减少 Padding，从而提高有效 Token 吞吐；但如果样本独立，就不能只加 EOS，还要用 Block-diagonal Causal Mask 阻断跨样本注意力，重置 Position ID，并分别处理 Loss Mask。代价是数据整理和内核实现更复杂。落地时我会先做与未 Packing 的小规模 Loss 等价测试，再比较有效 Token 比例、Samples/s、显存峰值和人工构造的跨样本泄漏率。
+> Sequence Packing 把多条短样本拼进一个长序列，减少 Padding，从而提高训练吞吐。但拼接后不能只加 EOS：若仍使用普通因果 Mask，后面的样本会看到前一条样本。正确做法是为每个片段建立块对角因果 Mask，按样本重置或正确编码位置，并设置对应 Loss Mask。验收既要看有效 Token 比例和吞吐，也要用单样本对照确认 Logits 没被邻居污染。
 
 ## 核心回答
 

@@ -15,16 +15,11 @@ date: 2026-07-13
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+PPO 对齐先把四个模型职责说准：Actor 生成，Reward 打分，Critic 估值，Reference 约束漂移。再沿采样、优势估计、策略与价值更新讲数据流；Clip 限制单批更新幅度，KL 限制相对参考策略的累计偏离，二者相关但不能互相替代。
 
-1. **先给结论**：先把四个模型和三类约束说清：Actor、Reference、Reward、Critic；Clip、KL、Value 学习；列完停顿。
-2. **再讲关键机制**：沿采样、打分、优势估计、策略更新讲一遍 PPO 数据流。
-3. **主动说取舍**：指出 Clip 控制单批更新、KL 限制偏离参考，二者相关但不能完全替代；Critic 降方差也会引入偏差。
-4. **最后落到项目**：监控 Reward、人工胜率、KL、Clip Fraction、熵、Value Loss 与长度，并设置早停回滚。
+**可以这样答：**
 
-**60 秒口述示例：**
-
-> 我先列四个模型：Actor 生成，Reference 约束偏离，Reward Model 给分，Critic 估计价值。这里停一下，再讲采样、计算 Advantage、用 Clip 更新策略的流程。Clip 控制单次更新，KL 控制相对参考模型的漂移，不能互相替代。项目里我同时监控人工胜率、KL、Clip Fraction、策略熵和 Value Loss，异常时早停。
+> PPO 对齐中，Actor 负责生成，Reward Model 给分，Critic 估计价值，Reference Model 用来约束策略漂移。采样后计算 Advantage，再同时更新策略和价值网络。Clip 限制当前批次的概率比变化，KL 限制相对参考策略的累计偏离；两者作用尺度不同，不能互相替代。
 
 ## 核心回答
 

@@ -15,17 +15,11 @@ date: 2026-07-13
 
 ## 面试时怎么答
 
-建议按“结论 → 原理 → 取舍 → 落地”回答：
+建议画一个很小的注意力矩阵解释三种 Mask：Causal Mask 遮未来，Padding Mask 遮补齐位，样本边界 Mask 在 packing 时阻止不同样本互看。一定区分 attention mask 与 loss mask，后者只决定哪些标签计入损失。面试官若给广播维度追问，现场检查 Query/Key 轴和被遮位置即可。
 
-1. **先给结论：** Causal Mask 控制可见未来，Padding Mask 屏蔽填充位，样本边界 Mask 防止打包样本互相读取。
-2. **再讲关键机制：** 用注意力 logits 加 `0/-∞` 解释三种 Mask 的作用，并区分它们与 loss label mask。
-3. **主动说取舍：** Mask 组合灵活，但形状、广播和布尔语义很容易写反，Flash Kernel 还可能有格式限制。
-4. **最后落到项目：** 用小矩阵单测和 packed 数据回归，检查泄漏率、有效 token 比例和吞吐；讲完停。
+**可以这样答：**
 
-**60 秒口述示例：**
-
-> 我会先分别回答：Causal Mask 让位置只能看自己和过去；Padding Mask 不让真实 token 关注补齐位；样本边界 Mask 在 sequence packing 时阻断跨样本注意力。它们作用于 attention logits，和把标签设为 -100 不同。工程上我会用可手算的小矩阵测广播方向，并监控跨样本泄漏必须为零、有效 token 比例和训练吞吐。 最后补一句，三种 Mask 必须分别单测。
-
+> Causal Mask 让位置只能关注自己和过去，防止自回归训练偷看未来；Padding Mask 不让有效 Token 关注补齐位置；样本边界 Mask 用于 sequence packing，阻断不同样本之间的注意力。它们都作用于 attention logits。把标签设为 `-100` 属于 loss mask，只是不计算该位置损失，不能阻止这个位置参与注意力。
 
 ## 核心回答
 
