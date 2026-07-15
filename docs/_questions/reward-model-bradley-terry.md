@@ -26,7 +26,7 @@ date: 2026-07-13
 
 ## 核心回答
 
-奖励模型通常在语言模型骨干上增加输出标量的 Reward Head。对同一 Prompt 的 `chosen` 与 `rejected` 回答分别得到分数 `r_c`、`r_r`，再以 Bradley-Terry 形式建模前者胜出的概率 `sigmoid(r_c - r_r)`，最小化 `-log sigmoid(r_c - r_r)`。训练只要求相对排序，不要求不同 Prompt 的绝对分数具有统一含义；因此奖励尺度、数据覆盖和偏好偏差都需要在后续策略优化前校准。
+奖励模型通常在语言模型骨干上增加输出标量的 Reward Head。对同一 Prompt 的 `chosen` 与 `rejected` 回答分别得到分数 $$r_c$$、$$r_r$$，再以 Bradley-Terry 形式建模前者胜出的概率 $$\sigma(r_c-r_r)$$，最小化 $$-\log \sigma(r_c-r_r)$$。训练只要求相对排序，不要求不同 Prompt 的绝对分数具有统一含义；因此奖励尺度、数据覆盖和偏好偏差都需要在后续策略优化前校准。
 
 ## 展开说明
 

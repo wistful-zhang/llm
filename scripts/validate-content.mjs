@@ -12,6 +12,7 @@ import {
   hasCompleteAnswer,
   hasMeaningfulAnswer,
 } from './publication-state.mjs';
+import { validateMathFormatting } from './math-format.mjs';
 
 const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.url));
 const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难']);
@@ -89,6 +90,9 @@ for (const filename of files) {
   const isVerified = verified === 'true';
   const effectiveAnswerStatus = getEffectiveAnswerStatus({ answerStatus, body });
   const hasAnswer = hasCompleteAnswer({ answerStatus, body });
+  validateMathFormatting(body).forEach((message) => {
+    errors.push(`${filename}: ${message}`);
+  });
   if (isPublished) publishedCount += 1;
   if (isVerified) verifiedCount += 1;
 

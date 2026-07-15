@@ -24,13 +24,13 @@ date: 2026-07-14
 
 ## 核心回答
 
-流水线并行把模型层切到 `p` 个 Stage，并把一个 Batch 切成 `m` 个 Microbatch。GPipe 采用 Fill-Drain：先流水执行全部 Forward，再执行全部 Backward，语义简单且没有权重陈旧，但需要较长时间保存多个 Microbatch 的激活。同步 1F1B 在 Warmup 后交替一个 Forward 和一个 Backward，通常降低峰值激活内存，但仍有填充和排空 Bubble。
+流水线并行把模型层切到 $$p$$ 个 Stage，并把一个 Batch 切成 $$m$$ 个 Microbatch。GPipe 采用 Fill-Drain：先流水执行全部 Forward，再执行全部 Backward，语义简单且没有权重陈旧，但需要较长时间保存多个 Microbatch 的激活。同步 1F1B 在 Warmup 后交替一个 Forward 和一个 Backward，通常降低峰值激活内存，但仍有填充和排空 Bubble。
 
 交错流水线让每个物理设备承载多个非连续的 Virtual Stage，可缩短有效流水段并减少 Bubble；代价是更多点对点通信、更复杂的时序与负载均衡。优化目标不是只让 Stage 数更多，而是让各 Stage 耗时接近，并用足够 Microbatch 摊薄边界空闲。
 
 ## 展开说明
 
-在各 Stage 等时、忽略通信的简化模型中，基本 Fill-Drain 的 Bubble 比例可近似为 `(p - 1) / (m + p - 1)`；因此 `m` 相对 `p` 越大，Bubble 越小。但更多 Microbatch 会改变 Kernel 效率、梯度累积和调度开销。
+在各 Stage 等时、忽略通信的简化模型中，基本 Fill-Drain 的 Bubble 比例可近似为 $$\frac{p-1}{m+p-1}$$；因此 $$m$$ 相对 $$p$$ 越大，Bubble 越小。但更多 Microbatch 会改变 Kernel 效率、梯度累积和调度开销。
 
 - **GPipe**：调度直观，激活驻留较多，可结合重计算省显存。
 - **1F1B Flush**：同一全局 Batch 内保持同步权重，并让激活更早释放；不要与异步、可能存在 Weight Staleness 的 PipeDream 变体混为一谈。

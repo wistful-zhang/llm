@@ -28,7 +28,7 @@ date: 2026-07-14
 
 视觉编码器输出与 LLM 输入通常存在两个接口差异：向量维度可能不同，表示空间也不是按同一训练目标形成的。Projector 把视觉特征映射到 LLM 可接收的 Embedding 维度，并通过图文训练让映射后的向量具备语言模型可利用的语义。它不是简单“改 Shape”，而是视觉与语言之间的可学习适配层。
 
-最简单的线性 Projector 可写为 `Z = X_v W + b`，其中 `X_v ∈ R^(N×d_v)`，`W ∈ R^(d_v×d_l)`，输出 `Z ∈ R^(N×d_l)`。MLP Projector 增加非线性；Resampler 或 Q-Former 还能在映射维度的同时改变 Token 数。采用哪种接口随模型架构、数据规模和延迟预算而异，并不是越复杂越好。
+最简单的线性 Projector 可写为 $$Z = X_vW+b$$，其中 $$X_v \in \mathbb{R}^{N \times d_v}$$，$$W \in \mathbb{R}^{d_v \times d_l}$$，输出 $$Z \in \mathbb{R}^{N \times d_l}$$。MLP Projector 增加非线性；Resampler 或 Q-Former 还能在映射维度的同时改变 Token 数。采用哪种接口随模型架构、数据规模和延迟预算而异，并不是越复杂越好。
 
 ## 展开说明
 

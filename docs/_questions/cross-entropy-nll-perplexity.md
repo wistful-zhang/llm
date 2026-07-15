@@ -20,33 +20,36 @@ date: 2026-07-14
 
 **可以这样答：**
 
-> 对真实序列，负对数似然是 `-Σ_t log p(x_t|x_{<t})`；标签为 one-hot 时，每个位置的交叉熵就是正确 Token 的负对数概率，所以最小化交叉熵等价于最大化似然。Perplexity 定义为平均每个有效 Token 的 NLL 取指数，即 `exp(NLL/T)`。Tokenizer、测试语料和 mask 口径不同，PPL 就不能直接比较。
+> 对真实序列，负对数似然是 $$-\sum_t \log p(x_t \mid x_{<t})$$；标签为 one-hot 时，每个位置的交叉熵就是正确 Token 的负对数概率，所以最小化交叉熵等价于最大化似然。Perplexity 定义为平均每个有效 Token 的 NLL 取指数，即 $$\exp(\mathrm{NLL}/T)$$。Tokenizer、测试语料和 mask 口径不同，PPL 就不能直接比较。
 
 ## 核心回答
 
-模型先为词表输出 Logit `z`，Softmax 得到概率 `p_k = exp(z_k) / Σ_j exp(z_j)`。当真实类别是 token `y` 时，One-hot 目标与预测分布的交叉熵为：
+模型先为词表输出 Logit $$z$$，Softmax 得到概率 $$p_k = \frac{\exp(z_k)}{\sum_j \exp(z_j)}$$。当真实类别是 token $$y$$ 时，One-hot 目标与预测分布的交叉熵为：
 
-```text
-CE = -Σ_k 1[k=y] log p_k = -log p_y
-```
+$$
+\mathrm{CE}
+= -\sum_k \mathbf{1}[k=y] \log p_k
+= -\log p_y
+$$
 
-它正是这个观测 token 的负对数似然（NLL）。对所有有效 token 取平均得到语言模型常说的 Cross-Entropy Loss。若使用自然对数且平均损失为 `L`，则：
+它正是这个观测 token 的负对数似然（NLL）。对所有有效 token 取平均得到语言模型常说的 Cross-Entropy Loss。若使用自然对数且平均损失为 $$\mathcal{L}$$，则：
 
-```text
-Perplexity = exp(L)
-```
+$$
+\mathrm{PPL} = \exp(\mathcal{L})
+$$
 
 Perplexity 越低，表示模型平均给真实下一个 token 分配的概率越高；它不是准确率，也不能单独衡量事实性、指令遵循或生成质量。
 
 ## 展开说明
 
-对序列 `x₁:T`，总 NLL 是：
+对序列 $$x_{1:T}$$，总 NLL 是：
 
-```text
-NLL(x₁:T) = -Σ_t log pθ(x_t | x_<t)
-```
+$$
+\mathrm{NLL}(x_{1:T})
+= -\sum_t \log p_\theta(x_t \mid x_{<t})
+$$
 
-除以有效 token 数得到平均 Token NLL，也就是通常报告的 Loss；再取指数得到 PPL。若对数以 2 为底，则对应 `2^L`，所以比较前要确认对数底和归约方式。实现通常把 `LogSoftmax + NLLLoss` 合成稳定的 CrossEntropyLoss，避免先显式计算很小的概率再取对数。
+除以有效 token 数得到平均 Token NLL，也就是通常报告的 Loss；再取指数得到 PPL。若对数以 2 为底，则对应 $$2^{\mathcal{L}}$$，所以比较前要确认对数底和归约方式。实现通常把 `LogSoftmax + NLLLoss` 合成稳定的 CrossEntropyLoss，避免先显式计算很小的概率再取对数。
 
 不同 Tokenizer 的 PPL 通常不能直接横向比较：同一段原始文本会被切成不同数量和粒度的 token，平均 NLL 的计量单位变了。若必须跨 Tokenizer 比较，可以在同一原始文本上报告按字节或字符归一化的负对数似然，并明确 Unicode 规范化、空格和边界处理；这仍不能替代下游任务评测。
 
@@ -58,10 +61,10 @@ NLL(x₁:T) = -Σ_t log pθ(x_t | x_<t)
 
 ## 常见追问
 
-1. **为什么 One-hot Label 下交叉熵等于真实 token 的 NLL？** One-hot 分布只有真实类别的权重为 1，交叉熵求和后只剩 `-log p_y`，恰好是该观测在模型下的负对数似然。
+1. **为什么 One-hot Label 下交叉熵等于真实 token 的 NLL？** One-hot 分布只有真实类别的权重为 1，交叉熵求和后只剩 $$-\log p_y$$，恰好是该观测在模型下的负对数似然。
 2. **Logit、概率和 Label 分别是什么？** Logit 是 LM Head 输出的未归一化分数，概率是 Logit 经 Softmax 后的分布，Label 是当前位置要预测的真实 token ID 或目标分布。
 3. **为什么不同 Tokenizer 的 Perplexity 不能直接比较？** Tokenizer 改变了序列分段和平均损失的单位，一个 token 可能代表不同数量的字符或字节。跨 Tokenizer 时应改用明确的字节/字符归一化指标并固定原始文本。
-4. **Label Smoothing 后交叉熵还等于单一真实类别的 NLL 吗？** 不严格等于。平滑后的目标在其他类别上也有非零质量，Loss 变成目标分布与预测分布的交叉熵，而不只是 `-log p_y`。
+4. **Label Smoothing 后交叉熵还等于单一真实类别的 NLL 吗？** 不严格等于。平滑后的目标在其他类别上也有非零质量，Loss 变成目标分布与预测分布的交叉熵，而不只是 $$-\log p_y$$。
 5. **Perplexity 下降为什么不保证对话体验一定提升？** PPL 只衡量参考文本上的下一 token 概率，不能直接覆盖事实性、安全、格式遵循和用户偏好。它需要与生成式任务指标和人工评测结合。
 
 ## 一句话复习

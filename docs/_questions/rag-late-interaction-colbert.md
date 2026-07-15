@@ -25,9 +25,9 @@ date: 2026-07-14
 
 ColBERT 位于单向量双塔和 Cross-Encoder 之间：查询与文档仍然独立编码，所以文档的 Token 级向量可以离线预计算；在线阶段不把每个查询—文档对重新送入 Transformer，而是用便宜的 Late Interaction 计算细粒度相关性。
 
-设查询向量矩阵为 `Q = {q_i}`，文档向量矩阵为 `D = {d_j}`，经典 ColBERT 的 MaxSim 分数可写为：
+设查询向量矩阵为 $$Q = \{q_i\}$$，文档向量矩阵为 $$D = \{d_j\}$$，经典 ColBERT 的 MaxSim 分数可写为：
 
-`S(Q, D) = Σ_i max_j(q_i · d_j)`
+$$S(Q,D) = \sum_i \max_j\!\left(q_i \cdot d_j\right)$$
 
 每个查询 Token 在文档中寻找最相似的 Token，再把这些最大相似度相加。它保留了单向量池化容易丢失的词项级匹配信息，同时避免 Cross-Encoder 对每个候选执行完整联合编码。不过，多向量索引会增加存储、内存带宽和近似检索复杂度；“兼顾”不等于在所有数据集和规模下都更快或更准。
 

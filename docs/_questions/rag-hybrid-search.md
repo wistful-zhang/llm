@@ -32,7 +32,10 @@ date: 2026-07-13
 
 RRF 对文档 d 的典型打分是：
 
-score(d) = Σ 1 / (c + rank_i(d))
+$$
+\operatorname{score}(d)
+= \sum_i \frac{1}{c + \operatorname{rank}_i(d)}
+$$
 
 其中 rank_i(d) 是文档在第 i 路结果中的名次，c 是降低头部名次过度支配的常数。RRF 不依赖两路原始分数可比，因此实现稳健；但它也会丢掉原分数差距信息。
 

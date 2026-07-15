@@ -8,6 +8,7 @@ import {
   shuffleQuestions,
   summarizeSession,
 } from './practice-core.mjs';
+import { clearMath, renderMath } from './math-render.mjs';
 
 (() => {
   const source = document.querySelector('#practice-question-data');
@@ -271,7 +272,9 @@ import {
       replacement.append(...heading.childNodes);
       heading.replaceWith(replacement);
     });
+    clearMath(answerContent);
     answerContent.replaceChildren(answer);
+    void renderMath(answerContent);
     answerSection.hidden = false;
     ratingFieldset.hidden = false;
     revealButton.hidden = true;
@@ -306,6 +309,7 @@ import {
     timer.textContent = formatClock(state.currentElapsedMs);
     answerSection.hidden = true;
     ratingFieldset.hidden = true;
+    clearMath(answerContent);
     answerContent.replaceChildren();
     revealButton.hidden = false;
     skipButton.hidden = false;

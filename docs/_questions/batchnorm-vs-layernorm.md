@@ -24,7 +24,7 @@ date: 2026-07-14
 
 ## 核心回答
 
-归一化通式为 `y=γ⊙(x-μ)/sqrt(σ²+ε)+β`，差别在 μ、σ² 沿哪些轴统计。卷积 BatchNorm 通常对每个通道跨 batch 和空间位置统计；训练时使用当前 mini-batch，推理时使用累计 running mean/variance。LayerNorm 对每个样本内部的一组特征统计，Transformer 中通常是每个 token 的 hidden dimension。
+归一化通式为 $$y=\gamma\odot(x-\mu)/\sqrt{\sigma^2+\varepsilon}+\beta$$，差别在 $$\mu$$、$$\sigma^2$$ 沿哪些轴统计。卷积 BatchNorm 通常对每个通道跨 batch 和空间位置统计；训练时使用当前 mini-batch，推理时使用累计 running mean/variance。LayerNorm 对每个样本内部的一组特征统计，Transformer 中通常是每个 token 的 hidden dimension。
 
 LayerNorm 不依赖 batch size，也不把不同序列样本统计耦合，适合变长文本、micro-batch 训练和逐 token 推理。BatchNorm 若在自回归不同时间步使用变化的 batch 统计，会造成训练推理不一致且难处理 padding。
 

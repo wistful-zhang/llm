@@ -26,9 +26,17 @@ date: 2026-07-14
 
 ## 核心回答
 
-设 `y_j=Σ_i W_{ji}x_i`，在权重与输入独立、零均值的近似下，`Var(y)≈fan_in·Var(W)·Var(x)`。保持前向方差需要 `Var(W)≈1/fan_in`；保持反向方差又与 `fan_out` 有关。Xavier/Glorot 用二者折中，常见 uniform 边界为 `±sqrt(6/(fan_in+fan_out))`。
+设 $$y_j = \sum_i W_{ji}x_i$$，在权重与输入独立、零均值的近似下：
 
-ReLU 对对称零均值输入大约保留一半激活，二阶矩约减半，因此 He 初始化常取 `Var(W)=2/fan_in`，normal 标准差为 `sqrt(2/fan_in)`。leaky ReLU 的 gain 还会随负半轴斜率调整。
+$$
+\operatorname{Var}(y)
+\approx \mathrm{fan}_{\mathrm{in}}\,
+  \operatorname{Var}(W)\,\operatorname{Var}(x)
+$$
+
+保持前向方差需要 $$\operatorname{Var}(W) \approx 1/\mathrm{fan}_{\mathrm{in}}$$；保持反向方差又与 $$\mathrm{fan}_{\mathrm{out}}$$ 有关。Xavier/Glorot 用二者折中，常见 uniform 边界为 $$\pm\sqrt{6/(\mathrm{fan}_{\mathrm{in}}+\mathrm{fan}_{\mathrm{out}})}$$。
+
+ReLU 对对称零均值输入大约保留一半激活，二阶矩约减半，因此 He 初始化常取 $$\operatorname{Var}(W) = 2/\mathrm{fan}_{\mathrm{in}}$$，normal 标准差为 $$\sqrt{2/\mathrm{fan}_{\mathrm{in}}}$$。leaky ReLU 的 gain 还会随负半轴斜率调整。
 
 ## 展开说明
 

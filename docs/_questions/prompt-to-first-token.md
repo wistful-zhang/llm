@@ -37,9 +37,9 @@ date: 2026-07-14
 1. **模板化**：将 system、user、assistant 等角色按模型训练时的 Chat Template 编码，必要时追加“开始回答”的控制 token。
 2. **分词**：Tokenizer 将字符串映射成 `input_ids`；不同 Tokenizer 对相同文本可能产生不同长度。
 3. **输入表示**：查 Embedding 表得到形状近似为 `[batch, sequence, hidden]` 的向量；若模型使用绝对位置 Embedding，也可在输入侧相加。
-4. **Transformer Block**：因果 Mask 保证位置 `t` 只能读取不晚于 `t` 的内容；Attention 聚合位置间信息，FFN 做逐位置非线性变换。使用 RoPE 的模型会在各层 Attention 的 Q/K 投影后按位置旋转。
-5. **输出投影**：最后一个非 Padding 位置的隐藏状态 `h` 经 LM Head 得到 `z = W_lm h + b`。LM Head 可能与输入 Embedding 共享权重，但不是必须。
-6. **得到分布**：`p(token | prompt) = softmax(z)`。Temperature、top-k、top-p 等会在采样前改变候选分布；贪心解码则直接选最大 Logit。
+4. **Transformer Block**：因果 Mask 保证位置 $$t$$ 只能读取不晚于 $$t$$ 的内容；Attention 聚合位置间信息，FFN 做逐位置非线性变换。使用 RoPE 的模型会在各层 Attention 的 Q/K 投影后按位置旋转。
+5. **输出投影**：最后一个非 Padding 位置的隐藏状态 $$h$$ 经 LM Head 得到 $$z = W_{\mathrm{lm}}h + b$$。LM Head 可能与输入 Embedding 共享权重，但不是必须。
+6. **得到分布**：$$p(\text{token} \mid \text{prompt}) = \operatorname{softmax}(z)$$。Temperature、top-k、top-p 等会在采样前改变候选分布；贪心解码则直接选最大 Logit。
 7. **增量解码**：把选中的 token 追加到上下文；启用 KV Cache 时，只对新 token 走完整 Block 前向并追加其 K/V，再进行下一步生成。生成步之间存在数据依赖，不能一次算出所有未知 token。
 
 “首 token 来自最后一个位置”是常见 Decoder-only 实现的描述；批处理中必须根据 Attention Mask 找到每条序列的最后一个有效位置。Encoder-Decoder 模型还会多出编码器和交叉注意力，不能照搬这条流程。

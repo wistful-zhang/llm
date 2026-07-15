@@ -32,7 +32,7 @@ Sequence Packing 把多个短样本装入同一个固定长度训练块，减少
 
 ## 展开说明
 
-若批内样本长度为 `l_1...l_k`，普通 Padding 的有效率是 `Σl_i/(k·L_max)`；Packing 可让一个长度 `L` 的块接近装满，提升有效 token 比例。装箱可用 first-fit decreasing 等近似算法，不必求解昂贵的最优 Bin Packing。
+若批内样本长度为 $$l_1,\ldots,l_k$$，普通 Padding 的有效率是 $$\frac{\sum_i l_i}{k \cdot L_{\max}}$$；Packing 可让一个长度 $$L$$ 的块接近装满，提升有效 token 比例。装箱可用 first-fit decreasing 等近似算法，不必求解昂贵的最优 Bin Packing。
 
 对于独立因果样本，Attention Mask 应在每个样本块内为下三角、块间为零；labels 仍按各块内部右移。SFT 还要把用户提示和 Padding 的 label 设为忽略值。支持 varlen Attention 的 Kernel 可用累计长度描述边界，避免真的物化巨大 Block-diagonal Mask。
 
