@@ -142,15 +142,15 @@ permalink: /start/
       <li>在 Pages CMS 的 <strong>Open a project</strong> 中打开仓库和 <code>main</code> 分支。</li>
       <li>进入“面试题与解答”，点击 <strong>Add an entry</strong>（手机端显示 <code>+</code>）。</li>
       <li>第一次可以只填写<strong>面试题目</strong>；日期会自动使用本地当天，答案可以稍后补。</li>
-      <li>系统默认关闭“发布到阅读网站”，分类和难度先使用“待整理 / 待评估”。</li>
-      <li>点击 <strong>Save</strong>（手机端是软盘图标），先保存为待整理内容。</li>
-      <li>准备公开时，补全答案和正式分类、难度，把状态改为“待复习”或“已掌握”，再打开发布开关并保存。</li>
+      <li>只想自己保存：保持“在阅读网站显示这道题”关闭。想先公开问题：打开它，并让“答案状态”保持<strong>待解答</strong>。</li>
+      <li>点击 <strong>Save</strong>（手机端是软盘图标）。待解答题只显示问题，不展示半成品，也不会进入模拟面试。</li>
+      <li>答案完成后，把分类和难度改为正式值、复习状态改为“待复习”或“已掌握”，再把答案状态改成<strong>已完成</strong>并保存。</li>
     </ol>
     <p class="guide-note"><strong>注意：</strong>未发布只代表不在阅读网站显示。Public 仓库中的草稿源文件仍然公开；Private 只适合普通个人非公开笔记。公司机密、未授权题库或受 NDA 约束的内容不要上传到 GitHub。</p>
   </div>
   <figure class="guide-figure">
-    <a href="{{ '/assets/guides/05-add-question.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 Pages CMS 新增题目示意图（在新窗口打开）"><img src="{{ '/assets/guides/05-add-question.svg' | relative_url }}" loading="lazy" alt="Pages CMS 新增面试题并点击 Save 的表单示意图"></a>
-    <figcaption>图 5：先记题目就能保存，答案和分类可以稍后整理。点击查看大图。</figcaption>
+    <a href="{{ '/assets/guides/05-add-question.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 Pages CMS 只发布待解答问题示意图（在新窗口打开）"><img src="{{ '/assets/guides/05-add-question.svg' | relative_url }}" loading="lazy" alt="Pages CMS 打开网站显示开关、让答案保持待解答并点击 Save 的表单示意图"></a>
+    <figcaption>图 5：先记题目就能保存；发布开关控制题目是否可见，答案状态控制题解是否展示。点击查看大图。</figcaption>
   </figure>
 </div>
 
@@ -161,9 +161,9 @@ permalink: /start/
 
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
-  <h2>以后只走两条日常路径</h2>
-  <p><strong>刚面试完：</strong>打开网页后台，先把题目存为待整理内容。<strong>准备复习：</strong>打开模拟面试，按分类随机抽题并复盘薄弱项。</p>
-  <a class="primary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">查看 1～2 分钟速记流程</a>
+  <h2>以后按需要走三条日常路径</h2>
+  <p><strong>只发布问题：</strong>打开发布开关，答案保持待解答。<strong>只给自己速记：</strong>关闭发布开关。<strong>准备复习：</strong>从答案已完成的题目中随机抽题。</p>
+  <a class="primary-button" href="{{ '/manage/' | relative_url }}#question-only-workflow">查看只发布问题流程</a>
   <a class="secondary-button" href="{{ '/practice/' | relative_url }}">开始模拟面试</a>
 </section>
 

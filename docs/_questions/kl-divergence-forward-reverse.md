@@ -9,6 +9,7 @@ tags:
   - 概率分布
   - 变分推断
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

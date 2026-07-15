@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
-  <title id="title">在 Pages CMS 新增题目并保存</title>
-  <desc id="desc">Pages CMS 编辑器示意图，显示面试题目、可稍后补充的速记、默认关闭的发布开关、待整理状态和 Save 按钮。</desc>
+  <title id="title">在 Pages CMS 只发布一道待解答问题</title>
+  <desc id="desc">Pages CMS 编辑器示意图，显示面试题目、已打开的网站显示开关、待解答答案状态、可留空的整理区和 Save 按钮。</desc>
   <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;fill:#1f2937}.muted{fill:#667085}.small{font-size:19px}.label{font-size:22px;font-weight:700}.title{font-size:28px;font-weight:760}.num{fill:#fff;font-size:24px;font-weight:800;text-anchor:middle}.inverse{fill:#fff}.inverse-muted{fill:#d0d5dd}</style>
   <rect width="1200" height="680" rx="30" fill="#f4f5f7"/>
   <rect x="38" y="35" width="1124" height="610" rx="20" fill="#fff" stroke="#d0d5dd" stroke-width="2"/>
@@ -10,11 +10,13 @@
   <text x="340" y="91" class="title">面试题与解答</text>
   <rect x="900" y="55" width="210" height="54" rx="11" fill="#6d5dfc"/><text x="938" y="90" class="label inverse">Add an entry</text>
   <circle cx="1110" cy="52" r="25" fill="#e0445e"/><text x="1110" y="61" class="num">7</text>
-  <text x="340" y="154" class="label">面试题目 · Required</text><text x="790" y="154" class="small">发布到阅读网站（默认关闭）</text><rect x="1038" y="132" width="62" height="30" rx="15" fill="#d0d5dd"/><circle cx="1053" cy="147" r="11" fill="#fff"/><rect x="340" y="170" width="760" height="52" rx="9" fill="#fff" stroke="#98a2b3"/><text x="360" y="203" class="small">为什么 KV Cache 能加速推理？</text>
-  <text x="340" y="268" class="label">当时的速记 / 解答（可稍后补）</text>
-  <rect x="340" y="284" width="760" height="146" rx="10" fill="#fff" stroke="#98a2b3"/><rect x="340" y="284" width="760" height="42" rx="10" fill="#f9fafb"/><text x="360" y="312" class="muted small">B  H₂  • List  “ Quote  &lt;/&gt; Code</text><text x="360" y="366" class="small">先记关键词、现场回答或卡住的位置，也可以留空……</text>
-  <text x="340" y="476" class="label">整理 / 复习状态</text><rect x="340" y="492" width="350" height="48" rx="9" fill="#fff" stroke="#98a2b3"/><text x="360" y="523" class="small">待整理</text>
-  <text x="738" y="476" class="label">分类</text><rect x="738" y="492" width="362" height="48" rx="9" fill="#fff" stroke="#98a2b3"/><text x="758" y="523" class="small">待整理</text>
-  <rect x="950" y="576" width="150" height="48" rx="10" fill="#1f883d"/><text x="997" y="607" class="label inverse">Save</text>
-  <circle cx="1110" cy="575" r="25" fill="#6d5dfc"/><text x="1110" y="584" class="num">8</text>
+  <text x="340" y="154" class="label">面试题目 · Required</text><text x="770" y="154" class="small">在阅读网站显示这道题</text><rect x="1038" y="132" width="62" height="30" rx="15" fill="#2563eb"/><circle cx="1085" cy="147" r="11" fill="#fff"/><rect x="340" y="170" width="760" height="52" rx="9" fill="#fff" stroke="#98a2b3"/><text x="360" y="203" class="small">为什么 KV Cache 能加速推理？</text>
+  <text x="340" y="268" class="label">答案状态</text>
+  <rect x="340" y="284" width="760" height="52" rx="9" fill="#fff" stroke="#98a2b3"/><text x="360" y="317" class="small">待解答（只显示问题）</text>
+  <text x="340" y="382" class="label">解答 / 私下整理区（可以留空）</text>
+  <rect x="340" y="398" width="760" height="72" rx="10" fill="#fff" stroke="#98a2b3"/><rect x="340" y="398" width="760" height="38" rx="10" fill="#f9fafb"/><text x="360" y="424" class="muted small">B  H₂  • List  “ Quote  &lt;/&gt; Code</text><text x="360" y="458" class="muted small">待解答时，这里的半成品不会在网站显示</text>
+  <text x="340" y="518" class="label">整理 / 复习状态</text><rect x="340" y="534" width="350" height="48" rx="9" fill="#fff" stroke="#98a2b3"/><text x="360" y="565" class="small">待整理</text>
+  <text x="738" y="518" class="label">分类</text><rect x="738" y="534" width="362" height="48" rx="9" fill="#fff" stroke="#98a2b3"/><text x="758" y="565" class="small">待整理</text>
+  <rect x="950" y="590" width="150" height="48" rx="10" fill="#1f883d"/><text x="997" y="621" class="label inverse">Save</text>
+  <circle cx="1110" cy="589" r="25" fill="#2563eb"/><text x="1110" y="598" class="num">8</text>
 </svg>

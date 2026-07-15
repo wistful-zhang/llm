@@ -9,6 +9,7 @@ tags:
   - Query Decomposition
   - Iterative Retrieval
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-13
 ---

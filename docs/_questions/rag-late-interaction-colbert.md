@@ -7,6 +7,7 @@ category: "RAG"
 difficulty: "困难"
 tags: [ColBERT, Late Interaction, MaxSim]
 published: true
+answer_status: complete
 date: 2026-07-14
 ---
 

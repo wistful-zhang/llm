@@ -9,6 +9,7 @@ tags:
   - 初始化
   - 残差连接
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

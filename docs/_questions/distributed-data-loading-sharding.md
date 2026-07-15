@@ -9,6 +9,7 @@ tags:
   - 数据分片
   - 断点续训
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

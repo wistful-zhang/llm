@@ -9,6 +9,7 @@ tags:
   - Pooling
   - CLS
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

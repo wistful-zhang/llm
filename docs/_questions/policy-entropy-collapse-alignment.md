@@ -9,6 +9,7 @@ tags:
   - 模式坍缩
   - RLHF
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

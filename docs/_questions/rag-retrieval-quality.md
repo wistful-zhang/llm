@@ -7,6 +7,7 @@ difficulty: "困难"
 tags: [检索, Rerank, 评估]
 review_status: 已掌握
 published: true
+answer_status: complete
 date: 2026-07-11
 ---
 

@@ -9,6 +9,7 @@ tags:
   - 非成对反馈
   - 偏好对齐
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

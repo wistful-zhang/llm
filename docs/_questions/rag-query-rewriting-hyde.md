@@ -7,6 +7,7 @@ category: "RAG"
 difficulty: "中等"
 tags: [Query Rewrite, HyDE, 查询变换]
 published: true
+answer_status: complete
 date: 2026-07-14
 ---
 

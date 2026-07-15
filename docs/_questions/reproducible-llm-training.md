@@ -9,6 +9,7 @@ tags:
   - 随机种子
   - 确定性
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

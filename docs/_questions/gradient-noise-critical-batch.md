@@ -9,6 +9,7 @@ tags:
   - Batch Size
   - 分布式训练
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

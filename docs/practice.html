@@ -3,12 +3,24 @@ title: 模拟面试
 description: 按分类随机抽取大模型面试题，计时口述、自我评价并复盘薄弱题。
 permalink: /practice/
 ---
-{% assign published_questions = site.questions | where: 'published', true | sort: 'date' | reverse %}
+{% assign all_published_questions = site.questions | where: 'published', true %}
+{% assign published_questions = '' | split: '' %}
+{% for question in all_published_questions %}
+  {% assign answer_text = question.content | strip_html | strip_newlines | strip %}
+  {% assign answer_ready = false %}
+  {% if question.answer_status == 'complete' and answer_text != empty %}
+    {% assign answer_ready = true %}
+  {% elsif question.answer_status == nil or question.answer_status == empty %}
+    {% if answer_text != empty %}{% assign answer_ready = true %}{% endif %}
+  {% endif %}
+  {% if answer_ready %}{% assign published_questions = published_questions | push: question %}{% endif %}
+{% endfor %}
+{% assign published_questions = published_questions | sort: 'date' | reverse %}
 <div class="container practice-page">
   <header class="practice-intro">
     <span class="status-badge">随机抽题 · 自我复盘</span>
     <h1>随机模拟面试</h1>
-    <p>系统会从已发布题目中随机出题。先用自己的话回答，再看参考说法和完整题解，判断自己是否真的讲清楚。</p>
+    <p>系统会从已发布且答案已完成的题目中随机出题。先用自己的话回答，再看参考说法和完整题解，判断自己是否真的讲清楚。</p>
   </header>
 
   <noscript>
@@ -20,8 +32,13 @@ permalink: /practice/
 
   {% if published_questions.size == 0 %}
     <section class="practice-empty" role="status">
-      <h2>题库还没有可练习的题目</h2>
-      <p>模拟面试只会使用已发布到网站的题目，草稿不会被抽到。</p>
+      {% if all_published_questions.size > 0 %}
+        <h2>公开问题正在等答案</h2>
+        <p>当前题目都处于“待解答”状态。答案完成前不会进入模拟面试，你仍然可以先浏览和分享这些问题。</p>
+      {% else %}
+        <h2>题库还没有可练习的题目</h2>
+        <p>模拟面试只会使用已发布且答案已完成的题目，草稿不会被抽到。</p>
+      {% endif %}
       <div class="practice-empty-actions">
         <a class="primary-button" href="{{ '/' | relative_url }}">返回题库</a>
         <a class="secondary-button" href="{{ '/manage/' | relative_url }}">我是题库主人：添加题目</a>
@@ -100,7 +117,7 @@ permalink: /practice/
         <button id="practice-last-weak" class="secondary-button" type="button" hidden>继续练薄弱题</button>
       </aside>
 
-      <p class="practice-local-note">练习进度只保存在当前浏览器，不会写回 GitHub。题目和答案来自这个网站中已发布的内容。</p>
+      <p class="practice-local-note">练习进度只保存在当前浏览器，不会写回 GitHub。待解答题和整理中的半成品不会被抽到。</p>
     </section>
 
     <section id="practice-session" class="practice-session" aria-labelledby="practice-session-title" hidden>

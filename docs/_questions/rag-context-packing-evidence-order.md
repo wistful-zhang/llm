@@ -7,6 +7,7 @@ category: "RAG"
 difficulty: "困难"
 tags: [Context Packing, Lost in the Middle, 证据排序]
 published: true
+answer_status: complete
 date: 2026-07-14
 ---
 
