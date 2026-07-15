@@ -15,7 +15,7 @@ content:
         update: "更新面试题：{filename}"
         delete: "删除面试题：{filename}"
     view:
-      fields: [title, published, review_status, category, date]
+      fields: [title, published, answer_status, review_status, category, date]
       primary: title
       sort: [date, title, review_status, category, difficulty]
       search: [title, source, category, tags, body]
@@ -33,15 +33,28 @@ content:
           maxlength: 160
 
       - name: published
-        label: 发布到阅读网站
+        label: 在阅读网站显示这道题
         type: boolean
         default: false
-        description: 默认关闭，先保存为待整理内容。注意：此开关只控制阅读网站是否显示；如果仓库是 Public，草稿源文件仍可在 GitHub 中被看到。
+        description: 只填题目也可以打开；“答案状态”保持待解答时，网站只公开问题。注意：此开关只控制阅读网站是否显示；如果仓库是 Public，未发布的源文件仍可在 GitHub 中被看到。
+
+      - name: answer_status
+        label: 答案状态
+        type: select
+        required: true
+        default: pending
+        description: 新题保持“待解答”即可先发布问题；答案整理完成后再改为“已完成”，届时才会显示答案并进入模拟面试。
+        options:
+          values:
+            - name: pending
+              label: 待解答（只显示问题）
+            - name: complete
+              label: 已完成（显示答案并进入模拟）
 
       - name: body
-        label: 现场速记 / 口述答法与解答（可稍后补）
+        label: 解答 / 私下整理区（可以留空）
         type: rich-text
-        description: 草稿阶段可以留空；发布前建议按“面试时怎么答、核心回答、展开说明、工程实践、常见追问、一句话复习、参考资料”整理。先写一段像现场回答、能直接说出口的参考说法；不要套固定四步，也不要编项目经历。
+        description: 答案状态为“待解答”时，即使这里有半成品也不会在网站展示或进入模拟。可在题目页复制补答指令交给 Codex；手动写完后请把答案状态改为“已完成”。
         options:
           format: markdown
           switcher: false
@@ -59,7 +72,7 @@ content:
         type: select
         required: true
         default: 待整理
-        description: 手动记录内容与复习进度；发布前改为“待复习”或“已掌握”。模拟面试中的自评只保存在浏览器，不会自动修改这里。
+        description: 手动记录内容与复习进度；把答案状态改为“已完成”前，请改为“待复习”或“已掌握”。模拟面试中的自评只保存在浏览器，不会自动修改这里。
         options:
           values: [待整理, 待复习, 已掌握]
 
@@ -68,7 +81,7 @@ content:
         type: string
         required: true
         default: 待整理
-        description: 速记时可保留“待整理”；发布前可选数学基础、LLM 基础、NLP 与机器学习、预训练与数据、训练与对齐、训练工程、推理与部署、RAG、Agent、多模态、评测与安全、工程实践、系统设计，也可以输入自己的分类。
+        description: 只发布问题时可保留“待整理”；完成答案前可选数学基础、LLM 基础、NLP 与机器学习、预训练与数据、训练与对齐、训练工程、推理与部署、RAG、Agent、多模态、评测与安全、工程实践、系统设计，也可以输入自己的分类。
         options:
           maxlength: 30
 
@@ -140,10 +153,10 @@ content:
           maxlength: 30
 
       - name: hero_highlight
-        label: 首页彩色第二行
+        label: 首页标题第二行
         type: string
         required: true
-        description: 首页标题中使用主题色显示的第二部分。
+        description: 显示在第一行下方，可作为标题补充。
         options:
           minlength: 2
           maxlength: 30
@@ -152,7 +165,7 @@ content:
         label: 主题配色
         type: select
         required: true
-        default: violet
+        default: blue
         options:
           values:
             - name: violet

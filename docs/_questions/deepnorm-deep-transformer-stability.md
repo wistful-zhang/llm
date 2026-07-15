@@ -9,6 +9,7 @@ tags:
   - 残差连接
   - 训练稳定性
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

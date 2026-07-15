@@ -6,6 +6,22 @@ title: 题库
 {% assign hero_highlight = site.data.settings.hero_highlight | default: '一道一道讲明白。' %}
 {% assign hero_description = site.data.settings.description | default: site.description %}
 {% assign published_questions = site.questions | where: 'published', true %}
+{% assign answered_count = 0 %}
+{% assign unanswered_count = 0 %}
+{% for question in published_questions %}
+  {% assign answer_text = question.content | strip_html | strip_newlines | strip %}
+  {% assign answer_ready = false %}
+  {% if question.answer_status == 'complete' and answer_text != empty %}
+    {% assign answer_ready = true %}
+  {% elsif question.answer_status == nil or question.answer_status == empty %}
+    {% if answer_text != empty %}{% assign answer_ready = true %}{% endif %}
+  {% endif %}
+  {% if answer_ready %}
+    {% assign answered_count = answered_count | plus: 1 %}
+  {% else %}
+    {% assign unanswered_count = unanswered_count | plus: 1 %}
+  {% endif %}
+{% endfor %}
 {% assign published_categories = published_questions | map: 'category' | uniq | sort %}
 <section class="hero">
   <div class="container hero-grid">
@@ -26,7 +42,7 @@ title: 题库
       <strong>{{ published_questions | size }}</strong>
       <span>道已发布题目</span>
       <div class="stat-line"></div>
-      <small>{{ published_categories | size }} 个方向 · 可按分类和难度抽题</small>
+      <small>{{ answered_count }} 道已有解答{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
     </div>
   </div>
 </section>
@@ -40,7 +56,7 @@ title: 题库
     <div class="filters" role="group" aria-label="按分类筛选">
       <button class="filter active" type="button" data-filter-all aria-pressed="true">全部</button>
       {% for category in published_categories %}
-        <button class="filter" type="button" data-category="{{ category | escape }}" aria-pressed="false">{{ category | escape }}</button>
+        <button class="filter" type="button" data-category="{{ category | escape }}" aria-pressed="false">{% if category == '待整理' %}未分类{% else %}{{ category | escape }}{% endif %}</button>
       {% endfor %}
     </div>
   </div>
@@ -49,17 +65,27 @@ title: 题库
     {% assign questions = published_questions | sort: 'date' | reverse %}
     {% for question in questions %}
       {% assign search_tags = question.tags | join: ' ' %}
-      {% assign search_body = question.content | strip_html | strip_newlines %}
+      {% assign answer_text = question.content | strip_html | strip_newlines | strip %}
+      {% assign answer_ready = false %}
+      {% if question.answer_status == 'complete' and answer_text != empty %}
+        {% assign answer_ready = true %}
+      {% elsif question.answer_status == nil or question.answer_status == empty %}
+        {% if answer_text != empty %}{% assign answer_ready = true %}{% endif %}
+      {% endif %}
+      {% assign search_body = '' %}
+      {% if answer_ready %}{% assign search_body = answer_text %}{% endif %}
       <a class="question-card"
          href="{{ question.url | relative_url }}"
          data-category="{{ question.category | escape }}"
+         data-answer-status="{% if answer_ready %}complete{% else %}pending{% endif %}"
          data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: search_tags | append: ' ' | append: search_body | downcase | escape }}">
         <div class="card-number">{% if forloop.index < 10 %}0{% endif %}{{ forloop.index }}</div>
         <div class="card-body">
           <div class="card-meta">
-            <span>{{ question.category | escape }}</span>
-            <span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>
-            {% if question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
+            <span>{% if question.category == '待整理' %}未分类{% else %}{{ question.category | escape }}{% endif %}</span>
+            {% if question.difficulty != '待评估' %}<span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>{% endif %}
+            {% unless answer_ready %}<span class="answer-state-badge">待解答</span>{% endunless %}
+            {% if answer_ready and question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
           </div>
           <h2>{{ question.title | escape }}</h2>
           <div class="tag-list">

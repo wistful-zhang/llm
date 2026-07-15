@@ -9,6 +9,7 @@ tags:
   - 对比学习
   - Sentence Embedding
 published: true
+answer_status: complete
 verified: true
 date: 2026-07-14
 ---

@@ -9,6 +9,7 @@ tags:
   - Transformer
   - 位置编码
 published: true
+answer_status: complete
 date: 2026-07-13
 ---
 

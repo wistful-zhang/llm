@@ -7,6 +7,7 @@ category: "RAG"
 difficulty: "困难"
 tags: [GraphRAG, 知识图谱, 社区摘要]
 published: true
+answer_status: complete
 date: 2026-07-14
 ---
 

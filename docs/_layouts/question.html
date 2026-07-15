@@ -3,13 +3,26 @@ layout: default
 ---
 <article class="container question-page">
   {% assign source_note = page.source | default: '' | strip %}
+  {% assign answer_text = content | strip_html | strip_newlines | strip %}
+  {% assign answer_ready = false %}
+  {% if page.answer_status == 'complete' and answer_text != empty %}
+    {% assign answer_ready = true %}
+  {% elsif page.answer_status == nil or page.answer_status == empty %}
+    {% if answer_text != empty %}{% assign answer_ready = true %}{% endif %}
+  {% endif %}
+  {% assign category_label = page.category %}
+  {% if page.category == '待整理' %}{% assign category_label = '未分类' %}{% endif %}
+  {% assign show_verified = false %}
+  {% if answer_ready and page.verified == true %}{% assign show_verified = true %}{% endif %}
+  {% assign show_provenance = show_verified %}
+  {% if source_note != empty %}{% assign show_provenance = true %}{% endif %}
   <a class="back-link" href="{{ '/' | relative_url }}">← 返回题库</a>
   <header class="question-header">
-    <div class="eyebrow">{{ page.category | escape }} · {{ page.difficulty | escape }}</div>
+    <div class="eyebrow">{{ category_label | escape }}{% if page.difficulty != '待评估' %} · {{ page.difficulty | escape }}{% endif %}</div>
     <h1>{{ page.title | escape }}</h1>
-    {% if page.verified == true or source_note != empty %}
+    {% if show_provenance %}
       <div class="question-provenance">
-        {% if page.verified == true %}<span class="verification-badge">✓ 资料核验</span>{% endif %}
+        {% if show_verified %}<span class="verification-badge">✓ 资料核验</span>{% endif %}
         {% if source_note != empty %}<span>来源说明：{{ source_note | escape }}</span>{% endif %}
       </div>
     {% endif %}
@@ -17,21 +30,35 @@ layout: default
       {% for tag in page.tags %}<span class="tag" role="listitem">{{ tag | escape }}</span>{% endfor %}
     </div>
   </header>
-  <section class="answer-coach" data-question-coach aria-labelledby="answer-coach-title">
-    <div class="answer-coach-copy">
-      <span class="answer-coach-kicker">口述训练</span>
-      <h2 id="answer-coach-title">先用自己的话答，再看参考说法</h2>
-      <p>60 秒是练习上限，不是必须凑满。原理题讲清因果，设计题讲清约束，项目题只讲真实证据。</p>
-    </div>
-    <p class="answer-coach-tip"><strong>别照着背。</strong>参考说法只用于对照；直接回答问题，简单题说清楚就收尾。项目题只用自己的经历和数字。</p>
-    <div class="answer-coach-actions" data-coach-controls hidden>
-      <button class="primary-button" type="button" data-coach-start>开始口述（最多 60 秒）</button>
-      <button class="secondary-button" type="button" data-coach-reveal hidden>看参考说法</button>
-      <output class="answer-coach-timer" data-coach-timer role="timer" aria-label="剩余口述时间">01:00</output>
-    </div>
-    <p class="answer-coach-status" data-coach-status aria-live="polite" hidden>参考内容当前已显示；开始口述后会暂时隐藏。</p>
-  </section>
-  <div class="prose question-answer" data-question-answer>{{ content }}</div>
+  {% if answer_ready %}
+    <section class="answer-coach" data-question-coach aria-labelledby="answer-coach-title">
+      <div class="answer-coach-copy">
+        <span class="answer-coach-kicker">口述训练</span>
+        <h2 id="answer-coach-title">先用自己的话答，再看参考说法</h2>
+        <p>60 秒是练习上限，不是必须凑满。原理题讲清因果，设计题讲清约束，项目题只讲真实证据。</p>
+      </div>
+      <p class="answer-coach-tip"><strong>别照着背。</strong>参考说法只用于对照；直接回答问题，简单题说清楚就收尾。项目题只用自己的经历和数字。</p>
+      <div class="answer-coach-actions" data-coach-controls hidden>
+        <button class="primary-button" type="button" data-coach-start>开始口述（最多 60 秒）</button>
+        <button class="secondary-button" type="button" data-coach-reveal hidden>看参考说法</button>
+        <output class="answer-coach-timer" data-coach-timer role="timer" aria-label="剩余口述时间">01:00</output>
+      </div>
+      <p class="answer-coach-status" data-coach-status aria-live="polite" hidden>参考内容当前已显示；开始口述后会暂时隐藏。</p>
+    </section>
+    <div class="prose question-answer" data-question-answer>{{ content }}</div>
+  {% else %}
+    <section class="unanswered-panel" data-unanswered-question data-question-title="{{ page.title | escape }}" aria-labelledby="unanswered-title">
+      <span class="answer-state-badge">待解答</span>
+      <h2 id="unanswered-title">先把问题公开，答案以后再补</h2>
+      <p>这道题目前只公开问题，不会展示整理中的正文，也不会进入随机模拟面试。复制下面的补答指令交给 Codex，我会找到对应文件、补全答案、切换答案状态并同步 GitHub。</p>
+      <div class="unanswered-actions" data-copy-controls hidden>
+        <button class="primary-button" type="button" data-copy-answer-prompt>复制给 Codex 的补答指令</button>
+        <button class="secondary-button" type="button" data-copy-question>只复制题目</button>
+        <a class="text-link" href="{{ '/manage/' | relative_url }}#question-only-workflow">去网页编辑</a>
+      </div>
+      <p class="copy-status" data-copy-status role="status" aria-live="polite">答案补好且状态改为“已完成”后，这个提示会自动消失。</p>
+    </section>
+  {% endif %}
   <nav class="question-nav" aria-label="题目翻页">
     {% if page.previous %}
       <a href="{{ page.previous.url | relative_url }}">← {{ page.previous.title | escape }}</a>
@@ -41,4 +68,8 @@ layout: default
     {% endif %}
   </nav>
 </article>
-<script type="module" src="{{ '/assets/js/question-coach.js' | relative_url }}"></script>
+{% if answer_ready %}
+  <script type="module" src="{{ '/assets/js/question-coach.js' | relative_url }}"></script>
+{% else %}
+  <script type="module" src="{{ '/assets/js/unanswered-question.js' | relative_url }}"></script>
+{% endif %}

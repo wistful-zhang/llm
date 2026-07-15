@@ -6,6 +6,12 @@ import {
   hasValidSpokenAnswerLength,
   parseAnswerGuide,
 } from './answer-guide-style.mjs';
+import {
+  ANSWER_STATUSES,
+  getEffectiveAnswerStatus,
+  hasCompleteAnswer,
+  hasMeaningfulAnswer,
+} from './publication-state.mjs';
 
 const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.url));
 const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难']);
@@ -77,9 +83,12 @@ for (const filename of files) {
   const reviewStatus = field(frontmatter, 'review_status');
   const published = rawField(frontmatter, 'published');
   const verified = rawField(frontmatter, 'verified');
+  const answerStatus = field(frontmatter, 'answer_status');
   const date = field(frontmatter, 'date');
   const isPublished = published === 'true';
   const isVerified = verified === 'true';
+  const effectiveAnswerStatus = getEffectiveAnswerStatus({ answerStatus, body });
+  const hasAnswer = hasCompleteAnswer({ answerStatus, body });
   if (isPublished) publishedCount += 1;
   if (isVerified) verifiedCount += 1;
 
@@ -89,20 +98,29 @@ for (const filename of files) {
   if (!category || category.length > 30) {
     errors.push(`${filename}: category 必填且不能超过 30 个字符`);
   }
-  if (isPublished && category === '待整理') {
+  if (isPublished && hasAnswer && category === '待整理') {
     errors.push(`${filename}: 发布前必须把 category 从“待整理”改为正式分类`);
   }
   if (!allowedDifficulties.has(difficulty)) {
     errors.push(`${filename}: difficulty 必须是“待评估”“简单”“中等”或“困难”`);
   }
-  if (isPublished && !publishableDifficulties.has(difficulty)) {
+  if (isPublished && hasAnswer && !publishableDifficulties.has(difficulty)) {
     errors.push(`${filename}: 发布前必须把 difficulty 从“待评估”改为正式难度`);
   }
   if (sourceNote.length > 80) {
     errors.push(`${filename}: source 不能超过 80 个字符`);
   }
+  if (answerStatus && effectiveAnswerStatus === null) {
+    errors.push(`${filename}: answer_status 必须是“pending”或“complete”`);
+  }
+  if (effectiveAnswerStatus === ANSWER_STATUSES.complete && !hasMeaningfulAnswer(body)) {
+    errors.push(`${filename}: answer_status 为 complete 时必须包含有效答案`);
+  }
   if (isVerified && !isPublished) {
     errors.push(`${filename}: verified: true 只能用于已发布题目`);
+  }
+  if (isVerified && !hasAnswer) {
+    errors.push(`${filename}: verified: true 只能用于答案状态为 complete 且正文有效的题目`);
   }
   if (verified && !['true', 'false'].includes(verified)) {
     errors.push(`${filename}: verified 必须是未加引号的 YAML 布尔值 true 或 false`);
@@ -113,7 +131,7 @@ for (const filename of files) {
   if (!allowedReviewStatuses.has(reviewStatus)) {
     errors.push(`${filename}: review_status 必须是“待整理”“待复习”或“已掌握”`);
   }
-  if (isPublished && reviewStatus === '待整理') {
+  if (isPublished && hasAnswer && reviewStatus === '待整理') {
     errors.push(`${filename}: 发布前必须把 review_status 从“待整理”改为“待复习”或“已掌握”`);
   }
   if (!['true', 'false'].includes(published)) {
@@ -126,10 +144,7 @@ for (const filename of files) {
   if (!isValidDate) {
     errors.push(`${filename}: date 必须是有效的 YYYY-MM-DD 日期`);
   }
-  if (isPublished && !body.trim()) {
-    errors.push(`${filename}: 发布到网站前必须补充题目解答`);
-  }
-  if (isVerified) {
+  if (isVerified && hasAnswer) {
     requiredVerifiedSections.forEach((section) => {
       const heading = new RegExp(`^##\\s+${section}\\s*$`, 'm');
       if (!heading.test(body)) {

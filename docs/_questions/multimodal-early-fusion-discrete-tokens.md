@@ -10,6 +10,7 @@ tags:
   - Discrete Image Token
   - Multimodal Generation
 published: true
+answer_status: complete
 date: 2026-07-14
 ---
 
