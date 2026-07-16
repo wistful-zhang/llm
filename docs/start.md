@@ -17,7 +17,7 @@ permalink: /start/
 
 <nav class="journey-grid" aria-label="选择当前目标">
   <a class="journey-card" href="{{ '/practice/' | relative_url }}"><strong>我只想先练习</strong><span>直接按分类随机抽题，不需要 GitHub 账号。</span><b>开始模拟面试 →</b></a>
-  <a class="journey-card" href="{{ '/manage/' | relative_url }}#capture-workflow"><strong>我已有自己的题库</strong><span>刚面试完时，直接用网页表单快速记题。</span><b>进入速记流程 →</b></a>
+  <a class="journey-card" href="{{ '/interviews/' | relative_url }}"><strong>我想记录真实面试</strong><span>不需要 GitHub 登录，记录只保存在自己的浏览器。</span><b>记录公司与进度 →</b></a>
   <a class="journey-card" href="#mode-choice"><strong>我是第一次创建</strong><span>继续下面 5 步，先决定公开还是私有。</span><b>开始首次配置 ↓</b></a>
 </nav>
 
@@ -161,9 +161,10 @@ permalink: /start/
 
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
-  <h2>以后按需要走三条日常路径</h2>
-  <p><strong>只发布问题：</strong>打开发布开关，答案保持待解答。<strong>只给自己速记：</strong>关闭发布开关。<strong>准备复习：</strong>从答案已完成的题目中随机抽题。</p>
-  <a class="primary-button" href="{{ '/manage/' | relative_url }}#question-only-workflow">查看只发布问题流程</a>
+  <h2>以后按需要走四条日常路径</h2>
+  <p><strong>真实面试：</strong>在浏览器记录公司、轮次、结果和复盘。<strong>只发布问题：</strong>打开发布开关，答案保持待解答。<strong>只给自己记题：</strong>关闭发布开关。<strong>准备复习：</strong>从答案已完成的题目中随机抽题。</p>
+  <a class="primary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
+  <a class="secondary-button" href="{{ '/manage/' | relative_url }}#question-only-workflow">查看记题流程</a>
   <a class="secondary-button" href="{{ '/practice/' | relative_url }}">开始模拟面试</a>
 </section>
 

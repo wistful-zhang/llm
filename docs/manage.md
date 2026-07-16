@@ -16,9 +16,11 @@ permalink: /manage/
 
 Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和发布不需要打开源码，也不需要 Git 命令。
 
+公司、岗位、面试结果和个人复盘属于个人求职数据，推荐使用[面试记录]({{ '/interviews/' | relative_url }})：它只保存在当前浏览器，不会写入公开仓库。这里的 Pages CMS 继续负责可以整理进题库的问题和答案。
+
 <nav class="journey-grid" aria-label="选择操作">
-  <a class="journey-card" href="#question-only-workflow"><strong>只发布问题</strong><span>先让别人看到题目，答案以后再补，不会出现空白题解。</span><b>查看最短流程 →</b></a>
-  <a class="journey-card" href="#capture-workflow"><strong>只给自己速记</strong><span>关闭网站发布，先把刚面试完记得的内容保存下来。</span><b>约 1～2 分钟 →</b></a>
+  <a class="journey-card" href="{{ '/interviews/' | relative_url }}"><strong>记录一次面试</strong><span>保存公司代号、岗位、轮次、结果和复盘，自动统计公司数。</span><b>打开本地记录 →</b></a>
+  <a class="journey-card" href="#question-only-workflow"><strong>记录一道题</strong><span>可只给自己速记，也可先公开问题、以后再补答案。</span><b>查看记题流程 →</b></a>
   <a class="journey-card" href="{{ '/start/' | relative_url }}"><strong>第一次使用</strong><span>先完成仓库可见性、Pages 和后台授权设置。</span><b>查看完整图解 →</b></a>
 </nav>
 
