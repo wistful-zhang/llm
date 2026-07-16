@@ -1,0 +1,275 @@
+---
+title: 面试记录
+description: 在浏览器本地记录面试公司、岗位、轮次、结果和复盘，自动统计面试公司数与求职进度。
+permalink: /interviews/
+---
+
+<div id="interview-tracker" class="container interview-page" data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}" data-manage-url="{{ '/manage/' | relative_url }}#capture-workflow">
+  <header class="interview-intro">
+    <span class="status-badge">浏览器本地 · 默认不上传</span>
+    <h1>面试记录</h1>
+    <p>记录真实面试的公司、岗位、轮次和结果。系统会自动区分“面试了几家公司”和“总共面了几轮”，不用自己维护数字。</p>
+    <div class="interview-header-actions">
+      <button id="interview-add" class="primary-button" type="button" aria-expanded="false" aria-controls="interview-form-panel">新增一场面试</button>
+      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">先保存为题库草稿</a>
+    </div>
+  </header>
+
+  <div class="interview-privacy" role="note">
+    <strong>这些记录只保存在当前浏览器。</strong>
+    <span>不会写入 GitHub，访问同一网站的其他人也看不到。换设备或清理浏览器前，请在页面底部导出 JSON 备份；共享电脑上的同一浏览器用户仍可能看到，敏感公司建议使用匿名代号。</span>
+  </div>
+
+  <noscript>
+    <style>
+      #interview-add,
+      #interview-tracker > section,
+      #interview-tracker > details { display: none !important; }
+    </style>
+    <div class="practice-empty" role="status">
+      <h2>需要启用 JavaScript</h2>
+      <p>面试记录保存在当前浏览器，需要 JavaScript 才能新增和统计；题库阅读不受影响。</p>
+    </div>
+  </noscript>
+
+  <section id="interview-storage-alert" class="interview-alert" role="alert" hidden>
+    <div>
+      <strong id="interview-storage-alert-title">浏览器记录暂时不可用</strong>
+      <p id="interview-storage-alert-text"></p>
+    </div>
+    <div id="interview-storage-alert-actions" class="interview-alert-actions" hidden>
+      <button id="interview-download-raw" class="secondary-button" type="button">下载原始数据</button>
+      <button id="interview-alert-export" class="secondary-button" type="button" hidden>导出临时 JSON</button>
+      <button id="interview-clear-damaged" class="text-button interview-danger-button" type="button">清除损坏数据</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="interview-overview-title">
+    <div class="interview-section-heading">
+      <div>
+        <span class="section-kicker">求职进度</span>
+        <h2 id="interview-overview-title">面试总览</h2>
+      </div>
+      <p>公司数按公司名称或匿名代号去重，已预约和已取消不计入“已面公司”。</p>
+    </div>
+    <dl class="interview-stats">
+      <div class="interview-stat-primary"><dt>已面公司</dt><dd id="interview-stat-companies">0</dd></div>
+      <div><dt>已面轮次</dt><dd id="interview-stat-rounds">0</dd></div>
+      <div><dt>进行中流程</dt><dd id="interview-stat-active">0</dd></div>
+      <div><dt>收到 Offer</dt><dd id="interview-stat-offers">0</dd></div>
+    </dl>
+  </section>
+
+  <section id="interview-upcoming-section" class="interview-upcoming" aria-labelledby="interview-upcoming-title" hidden>
+    <div class="interview-section-heading interview-section-heading-compact">
+      <div>
+        <span class="section-kicker">不要漏掉下一步</span>
+        <h2 id="interview-upcoming-title">接下来</h2>
+      </div>
+    </div>
+    <ol id="interview-upcoming-list" class="interview-upcoming-list"></ol>
+  </section>
+
+  <section id="interview-form-panel" class="interview-form-panel" aria-labelledby="interview-form-title" hidden>
+    <div class="interview-form-heading">
+      <div>
+        <span id="interview-form-kicker" class="section-kicker">刚面完先速记</span>
+        <h2 id="interview-form-title" tabindex="-1">新增一场面试</h2>
+      </div>
+      <button id="interview-form-close" class="text-button" type="button" aria-label="关闭面试记录表单">关闭</button>
+    </div>
+
+    <form id="interview-form">
+      <input id="interview-form-mode" type="hidden" value="round">
+      <input id="interview-round-id" type="hidden">
+      <input id="interview-application-id" type="hidden">
+
+      <fieldset class="interview-fieldset">
+        <legend id="interview-basic-legend">基本信息</legend>
+        <p id="interview-fieldset-hint" class="interview-fieldset-hint">带“必填”的 5 项就能保存；同一流程继续面试时，使用记录卡片里的“预约 / 记录下一轮”。</p>
+        <div class="interview-form-grid">
+          <label class="interview-field interview-field-wide" for="interview-company">
+            <span>公司 / 匿名代号 <b>必填</b></span>
+            <input id="interview-company" name="company" type="text" maxlength="80" list="interview-company-options" placeholder="例如：某电商 A" autocomplete="organization" required>
+            <small id="interview-company-hint">敏感场景建议用固定匿名代号，同一名称会自动合并公司统计。</small>
+          </label>
+          <datalist id="interview-company-options"></datalist>
+
+          <label class="interview-field interview-field-wide" for="interview-role">
+            <span>岗位 <b>必填</b></span>
+            <input id="interview-role" name="role" type="text" maxlength="80" placeholder="例如：大模型算法工程师" autocomplete="organization-title" required>
+          </label>
+
+          <label class="interview-field interview-round-field" for="interview-date">
+            <span>面试日期 <b>必填</b></span>
+            <input id="interview-date" name="date" type="date" required>
+          </label>
+
+          <label class="interview-field interview-round-field" for="interview-stage">
+            <span>轮次 <b>必填</b></span>
+            <select id="interview-stage" name="stage" required>
+              <option value="hr_screen">HR 初筛</option>
+              <option value="first" selected>技术一面</option>
+              <option value="second">技术二面</option>
+              <option value="third">技术三面</option>
+              <option value="manager">主管面</option>
+              <option value="hr">HR 面</option>
+              <option value="final">终面</option>
+              <option value="other">其他轮次</option>
+            </select>
+          </label>
+
+          <label class="interview-field interview-round-field" for="interview-outcome">
+            <span>本轮结果 <b>必填</b></span>
+            <select id="interview-outcome" name="outcome" aria-describedby="interview-outcome-hint" required>
+              <option value="scheduled">已预约</option>
+              <option value="waiting" selected>已面试 · 待反馈</option>
+              <option value="passed">进入下一轮</option>
+              <option value="failed">未通过</option>
+              <option value="offer">收到 Offer</option>
+              <option value="withdrawn">主动结束</option>
+              <option value="cancelled">已取消</option>
+            </select>
+            <small id="interview-outcome-hint">本轮反馈出来后编辑本轮；拿到下一轮时间时，请新增下一轮，不要把本轮改成“已预约”。</small>
+          </label>
+
+          <label class="interview-field interview-round-field" for="interview-mode">
+            <span>面试方式</span>
+            <select id="interview-mode" name="mode">
+              <option value="online" selected>线上</option>
+              <option value="onsite">线下</option>
+              <option value="phone">电话</option>
+              <option value="other">其他</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <details id="interview-more-fields" class="interview-more-fields">
+        <summary><strong id="interview-more-title">补充复盘与下一步</strong> <span id="interview-more-hint">选填，但建议面完顺手写</span></summary>
+        <fieldset class="interview-fieldset interview-fieldset-more">
+          <legend class="sr-only">复盘与下一步</legend>
+          <div class="interview-form-grid">
+            <label class="interview-field interview-round-field" for="interview-rating">
+              <span>自我感觉</span>
+              <select id="interview-rating" name="rating">
+                <option value="0" selected>暂不评价</option>
+                <option value="1">1 · 很不理想</option>
+                <option value="2">2 · 有明显问题</option>
+                <option value="3">3 · 基本发挥</option>
+                <option value="4">4 · 发挥不错</option>
+                <option value="5">5 · 很有把握</option>
+              </select>
+            </label>
+
+            <label class="interview-field interview-application-field" for="interview-source">
+              <span>匿名来源</span>
+              <input id="interview-source" name="source" type="text" maxlength="120" placeholder="例如：内推、官网、招聘平台">
+            </label>
+
+            <label class="interview-field interview-field-wide interview-application-field" for="interview-next-action">
+              <span>下一步</span>
+              <input id="interview-next-action" name="nextAction" type="text" maxlength="160" placeholder="例如：补发材料、准备系统设计、三天后跟进">
+            </label>
+
+            <label class="interview-field interview-application-field" for="interview-next-date">
+              <span>跟进日期</span>
+              <input id="interview-next-date" name="nextDate" type="date">
+            </label>
+
+            <label class="interview-field interview-field-wide interview-round-field" for="interview-reflection">
+              <span>本轮复盘</span>
+              <textarea id="interview-reflection" name="reflection" rows="5" maxlength="3000" placeholder="记录问了什么、自己哪里没讲清、下次要补什么。不要保存面试官姓名、联系方式、会议链接或公司机密。"></textarea>
+              <small>题目本身建议进入题库；这里更适合写表现、反馈和改进动作。</small>
+            </label>
+          </div>
+        </fieldset>
+      </details>
+
+      <div class="interview-form-actions">
+        <button id="interview-save" class="primary-button" type="submit">保存记录</button>
+        <button id="interview-cancel" class="secondary-button" type="button">取消</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="interview-save-success" class="interview-save-success" role="status" tabindex="-1" hidden>
+    <div>
+      <strong id="interview-save-success-title">面试记录已保存</strong>
+      <p>公司和轮次统计已经更新。题目不会自动关联到这条本地记录；如果还记得原题，可以继续保存为未发布题库草稿。Public 仓库中的草稿源文件仍可见。</p>
+    </div>
+    <div class="interview-save-success-actions">
+      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">先保存为题库草稿</a>
+      <button id="interview-save-success-close" class="text-button" type="button">暂时完成</button>
+    </div>
+  </section>
+
+  <section class="interview-records" aria-labelledby="interview-records-title">
+    <div class="interview-section-heading">
+      <div>
+        <span class="section-kicker">按公司和岗位归档</span>
+        <h2 id="interview-records-title">面试流程</h2>
+      </div>
+      <p id="interview-record-count">还没有记录</p>
+    </div>
+
+    <div id="interview-toolbar" class="interview-toolbar">
+      <label class="search-box interview-search" for="interview-search">
+        <span aria-hidden="true">⌕</span>
+        <input id="interview-search" type="search" aria-label="搜索面试记录" placeholder="搜索公司、岗位或复盘…" autocomplete="off">
+      </label>
+      <div class="interview-filter-grid">
+        <label class="interview-field" for="interview-filter-outcome">
+          <span>最新状态</span>
+          <select id="interview-filter-outcome">
+            <option value="">全部状态</option>
+            <option value="scheduled">已预约</option>
+            <option value="waiting">待反馈</option>
+            <option value="passed">进入下一轮</option>
+            <option value="failed">未通过</option>
+            <option value="offer">收到 Offer</option>
+            <option value="withdrawn">主动结束</option>
+            <option value="cancelled">已取消</option>
+          </select>
+        </label>
+        <label class="interview-field" for="interview-filter-year">
+          <span>年份</span>
+          <select id="interview-filter-year"><option value="">全部年份</option></select>
+        </label>
+        <button id="interview-clear-filters" class="text-button" type="button">清除筛选</button>
+      </div>
+    </div>
+
+    <div id="interview-flow-list" class="interview-flow-list"></div>
+
+    <div id="interview-first-empty" class="interview-empty" role="status" hidden>
+      <span class="empty-number" aria-hidden="true">01</span>
+      <h3>还没有面试记录</h3>
+      <p>第一次只需填写公司、岗位、日期、轮次和结果。以后同一流程继续面试，直接点击“记录下一轮”。</p>
+      <button id="interview-empty-add" class="primary-button" type="button">记录第一次面试</button>
+    </div>
+
+    <div id="interview-filter-empty" class="interview-empty" role="status" hidden>
+      <h3>没有符合条件的记录</h3>
+      <p>换个关键词或清除筛选，不需要重复新增。</p>
+      <button id="interview-filter-empty-clear" class="secondary-button" type="button">清除筛选</button>
+    </div>
+  </section>
+
+  <details class="interview-data-tools">
+    <summary><strong>备份、换设备与清空数据</strong><span>JSON 可恢复，CSV 便于查看</span></summary>
+    <div class="interview-data-tools-body">
+      <p>浏览器记录不会自动跟随 GitHub 或账号同步。建议定期导出 JSON；在另一台设备打开同一页面后，使用“恢复 JSON”即可合并记录。</p>
+      <div class="interview-data-actions">
+        <button id="interview-export-json" class="primary-button" type="button">导出 JSON 备份</button>
+        <button id="interview-import-json" class="secondary-button" type="button">恢复 JSON</button>
+        <input id="interview-import-file" type="file" accept="application/json,.json" hidden>
+        <button id="interview-export-csv" class="secondary-button" type="button">导出 CSV 表格</button>
+        <button id="interview-clear-all" class="text-button interview-danger-button" type="button">清空全部记录</button>
+      </div>
+      <p class="interview-data-note">JSON / CSV 只包含本页的本地面试记录，不包含 GitHub 中的题目和答案；反过来，GitHub 也不会备份本页记录。合并时同编号冲突默认保留本机版本，如需完全替换请先导出、清空再导入。文件包含你填写的公司和复盘内容，请像个人文件一样妥善保管，不要提交到公开仓库。</p>
+    </div>
+  </details>
+
+  <div id="interview-live-status" class="sr-only" role="status" aria-live="polite"></div>
+</div>

@@ -46,9 +46,10 @@
         <nav aria-label="主导航">
           <a href="{{ '/' | relative_url }}"{% if page.url == '/' or page.collection == 'questions' %} aria-current="page"{% endif %}>题库</a>
           <a class="practice-link" href="{{ '/practice/' | relative_url }}"{% if page.url == '/practice/' %} aria-current="page"{% endif %}>模拟</a>
+          <a class="tracker-link" href="{{ '/interviews/' | relative_url }}"{% if page.url == '/interviews/' %} aria-current="page"{% endif %}>记录</a>
           <a class="start-link" href="{{ '/start/' | relative_url }}"{% if page.url == '/start/' %} aria-current="page"{% endif %}>使用</a>
           <a class="optional-link" href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>关于</a>
-          <a class="admin-link" href="{{ '/manage/' | relative_url }}"{% if page.url == '/manage/' %} aria-current="page"{% endif %}>网页编辑</a>
+          <a class="admin-link" href="{{ '/manage/' | relative_url }}" aria-label="网页编辑题库"{% if page.url == '/manage/' %} aria-current="page"{% endif %}><span class="admin-label-long" aria-hidden="true">网页编辑</span><span class="admin-label-short" aria-hidden="true">管理</span></a>
         </nav>
       </div>
     </header>
@@ -65,5 +66,6 @@
     </footer>
     <script src="{{ '/assets/js/search.js' | relative_url }}" defer></script>
     {% if page.url == '/practice/' %}<script type="module" src="{{ '/assets/js/practice.js' | relative_url }}"></script>{% endif %}
+    {% if page.url == '/interviews/' %}<script type="module" src="{{ '/assets/js/interview-tracker.js' | relative_url }}"></script>{% endif %}
   </body>
 </html>
