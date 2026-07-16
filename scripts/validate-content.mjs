@@ -13,8 +13,13 @@ import {
   hasMeaningfulAnswer,
 } from './publication-state.mjs';
 import { validateMathFormatting } from './math-format.mjs';
+import {
+  isExperienceDocumentPath,
+  validateExperienceDocument,
+} from './experience-publication.mjs';
 
 const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.url));
+const experiencesDir = fileURLToPath(new URL('../docs/_experiences/', import.meta.url));
 const allowedDifficulties = new Set(['待评估', '简单', '中等', '困难']);
 const publishableDifficulties = new Set(['简单', '中等', '困难']);
 const allowedReviewStatuses = new Set(['待整理', '待复习', '已掌握']);
@@ -38,10 +43,28 @@ const questionsPathIsDirectory = questionsPathExists && statSync(questionsDir).i
 const files = questionsPathIsDirectory
   ? readdirSync(questionsDir).filter((name) => name.endsWith('.md')).sort()
   : [];
+const experiencesPathExists = existsSync(experiencesDir);
+const experiencesPathIsDirectory = experiencesPathExists && statSync(experiencesDir).isDirectory();
+const listContentFiles = (directory, prefix = '') => readdirSync(directory, { withFileTypes: true })
+  .sort((left, right) => left.name.localeCompare(right.name, 'zh-CN'))
+  .flatMap((entry) => {
+    if (entry.name.startsWith('.')) return [];
+    const relativePath = prefix ? join(prefix, entry.name) : entry.name;
+    if (entry.isDirectory()) return listContentFiles(join(directory, entry.name), relativePath);
+    return [relativePath];
+  });
+const experienceEntries = experiencesPathIsDirectory ? listContentFiles(experiencesDir) : [];
+const experienceFiles = experienceEntries.filter(isExperienceDocumentPath);
 
 if (questionsPathExists && !questionsPathIsDirectory) {
   errors.push('docs/_questions 必须是目录');
 }
+if (experiencesPathExists && !experiencesPathIsDirectory) {
+  errors.push('docs/_experiences 必须是目录');
+}
+experienceEntries
+  .filter((name) => !isExperienceDocumentPath(name))
+  .forEach((name) => errors.push(`${name}: 公开面经内容必须使用 .md 或 .markdown 扩展名`));
 
 const unquote = (value) => {
   const trimmed = value.trim();
@@ -245,10 +268,17 @@ for (const [prefix, owners] of guidancePrefixOwners) {
   }
 }
 
+let publishedExperienceCount = 0;
+for (const filename of experienceFiles) {
+  const source = readFileSync(join(experiencesDir, filename), 'utf8');
+  validateExperienceDocument(source, filename).forEach((message) => errors.push(message));
+  if (/^published:\s*true\s*$/m.test(source)) publishedExperienceCount += 1;
+}
+
 if (errors.length > 0) {
   console.error(`内容校验失败（${errors.length} 项）：`);
   errors.forEach((error) => console.error(`- ${error}`));
   process.exitCode = 1;
 } else {
-  console.log(`内容校验通过：共 ${files.length} 道，已发布 ${publishedCount} 道，已核验 ${verifiedCount} 道，草稿 ${files.length - publishedCount} 道`);
+  console.log(`内容校验通过：共 ${files.length} 道，已发布 ${publishedCount} 道，已核验 ${verifiedCount} 道，草稿 ${files.length - publishedCount} 道；公开面经 ${publishedExperienceCount} 篇`);
 }

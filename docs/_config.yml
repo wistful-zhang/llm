@@ -11,6 +11,9 @@ collections:
   questions:
     output: true
     permalink: /questions/:name/
+  experiences:
+    output: true
+    permalink: /experiences/:name/
 
 defaults:
   - scope:
@@ -22,6 +25,11 @@ defaults:
       type: questions
     values:
       layout: question
+  - scope:
+      path: ""
+      type: experiences
+    values:
+      layout: experience
 
 exclude:
   - Gemfile

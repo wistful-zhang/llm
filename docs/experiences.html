@@ -1,0 +1,54 @@
+---
+title: 公开面经
+description: 经过主动确认和匿名整理后公开分享的大模型面试经历。
+permalink: /experiences/
+---
+
+{% assign public_experiences = site.experiences | where: 'published', true | where: 'consent_to_publish', true | sort: 'interview_month' | reverse %}
+<div class="container experience-index">
+  <header class="experience-index-header">
+    <span class="status-badge">主动公开 · 匿名分享</span>
+    <h1>公开面经</h1>
+    <p>这里只展示作者明确选择公开、并确认完成匿名处理的面试经历。浏览器里的私人进度和复盘不会自动出现在这里。</p>
+    <div class="experience-index-actions">
+      <a class="primary-button" href="{{ '/experiences/manage/' | relative_url }}">分享一篇匿名面经</a>
+      <a class="secondary-button" href="{{ '/interviews/' | relative_url }}">记录自己的面试</a>
+    </div>
+  </header>
+
+  {% if public_experiences.size > 0 %}
+    <section class="experience-library" aria-labelledby="experience-list-title">
+      <div class="interview-section-heading">
+        <div>
+          <span class="section-kicker">来自公开整理</span>
+          <h2 id="experience-list-title">全部面经</h2>
+        </div>
+        <p>共 {{ public_experiences.size }} 篇</p>
+      </div>
+      <div class="experience-list">
+        {% for experience in public_experiences %}
+          <a class="experience-card" href="{{ experience.url | relative_url }}">
+            <div class="experience-card-meta">
+              <span>{{ experience.company_alias | default: '某公司' | escape }}</span>
+              <span>{{ experience.role | escape }}</span>
+              <time datetime="{{ experience.interview_month | escape }}">{{ experience.interview_month | escape }}</time>
+            </div>
+            <h2>{{ experience.title | escape }}</h2>
+            {% if experience.round_summary %}<p>{{ experience.round_summary | escape }}</p>{% endif %}
+            <div class="tag-list">
+              {% for tag in experience.tags %}<span class="tag">{{ tag | escape }}</span>{% endfor %}
+            </div>
+            <span class="card-arrow" aria-hidden="true">↗</span>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% else %}
+    <section class="experience-empty" role="status">
+      <span class="empty-number" aria-hidden="true">01</span>
+      <h2>还没有公开面经</h2>
+      <p>私人记录仍然只在各自的浏览器里。第一篇公开内容必须由作者主动匿名整理并确认发布。</p>
+      <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看安全发布步骤</a>
+    </section>
+  {% endif %}
+</div>

@@ -10,20 +10,30 @@
     const links = [...document.querySelectorAll('[data-template-repository]')];
     if (links.length === 0) return;
 
+    const useRepositoryFallback = () => {
+      links.forEach((link) => { link.textContent = '打开 GitHub 仓库，再点 Use this template ↗'; });
+    };
+
     const repository = links[0].dataset.templateRepository;
     const [owner, name] = (repository || '').split('/');
-    if (!owner || !name) return;
+    if (!owner || !name) {
+      useRepositoryFallback();
+      return;
+    }
 
     try {
       const response = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, {
         headers: { Accept: 'application/vnd.github+json' },
       });
-      if (!response.ok) return;
+      if (!response.ok) {
+        useRepositoryFallback();
+        return;
+      }
 
       const current = await response.json();
       const template = current.is_template ? current : current.template_repository;
       if (!template?.html_url) {
-        links.forEach((link) => { link.textContent = '打开 GitHub 仓库（需先开启模板） ↗'; });
+        useRepositoryFallback();
         return;
       }
 
@@ -32,7 +42,8 @@
         link.textContent = '打开 GitHub 模板创建页 ↗';
       });
     } catch {
-      // 网络或 API 限流时保留安全的仓库首页链接。
+      // 网络或 API 限流时保留仓库首页链接，并说明仍需手动点击模板按钮。
+      useRepositoryFallback();
     }
   };
 

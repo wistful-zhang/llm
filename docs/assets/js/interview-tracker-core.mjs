@@ -1,6 +1,11 @@
 export const TRACKER_FORMAT = 'llm-interview-tracker';
 export const TRACKER_BACKUP_FORMAT = 'llm-interview-tracker-backup';
-export const TRACKER_SCHEMA_VERSION = 1;
+export const TRACKER_SCHEMA_VERSION = 2;
+
+export const VISIBILITIES = Object.freeze({
+  private: '仅自己',
+  public: '允许整理公开（不会自动上传）',
+});
 
 export const OUTCOMES = Object.freeze({
   scheduled: '已预约',
@@ -155,7 +160,7 @@ export function sanitizeTracker(value, options = {}) {
   if (version > TRACKER_SCHEMA_VERSION) {
     throw new TrackerDataError('这份记录由更新版本创建，请先更新网站后再导入。', 'future_version');
   }
-  if (version !== TRACKER_SCHEMA_VERSION) {
+  if (version !== 1 && version !== TRACKER_SCHEMA_VERSION) {
     throw new TrackerDataError('暂不支持这份旧版记录，请保留原文件并更新项目。', 'unsupported_version');
   }
 
@@ -190,6 +195,7 @@ export function sanitizeTracker(value, options = {}) {
       id,
       companyId,
       role,
+      visibility: version === 1 ? 'private' : pickEnum(item.visibility, VISIBILITIES, 'private'),
       source: cleanInlineText(item.source, 120),
       nextAction: cleanInlineText(item.nextAction, 160),
       nextActionOn: isValidDate(item.nextActionOn) ? item.nextActionOn : '',
@@ -244,6 +250,8 @@ export function upsertInterview(tracker, input, options = {}) {
   const role = cleanInlineText(input?.role, 80);
   const date = String(input?.date || '');
   const outcome = pickEnum(input?.outcome, OUTCOMES, 'waiting');
+  const visibilityProvided = Object.hasOwn(input || {}, 'visibility');
+  const visibility = pickEnum(input?.visibility, VISIBILITIES, 'private');
 
   if (!companyName) throw new TrackerDataError('请填写公司名称或匿名代号。', 'required', 'company');
   if (!role) throw new TrackerDataError('请填写岗位名称。', 'required', 'role');
@@ -282,6 +290,7 @@ export function upsertInterview(tracker, input, options = {}) {
       id: newId('application', options.idFactory),
       companyId: company.id,
       role,
+      visibility,
       source: '',
       nextAction: '',
       nextActionOn: '',
@@ -293,6 +302,7 @@ export function upsertInterview(tracker, input, options = {}) {
 
   application.companyId = company.id;
   application.role = role;
+  if (visibilityProvided) application.visibility = visibility;
   const source = cleanInlineText(input?.source, 120);
   const nextAction = cleanInlineText(input?.nextAction, 160);
   const nextActionOn = isValidDate(input?.nextActionOn) ? input.nextActionOn : '';
@@ -359,6 +369,9 @@ export function updateApplication(tracker, input, options = {}) {
 
   application.companyId = company.id;
   application.role = role;
+  if (Object.hasOwn(input || {}, 'visibility')) {
+    application.visibility = pickEnum(input.visibility, VISIBILITIES, 'private');
+  }
   application.source = cleanInlineText(input?.source, 120);
   application.nextAction = cleanInlineText(input?.nextAction, 160);
   application.nextActionOn = isValidDate(input?.nextActionOn) ? input.nextActionOn : '';
@@ -486,10 +499,11 @@ export function listUpcomingItems(tracker, today) {
   const items = [];
   for (const view of views) {
     for (const round of view.rounds) {
-      if (round.status === 'scheduled' && round.date >= currentDate) {
+      if (round.status === 'scheduled') {
         items.push({
           type: 'interview',
           date: round.date,
+          overdue: round.date < currentDate,
           company: view.company.name,
           role: view.application.role,
           label: STAGES[round.stage],
@@ -498,10 +512,11 @@ export function listUpcomingItems(tracker, today) {
         });
       }
     }
-    if (view.application.nextAction && view.application.nextActionOn >= currentDate) {
+    if (view.application.nextAction && view.application.nextActionOn) {
       items.push({
         type: 'action',
         date: view.application.nextActionOn,
+        overdue: view.application.nextActionOn < currentDate,
         company: view.company.name,
         role: view.application.role,
         label: view.application.nextAction,
@@ -510,6 +525,31 @@ export function listUpcomingItems(tracker, today) {
     }
   }
   return items.sort((left, right) => left.date.localeCompare(right.date));
+}
+
+export function buildPublicExperienceDraft(view) {
+  if (!view?.application || !Array.isArray(view.rounds)) {
+    throw new TrackerDataError('找不到可整理的面试流程。', 'missing_application');
+  }
+  const role = cleanInlineText(view.application.role, 80) || '岗位方向待补充';
+  const rounds = view.rounds.map((round, index) => (
+    `${index + 1}. ${STAGES[round.stage] || STAGES.other}：${OUTCOMES[roundOutcome(round)] || '待反馈'}`
+  ));
+  return [
+    '匿名面试经历（待二次整理）',
+    '',
+    `岗位方向：${role}`,
+    `面试轮次：${view.rounds.length} 轮`,
+    '',
+    '流程概览：',
+    ...rounds,
+    '',
+    '公开前请补充：',
+    '- 每轮主要问题与考察方向',
+    '- 可复用的回答思路与复习建议',
+    '',
+    '隐私检查：此草稿已排除公司名称、匿名来源、精确日期、下一步、个人复盘和自评分数。发布前仍需逐项检查，不要加入面试官信息、联系方式、会议链接、公司机密或受保密协议约束的内容。',
+  ].join('\n');
 }
 
 const mergeEntities = (left, right, entityType, onConflict) => {
@@ -593,7 +633,7 @@ export function escapeCsvCell(value) {
 export function trackerToCsv(tracker) {
   const views = buildApplicationViews(tracker);
   const rows = [[
-    '公司 / 匿名代号', '岗位', '面试日期', '轮次', '结果', '方式', '自评',
+    '公司 / 匿名代号', '岗位', '公开意愿', '面试日期', '轮次', '结果', '方式', '自评',
     '匿名来源', '下一步', '跟进日期', '复盘',
   ]];
   for (const view of views) {
@@ -601,6 +641,7 @@ export function trackerToCsv(tracker) {
       rows.push([
         view.company.name,
         view.application.role,
+        VISIBILITIES[view.application.visibility],
         round.date,
         STAGES[round.stage],
         OUTCOMES[roundOutcome(round)],

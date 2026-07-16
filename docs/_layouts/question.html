@@ -50,7 +50,7 @@ layout: default
     <section class="unanswered-panel" data-unanswered-question data-question-title="{{ page.title | escape }}" aria-labelledby="unanswered-title">
       <span class="answer-state-badge">待解答</span>
       <h2 id="unanswered-title">先把问题公开，答案以后再补</h2>
-      <p>这道题目前只公开问题，不会展示整理中的正文，也不会进入随机模拟面试。复制下面的补答指令交给 Codex，我会找到对应文件、补全答案、切换答案状态并同步 GitHub。</p>
+      <p>这道题目前只公开问题，不会展示整理中的正文，也不会进入随机模拟面试。Codex 打开你自己的题库仓库并拥有工作区写权限后，可以找到对应文件、补全答案和切换状态；要继续同步 GitHub，还必须已经完成 GitHub 身份验证，并对远端仓库有写权限。使用普通 AI，或任一条件不满足时，请生成答案后粘贴回 Pages CMS，再手动把答案状态改为“已完成”并保存。</p>
       <div class="unanswered-actions" data-copy-controls hidden>
         <button class="primary-button" type="button" data-copy-answer-prompt>复制给 Codex 的补答指令</button>
         <button class="secondary-button" type="button" data-copy-question>只复制题目</button>

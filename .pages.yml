@@ -107,6 +107,102 @@ content:
         options:
           format: yyyy-MM-dd
 
+  - name: experiences
+    label: 匿名公开面经
+    type: collection
+    path: docs/_experiences
+    format: yaml-frontmatter
+    filename:
+      template: "{year}-{month}-{primary}.md"
+      field: false
+    operations:
+      rename: false
+    commit:
+      templates:
+        create: "新增匿名面经：{filename}"
+        update: "更新匿名面经：{filename}"
+        delete: "删除匿名面经：{filename}"
+    view:
+      fields: [title, published, company_alias, role, interview_month]
+      primary: title
+      sort: [interview_month, title, role]
+      search: [title, company_alias, role, round_summary, tags, body]
+      default:
+        sort: interview_month
+        order: desc
+    fields:
+      - name: title
+        label: 面经标题
+        type: string
+        required: true
+        description: 使用匿名标题，例如“某互联网公司 · 大模型应用岗二面复盘”，不要写面试官或候选人姓名。
+        options:
+          minlength: 2
+          maxlength: 120
+
+      - name: published
+        label: 在公开网站显示这篇面经
+        type: boolean
+        default: false
+        description: 关闭时不会出现在阅读网站；但如果仓库是 Public，草稿源文件仍可在 GitHub 看到。真正私密的经历请只保存在“面试记录”页面，不要保存到这里。
+
+      - name: consent_to_publish
+        label: 我确认内容已匿名，并且有权公开
+        type: boolean
+        default: false
+        description: 打开网站显示前必须确认。请删除真实姓名、联系方式、会议链接、精确薪资、公司机密和受 NDA 约束的内容。
+
+      - name: company_alias
+        label: 公司匿名代号
+        type: string
+        required: true
+        default: 某公司
+        description: 必须使用“某电商公司 A”“某模型创业公司”等匿名代号，不要填写真实公司名或可定位到具体团队的内部名称。
+        options:
+          minlength: 2
+          maxlength: 40
+
+      - name: role
+        label: 岗位方向
+        type: string
+        required: true
+        description: 例如“大模型算法工程师”“AI 应用开发”。避免填写能唯一识别个人的内部岗位编号。
+        options:
+          minlength: 2
+          maxlength: 80
+
+      - name: interview_month
+        label: 面试月份
+        type: string
+        required: true
+        description: 只填写 YYYY-MM，例如 2026-07；不要保存具体面试日期。
+        options:
+          minlength: 7
+          maxlength: 7
+
+      - name: round_summary
+        label: 轮次概览
+        type: string
+        description: 例如“HR 初筛 + 两轮技术面”；不要填写面试官姓名或会议安排。
+        options:
+          maxlength: 120
+
+      - name: tags
+        label: 方向标签
+        type: string
+        list: true
+        description: 可选，例如 RAG、推理部署、Agent、系统设计。
+
+      - name: body
+        label: 可公开的面经正文
+        type: rich-text
+        required: true
+        description: 只整理你有权分享的题目、回答思路和经验。不要从本地复盘直接整段粘贴，不要加入图片或截图；保存前再次删除公司机密和个人信息。
+        options:
+          format: markdown
+          switcher: false
+          media: false
+
   - name: site_settings
     label: 站点设置
     type: file

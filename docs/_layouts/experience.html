@@ -1,0 +1,22 @@
+---
+layout: default
+---
+<article class="container experience-page" data-public-experience="true">
+  <a class="back-link" href="{{ '/experiences/' | relative_url }}">← 返回公开面经</a>
+  <header class="experience-header">
+    <span class="status-badge">已确认匿名公开</span>
+    <div class="eyebrow">{{ page.company_alias | default: '某公司' | escape }} · {{ page.role | escape }} · {{ page.interview_month | escape }}</div>
+    <h1>{{ page.title | escape }}</h1>
+    {% if page.round_summary %}<p>{{ page.round_summary | escape }}</p>{% endif %}
+    <div class="tag-list" role="list" aria-label="面经标签">
+      {% for tag in page.tags %}<span class="tag" role="listitem">{{ tag | escape }}</span>{% endfor %}
+    </div>
+  </header>
+
+  <div class="experience-public-note" role="note">
+    <strong>这是一篇主动公开的匿名整理。</strong>
+    <span>内容不代表公司固定题库；请勿补充面试官身份、联系方式、会议链接、公司机密或受 NDA 约束的信息。</span>
+  </div>
+
+  <div class="prose experience-body">{{ content }}</div>
+</article>

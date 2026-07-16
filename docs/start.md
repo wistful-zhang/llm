@@ -23,6 +23,12 @@ permalink: /start/
 
 <div class="guide-alert" role="note" markdown="1">
 
+**先记录、以后再创建自己的站点？** 面试记录按网站和浏览器分别保存。切换到自己的公开站点前，先在当前记录页导出 JSON，再到新站点使用“恢复 JSON”。Private 仓库不会部署这个记录页面，请继续使用[当前公开记录页]({{ '/interviews/' | relative_url }})，或在自己的电脑上本地预览；这些浏览器记录不会写入 Private 仓库。
+
+</div>
+
+<div class="guide-alert" role="note" markdown="1">
+
 **公开 / 私有不在题库后台设置。** 它位于 GitHub 的“Create a new repository”页面。Pages CMS 负责编辑内容，不能修改仓库可见性。
 
 </div>
@@ -44,7 +50,7 @@ permalink: /start/
   </a>
 </div>
 
-{% if site.github.repository_url %}<div class="template-launch"><div><strong>已经选好模式？</strong><br><span>接下来打开模板，在创建页按上面的决定选择 Public 或 Private。</span></div><a class="primary-button" href="{{ site.github.repository_url }}" data-template-repository="{{ site.github.repository_nwo | escape }}" target="_blank" rel="noopener noreferrer">打开模板创建页 ↗</a></div>{% endif %}
+{% if site.github.repository_url %}<div class="template-launch"><div><strong>已经选好模式？</strong><br><span>接下来打开仓库，点击 Use this template，并在创建页按上面的决定选择 Public 或 Private。</span></div><a class="primary-button" href="{{ site.github.repository_url }}" data-template-repository="{{ site.github.repository_nwo | escape }}" target="_blank" rel="noopener noreferrer">打开 GitHub 仓库，再点 Use this template ↗</a></div>{% endif %}
 
 ## 1. 从模板创建仓库
 
@@ -146,6 +152,7 @@ permalink: /start/
       <li>点击 <strong>Save</strong>（手机端是软盘图标）。待解答题只显示问题，不展示半成品，也不会进入模拟面试。</li>
       <li>答案完成后，把分类和难度改为正式值、复习状态改为“待复习”或“已掌握”，再把答案状态改成<strong>已完成</strong>并保存。</li>
     </ol>
+    <p class="guide-note"><strong>使用 AI 补答案：</strong>Codex 打开你自己的题库仓库并拥有工作区写权限后，可以直接修改对应文件；要继续同步 GitHub，还必须已经完成 GitHub 身份验证，并对远端仓库有写权限。使用普通 AI，或任一条件不满足时，请先让 AI 生成答案，再把内容粘贴回 Pages CMS，手动修改答案状态并保存。</p>
     <p class="guide-note"><strong>注意：</strong>未发布只代表不在阅读网站显示。Public 仓库中的草稿源文件仍然公开；Private 只适合普通个人非公开笔记。公司机密、未授权题库或受 NDA 约束的内容不要上传到 GitHub。</p>
   </div>
   <figure class="guide-figure">
@@ -162,11 +169,18 @@ permalink: /start/
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
   <h2>以后按需要走四条日常路径</h2>
-  <p><strong>真实面试：</strong>在浏览器记录公司、轮次、结果和复盘。<strong>只发布问题：</strong>打开发布开关，答案保持待解答。<strong>只给自己记题：</strong>关闭发布开关。<strong>准备复习：</strong>从答案已完成的题目中随机抽题。</p>
+  <p><strong>真实面试：</strong>在浏览器记录公司、轮次、结果和复盘，默认选择“仅自己”；需要分享时先改为“可整理公开”，再匿名检查并二次发布。<strong>只发布问题：</strong>打开发布开关，答案保持待解答。<strong>只给自己记题：</strong>关闭发布开关。<strong>准备复习：</strong>从答案已完成的题目中随机抽题。</p>
   <a class="primary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
+  <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看匿名面经发布步骤</a>
   <a class="secondary-button" href="{{ '/manage/' | relative_url }}#question-only-workflow">查看记题流程</a>
   <a class="secondary-button" href="{{ '/practice/' | relative_url }}">开始模拟面试</a>
 </section>
+
+<div class="guide-alert" role="note" markdown="1">
+
+**记录与公开是两件事。** 公司、轮次、结果和个人复盘默认只保存在当前浏览器。只有经过匿名化整理、确认不含隐私或受限内容，并且你明确打开发布开关的面经或题目，才应公开。即使关闭发布开关，Public 仓库中的源文件仍然可见。
+
+</div>
 
 ## 已有仓库想改变模式
 

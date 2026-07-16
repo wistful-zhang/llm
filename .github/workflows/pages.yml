@@ -51,6 +51,9 @@ jobs:
           source: ./docs
           destination: ./_site
 
+      - name: Validate rendered public experiences
+        run: node scripts/validate-rendered-experiences.mjs ./_site ./docs/_experiences
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
 
