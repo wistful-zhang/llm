@@ -3,6 +3,7 @@ import {
   OUTCOMES,
   STAGES,
   buildApplicationViews,
+  buildPublicExperienceDraft,
   createEmptyTracker,
   createTrackerBackup,
   filterApplicationViews,
@@ -67,6 +68,7 @@ import {
   const nextActionInput = document.querySelector('#interview-next-action');
   const nextDateInput = document.querySelector('#interview-next-date');
   const reflectionInput = document.querySelector('#interview-reflection');
+  const visibilityInputs = [...form.querySelectorAll('input[name="visibility"]')];
   const basicLegend = document.querySelector('#interview-basic-legend');
   const fieldsetHint = document.querySelector('#interview-fieldset-hint');
   const companyHint = document.querySelector('#interview-company-hint');
@@ -112,6 +114,7 @@ import {
   const saveSuccess = document.querySelector('#interview-save-success');
   const saveSuccessTitle = document.querySelector('#interview-save-success-title');
   const saveSuccessClose = document.querySelector('#interview-save-success-close');
+  const publicationUrl = root.dataset.publicationUrl || root.dataset.manageUrl || '../manage/#experience-publication';
 
   let loaded = readTrackerStorage(storage, storageKey, repositoryId);
   let tracker = loaded.data;
@@ -120,6 +123,8 @@ import {
   let storageBlocked = loaded.status === 'corrupt';
   let formDirty = false;
   let damagedRawDownloaded = false;
+  let formReturnFocus = { element: addButton };
+  let filterAnnouncementTimer = 0;
 
   const localDate = (date = new Date()) => {
     const year = date.getFullYear();
@@ -200,6 +205,28 @@ import {
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
+  const copyText = async (value) => {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return;
+      } catch {
+        // Clipboard permission can be denied even when the API exists; use a local fallback.
+      }
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.append(textarea);
+    textarea.select();
+    const copied = document.execCommand('copy');
+    textarea.remove();
+    if (!copied) throw new Error('copy failed');
+  };
+
   const backupFilename = (extension) => `大模型面经-面试记录-${localDate()}.${extension}`;
 
   const getView = (applicationId) => buildApplicationViews(tracker)
@@ -233,6 +260,10 @@ import {
         makeElement('strong', '', `${item.company} · ${item.role}`),
         makeElement('span', '', item.type === 'interview' ? `面试：${item.label}` : `待办：${item.label}`),
       );
+      if (item.overdue) {
+        time.classList.add('is-overdue');
+        copy.append(makeElement('span', 'interview-overdue', '已逾期'));
+      }
       row.append(time, copy);
       upcomingList.append(row);
     });
@@ -261,6 +292,57 @@ import {
     `interview-outcome interview-outcome-${outcome}`,
     OUTCOMES[outcome] || '待反馈',
   );
+
+  const applicationVisibility = (application) => (application?.visibility === 'public' ? 'public' : 'private');
+
+  const createVisibilityBadge = (application) => {
+    const visibility = applicationVisibility(application);
+    const badge = makeElement(
+      'span',
+      `interview-visibility-badge interview-visibility-${visibility}`,
+      visibility === 'public' ? '可整理公开' : '仅自己',
+    );
+    badge.title = visibility === 'public'
+      ? '仍只保存在当前浏览器，必须匿名检查并二次发布'
+      : '只保存在当前浏览器';
+    return badge;
+  };
+
+  const createPublicationPanel = (view) => {
+    const panel = makeElement('section', 'interview-publication-panel');
+    const panelId = `interview-publication-${view.application.id}`;
+    const headingId = `${panelId}-title`;
+    panel.id = panelId;
+    panel.hidden = true;
+    panel.setAttribute('aria-labelledby', headingId);
+
+    const heading = makeElement('h4', '', '匿名公开预览');
+    heading.id = headingId;
+    heading.tabIndex = -1;
+    const note = makeElement(
+      'p',
+      'interview-publication-note',
+      '下面只是本地生成的脱敏草稿，不会自动上传。已排除流程中的来源、下一步、个人复盘等信息；公开前仍要人工检查并二次确认。',
+    );
+    const preview = makeElement('pre', 'interview-publication-preview', buildPublicExperienceDraft(view));
+    preview.tabIndex = 0;
+
+    const actions = makeElement('div', 'interview-publication-actions');
+    actions.append(button('复制匿名草稿', 'copy-publication', 'primary-button', { applicationId: view.application.id }));
+    const manageLink = makeElement('a', 'secondary-button', '进入二次整理页（不会自动发布）');
+    manageLink.href = publicationUrl;
+    actions.append(
+      manageLink,
+      button('收起预览', 'close-publication', 'text-button', { applicationId: view.application.id }),
+    );
+
+    const status = makeElement('p', 'interview-publication-status');
+    status.id = `${panelId}-status`;
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    panel.append(heading, note, preview, actions, status);
+    return panel;
+  };
 
   const createRoundItem = (round) => {
     const item = makeElement('li', 'interview-round-item');
@@ -299,7 +381,9 @@ import {
       makeElement('span', 'section-kicker', view.company.name),
       makeElement('h3', '', view.application.role),
     );
-    header.append(heading, createOutcomeBadge(view.latestOutcome));
+    const statuses = makeElement('div', 'interview-flow-statuses');
+    statuses.append(createVisibilityBadge(view.application), createOutcomeBadge(view.latestOutcome));
+    header.append(heading, statuses);
 
     const meta = makeElement('p', 'interview-flow-meta');
     meta.textContent = `${view.rounds.length} 轮记录 · 最近 ${formatDate(view.latestRound.date)}`;
@@ -330,6 +414,19 @@ import {
       button('＋ 预约 / 记录下一轮', 'next-round', 'secondary-button', { applicationId: view.application.id }),
       button('编辑流程信息', 'edit-application', 'text-button', { applicationId: view.application.id }),
     );
+    let publicationPanel = null;
+    if (applicationVisibility(view.application) === 'public') {
+      publicationPanel = createPublicationPanel(view);
+      const publicationButton = button(
+        '整理公开面经',
+        'prepare-publication',
+        'secondary-button interview-publication-button',
+        { applicationId: view.application.id },
+      );
+      publicationButton.setAttribute('aria-expanded', 'false');
+      publicationButton.setAttribute('aria-controls', publicationPanel.id);
+      footer.append(publicationButton);
+    }
     const questionLink = makeElement('a', 'text-link', '保存本轮题目草稿');
     questionLink.href = root.dataset.manageUrl || '../manage/#capture-workflow';
     footer.append(
@@ -337,6 +434,7 @@ import {
       button('删除整个流程', 'delete-application', 'text-button interview-danger-button', { applicationId: view.application.id }),
     );
     article.append(footer);
+    if (publicationPanel) article.append(publicationPanel);
     return article;
   };
 
@@ -360,6 +458,7 @@ import {
     firstEmpty.hidden = views.length !== 0;
     filterEmpty.hidden = views.length === 0 || filtered.length !== 0;
     flowList.hidden = filtered.length === 0;
+    return { total: views.length, visible: filtered.length, visibleRounds: filteredRoundCount };
   };
 
   const renderAll = () => {
@@ -394,6 +493,40 @@ import {
       : '敏感场景建议用固定匿名代号，同一名称会自动合并公司统计。';
   };
 
+  const setVisibility = (value) => {
+    const normalized = value === 'public' ? 'public' : 'private';
+    visibilityInputs.forEach((input) => { input.checked = input.value === normalized; });
+  };
+
+  const rememberFormTrigger = (trigger) => {
+    if (!trigger?.focus) {
+      formReturnFocus = { element: addButton };
+      return;
+    }
+    formReturnFocus = {
+      element: trigger,
+      action: trigger.dataset?.action || '',
+      roundId: trigger.dataset?.roundId || '',
+      applicationId: trigger.dataset?.applicationId || '',
+    };
+  };
+
+  const resolveFormReturnFocus = () => {
+    const available = (element) => (
+      element?.isConnected && !element.disabled && !element.closest('[hidden]')
+    );
+    if (available(formReturnFocus.element)) return formReturnFocus.element;
+    if (formReturnFocus.action) {
+      const matching = [...flowList.querySelectorAll(`button[data-action="${formReturnFocus.action}"]`)]
+        .find((candidate) => (
+          (!formReturnFocus.roundId || candidate.dataset.roundId === formReturnFocus.roundId)
+          && (!formReturnFocus.applicationId || candidate.dataset.applicationId === formReturnFocus.applicationId)
+        ));
+      if (available(matching)) return matching;
+    }
+    return addButton;
+  };
+
   const resetForm = () => {
     form.reset();
     formModeInput.value = 'round';
@@ -404,6 +537,7 @@ import {
     outcomeInput.value = 'waiting';
     modeInput.value = 'online';
     ratingInput.value = '0';
+    setVisibility('private');
     setRoundFieldsEnabled(true);
     setApplicationFieldsEnabled(true);
     setIdentityLocked(false);
@@ -428,8 +562,9 @@ import {
     });
   };
 
-  const openNewForm = () => {
+  const openNewForm = (trigger = addButton) => {
     if (storageBlocked) return;
+    rememberFormTrigger(trigger);
     resetForm();
     formKicker.textContent = '刚面完先速记';
     formTitle.textContent = '新增一场面试';
@@ -438,9 +573,10 @@ import {
     revealForm();
   };
 
-  const openNextRoundForm = (applicationId) => {
+  const openNextRoundForm = (applicationId, trigger) => {
     const view = getView(applicationId);
     if (!view || storageBlocked) return;
+    rememberFormTrigger(trigger);
     resetForm();
     applicationIdInput.value = applicationId;
     companyInput.value = view.company.name;
@@ -448,6 +584,7 @@ import {
     sourceInput.value = view.application.source;
     nextActionInput.value = view.application.nextAction;
     nextDateInput.value = view.application.nextActionOn;
+    setVisibility(view.application.visibility);
     modeInput.value = view.latestRound?.mode || 'online';
     stageInput.value = nextStage(view.latestRound?.stage);
     outcomeInput.value = 'scheduled';
@@ -464,9 +601,10 @@ import {
     revealForm();
   };
 
-  const openEditForm = (roundId) => {
+  const openEditForm = (roundId, trigger) => {
     const context = getRoundContext(roundId);
     if (!context || storageBlocked) return;
+    rememberFormTrigger(trigger);
     const { round, view } = context;
     resetForm();
     roundIdInput.value = round.id;
@@ -481,6 +619,7 @@ import {
     sourceInput.value = view.application.source;
     nextActionInput.value = view.application.nextAction;
     nextDateInput.value = view.application.nextActionOn;
+    setVisibility(view.application.visibility);
     reflectionInput.value = round.reflection;
     setIdentityLocked(true);
     setApplicationFieldsEnabled(false);
@@ -495,9 +634,10 @@ import {
     revealForm();
   };
 
-  const openEditApplicationForm = (applicationId) => {
+  const openEditApplicationForm = (applicationId, trigger) => {
     const view = getView(applicationId);
     if (!view || storageBlocked) return;
+    rememberFormTrigger(trigger);
     resetForm();
     formModeInput.value = 'application';
     applicationIdInput.value = view.application.id;
@@ -506,6 +646,7 @@ import {
     sourceInput.value = view.application.source;
     nextActionInput.value = view.application.nextAction;
     nextDateInput.value = view.application.nextActionOn;
+    setVisibility(view.application.visibility);
     setRoundFieldsEnabled(false);
     setApplicationFieldsEnabled(true);
     setIdentityLocked(false);
@@ -521,12 +662,12 @@ import {
     revealForm();
   };
 
-  const closeForm = (force = false) => {
+  const closeForm = (force = false, restoreFocus = true) => {
     if (!force && formDirty && !window.confirm('表单里还有未保存的内容，确定关闭吗？')) return;
     formPanel.hidden = true;
     addButton.setAttribute('aria-expanded', 'false');
     resetForm();
-    addButton.focus({ preventScroll: true });
+    if (restoreFocus) resolveFormReturnFocus().focus({ preventScroll: true });
   };
 
   const handleStorageFailure = (error) => {
@@ -574,6 +715,7 @@ import {
     applicationId: applicationIdInput.value,
     company: companyInput.value,
     role: roleInput.value,
+    visibility: visibilityInputs.find((input) => input.checked)?.value || 'private',
     date: dateInput.value,
     stage: stageInput.value,
     outcome: outcomeInput.value,
@@ -589,8 +731,59 @@ import {
     searchInput.value = '';
     outcomeFilter.value = '';
     yearFilter.value = '';
+    window.clearTimeout(filterAnnouncementTimer);
     renderFlows();
     announce('已清除面试记录筛选。');
+  };
+
+  const renderFilteredResults = () => {
+    const result = renderFlows();
+    window.clearTimeout(filterAnnouncementTimer);
+    filterAnnouncementTimer = window.setTimeout(() => {
+      announce(result.visible > 0
+        ? `筛选后显示 ${result.visible} 个面试流程，共 ${result.visibleRounds} 轮记录。`
+        : '没有符合当前筛选条件的面试流程。');
+    }, 250);
+  };
+
+  const publicationPanelFor = (applicationId) => document.getElementById(`interview-publication-${applicationId}`);
+
+  const publicationButtonFor = (applicationId) => (
+    [...flowList.querySelectorAll('button[data-action="prepare-publication"]')]
+      .find((candidate) => candidate.dataset.applicationId === applicationId)
+  );
+
+  const openPublicationPanel = (applicationId, trigger) => {
+    const panel = publicationPanelFor(applicationId);
+    if (!panel) return;
+    panel.hidden = false;
+    trigger?.setAttribute('aria-expanded', 'true');
+    panel.querySelector('h4')?.focus({ preventScroll: true });
+    panel.scrollIntoView({ block: 'nearest' });
+  };
+
+  const closePublicationPanel = (applicationId) => {
+    const panel = publicationPanelFor(applicationId);
+    const trigger = publicationButtonFor(applicationId);
+    if (!panel) return;
+    panel.hidden = true;
+    trigger?.setAttribute('aria-expanded', 'false');
+    trigger?.focus({ preventScroll: true });
+  };
+
+  const copyPublication = async (applicationId) => {
+    const view = getView(applicationId);
+    const panel = publicationPanelFor(applicationId);
+    const status = panel?.querySelector('.interview-publication-status');
+    if (!view || !panel || !status || applicationVisibility(view.application) !== 'public') return;
+    try {
+      await copyText(buildPublicExperienceDraft(view));
+      status.textContent = '匿名草稿已复制。进入整理页后仍需人工检查，并再次确认发布。';
+      announce('匿名面经草稿已复制。');
+    } catch {
+      status.textContent = '复制失败，请手动选中上方预览文本后复制。';
+      announce('匿名草稿复制失败。');
+    }
   };
 
   const showSaveSuccess = (message) => {
@@ -622,7 +815,7 @@ import {
       const message = editingApplication ? '面试流程信息已更新。' : (edited ? '本轮面试记录已更新。' : '面试记录已保存。');
       if (commit(next, message)) {
         formDirty = false;
-        closeForm(true);
+        closeForm(true, false);
         showSaveSuccess(editingApplication ? '流程信息已更新' : '面试记录已保存');
       }
     } catch (error) {
@@ -640,19 +833,22 @@ import {
     event.target.removeAttribute?.('aria-invalid');
   });
 
-  addButton.addEventListener('click', () => (formPanel.hidden ? openNewForm() : closeForm()));
-  emptyAddButton.addEventListener('click', openNewForm);
+  addButton.addEventListener('click', (event) => (formPanel.hidden ? openNewForm(event.currentTarget) : closeForm()));
+  emptyAddButton.addEventListener('click', (event) => openNewForm(event.currentTarget));
   formCloseButton.addEventListener('click', () => closeForm());
   cancelButton.addEventListener('click', () => closeForm());
 
-  flowList.addEventListener('click', (event) => {
+  flowList.addEventListener('click', async (event) => {
     const target = event.target.closest('button[data-action]');
     if (!target) return;
     const { action, roundId, applicationId } = target.dataset;
 
-    if (action === 'edit-round') openEditForm(roundId);
-    if (action === 'next-round') openNextRoundForm(applicationId);
-    if (action === 'edit-application') openEditApplicationForm(applicationId);
+    if (action === 'edit-round') openEditForm(roundId, target);
+    if (action === 'next-round') openNextRoundForm(applicationId, target);
+    if (action === 'edit-application') openEditApplicationForm(applicationId, target);
+    if (action === 'prepare-publication') openPublicationPanel(applicationId, target);
+    if (action === 'close-publication') closePublicationPanel(applicationId);
+    if (action === 'copy-publication') await copyPublication(applicationId);
 
     if (action === 'delete-round') {
       const context = getRoundContext(roundId);
@@ -669,9 +865,9 @@ import {
     }
   });
 
-  searchInput.addEventListener('input', renderFlows);
-  outcomeFilter.addEventListener('change', renderFlows);
-  yearFilter.addEventListener('change', renderFlows);
+  searchInput.addEventListener('input', renderFilteredResults);
+  outcomeFilter.addEventListener('change', renderFilteredResults);
+  yearFilter.addEventListener('change', renderFilteredResults);
   clearFiltersButton.addEventListener('click', clearFilters);
   filterEmptyClearButton.addEventListener('click', clearFilters);
 
@@ -823,6 +1019,6 @@ import {
 
   saveSuccessClose.addEventListener('click', () => {
     saveSuccess.hidden = true;
-    addButton.focus({ preventScroll: true });
+    resolveFormReturnFocus().focus({ preventScroll: true });
   });
 })();

@@ -3,8 +3,10 @@ title: 面试记录
 description: 在浏览器本地记录面试公司、岗位、轮次、结果和复盘，自动统计面试公司数与求职进度。
 permalink: /interviews/
 ---
+{% assign experience_manage_pages = site.pages | where: "url", "/experiences/manage/" %}
+{% assign experience_manage_page = experience_manage_pages | first %}
 
-<div id="interview-tracker" class="container interview-page" data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}" data-manage-url="{{ '/manage/' | relative_url }}#capture-workflow">
+<div id="interview-tracker" class="container interview-page" data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}" data-manage-url="{{ '/manage/' | relative_url }}#capture-workflow" data-publication-url="{% if experience_manage_page %}{{ experience_manage_page.url | relative_url }}{% else %}{{ '/manage/' | relative_url }}#experience-publication{% endif %}">
   <header class="interview-intro">
     <span class="status-badge">浏览器本地 · 默认不上传</span>
     <h1>面试记录</h1>
@@ -17,7 +19,12 @@ permalink: /interviews/
 
   <div class="interview-privacy" role="note">
     <strong>这些记录只保存在当前浏览器。</strong>
-    <span>不会写入 GitHub，访问同一网站的其他人也看不到。换设备或清理浏览器前，请在页面底部导出 JSON 备份；共享电脑上的同一浏览器用户仍可能看到，敏感公司建议使用匿名代号。</span>
+    <span>不会写入 GitHub，访问同一网站的其他人也看不到。共享电脑上的同一浏览器用户仍可能看到，敏感公司建议使用匿名代号。</span>
+    <div class="interview-migration-note">
+      <strong>准备从当前站点切换到自己的站点？</strong>
+      <span>不同站点之间不会自动带走记录。请先在当前站导出 JSON，再到新站使用“恢复 JSON”；换设备或清理浏览器前也要这样备份。</span>
+      <a class="text-link" href="#interview-data-tools" data-open-details="interview-data-tools">前往导出 / 恢复数据 ↓</a>
+    </div>
   </div>
 
   <noscript>
@@ -99,6 +106,21 @@ permalink: /interviews/
             <span>岗位 <b>必填</b></span>
             <input id="interview-role" name="role" type="text" maxlength="80" placeholder="例如：大模型算法工程师" autocomplete="organization-title" required>
           </label>
+
+          <fieldset class="interview-visibility-field interview-field-wide interview-application-field" aria-describedby="interview-visibility-hint">
+            <legend>面试经历可见性</legend>
+            <div class="interview-visibility-options">
+              <label>
+                <input type="radio" name="visibility" value="private" checked>
+                <span><strong>仅自己</strong><small>保留在本机，不提供公开整理入口（推荐）</small></span>
+              </label>
+              <label>
+                <input type="radio" name="visibility" value="public">
+                <span><strong>可整理公开</strong><small>只标记为候选，仍需匿名检查和二次发布</small></span>
+              </label>
+            </div>
+            <p id="interview-visibility-hint">选择“可整理公开”也不会自动上传。公开前必须移除公司身份、来源、下一步、个人复盘等敏感信息，并在整理页再次确认发布。改回“仅自己”只影响本机记录，不会自动撤下已经发布的文章。</p>
+          </fieldset>
 
           <label class="interview-field interview-round-field" for="interview-date">
             <span>面试日期 <b>必填</b></span>
@@ -256,7 +278,7 @@ permalink: /interviews/
     </div>
   </section>
 
-  <details class="interview-data-tools">
+  <details id="interview-data-tools" class="interview-data-tools">
     <summary><strong>备份、换设备与清空数据</strong><span>JSON 可恢复，CSV 便于查看</span></summary>
     <div class="interview-data-tools-body">
       <p>浏览器记录不会自动跟随 GitHub 或账号同步。建议定期导出 JSON；在另一台设备打开同一页面后，使用“恢复 JSON”即可合并记录。</p>
