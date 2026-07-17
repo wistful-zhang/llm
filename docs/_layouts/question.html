@@ -1,7 +1,7 @@
 ---
 layout: default
 ---
-<article class="container question-page">
+<article class="container question-page" data-public-question="true">
   {% assign source_note = page.source | default: '' | strip %}
   {% assign answer_text = content | strip_html | strip_newlines | strip %}
   {% assign answer_ready = false %}

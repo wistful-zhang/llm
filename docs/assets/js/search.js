@@ -50,6 +50,7 @@
   resolveTemplateLinks();
 
   const search = document.querySelector('#question-search');
+  const questionList = document.querySelector('#question-list');
   const cards = [...document.querySelectorAll('.question-card')];
   const filters = [...document.querySelectorAll('.filter')];
   const empty = document.querySelector('#empty-state');
@@ -58,8 +59,20 @@
   if (!search || !empty) return;
 
   let activeCategory = null;
+  let answerIndexState = 'idle';
+  let answerIndexPromise = null;
+  let lastIndexFailureAt = 0;
+  const answerSearchById = new Map();
 
   const normalize = (value) => String(value || '').trim().toLocaleLowerCase();
+
+  const setIndexEntries = (entries) => {
+    if (!Array.isArray(entries)) throw new Error('答案搜索索引格式无效');
+    entries.forEach((entry) => {
+      if (!entry || typeof entry.id !== 'string' || typeof entry.search !== 'string') return;
+      answerSearchById.set(entry.id, normalize(entry.search));
+    });
+  };
 
   const update = () => {
     const keyword = normalize(search.value);
@@ -67,20 +80,70 @@
 
     cards.forEach((card) => {
       const matchesCategory = activeCategory === null || card.dataset.category === activeCategory;
-      const matchesKeyword = !keyword || normalize(card.dataset.search || '').includes(keyword);
+      const metadata = normalize(card.dataset.search || '');
+      const answer = answerSearchById.get(card.dataset.searchId) || '';
+      const matchesKeyword = !keyword || metadata.includes(keyword) || answer.includes(keyword);
       const visible = matchesCategory && matchesKeyword;
       card.hidden = !visible;
       if (visible) visibleCount += 1;
     });
 
-    empty.textContent = cards.length === 0
-      ? '题库还没有内容，请从管理后台添加第一道题。'
-      : '没有找到匹配的题目，换个关键词试试。';
-    empty.hidden = visibleCount !== 0;
-    if (status) status.textContent = `当前显示 ${visibleCount} 道题目`;
+    if (cards.length === 0) {
+      empty.textContent = '题库还没有内容，请从管理后台添加第一道题。';
+    } else if (answerIndexState === 'failed' && keyword) {
+      empty.textContent = '题目、分类和标签中没有匹配项；答案全文暂时无法搜索，请稍后重试。';
+    } else {
+      empty.textContent = '没有找到匹配的题目，换个关键词试试。';
+    }
+
+    const loadingAnswers = Boolean(keyword) && answerIndexState === 'loading';
+    empty.hidden = visibleCount !== 0 || loadingAnswers;
+    if (status) {
+      const scopeStatus = loadingAnswers
+        ? '，正在继续搜索答案全文'
+        : (keyword && answerIndexState === 'failed' ? '；答案全文暂时无法搜索' : '');
+      status.textContent = `当前显示 ${visibleCount} 道题目${scopeStatus}`;
+    }
   };
 
-  search.addEventListener('input', update);
+  const loadAnswerIndex = () => {
+    const indexUrl = questionList?.dataset.searchIndexUrl;
+    if (!indexUrl || answerIndexState === 'loaded') return Promise.resolve();
+    if (answerIndexPromise) return answerIndexPromise;
+    if (answerIndexState === 'failed' && Date.now() - lastIndexFailureAt < 10000) return Promise.resolve();
+
+    answerIndexState = 'loading';
+    update();
+    answerIndexPromise = fetch(indexUrl, {
+      headers: { Accept: 'application/json' },
+      credentials: 'same-origin',
+      cache: 'force-cache',
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`答案搜索索引加载失败（${response.status}）`);
+        return response.json();
+      })
+      .then((entries) => {
+        answerSearchById.clear();
+        setIndexEntries(entries);
+        answerIndexState = 'loaded';
+      })
+      .catch(() => {
+        answerSearchById.clear();
+        answerIndexState = 'failed';
+        lastIndexFailureAt = Date.now();
+      })
+      .finally(() => {
+        answerIndexPromise = null;
+        update();
+      });
+    return answerIndexPromise;
+  };
+
+  search.addEventListener('input', () => {
+    update();
+    if (normalize(search.value)) void loadAnswerIndex();
+  });
   search.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && search.value) {
       search.value = '';
@@ -101,4 +164,5 @@
   });
 
   update();
+  if (normalize(search.value)) void loadAnswerIndex();
 })();

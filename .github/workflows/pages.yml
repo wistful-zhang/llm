@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validate:
@@ -20,7 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
 
       - name: Validate question content
         run: node scripts/validate-content.mjs
@@ -28,34 +30,57 @@ jobs:
       - name: Test browser-side practice logic
         run: node --test tests/*.test.mjs
 
-  build:
-    name: Build public site
-    if: (github.event.repository.visibility == 'public' && github.event.repository.has_pages == true) || vars.ENABLE_PAGES == 'true'
+  preview-build:
+    name: Verify rendered site (pull request)
+    if: github.event_name == 'pull_request'
     needs: validate
     permissions:
       contents: read
-      pages: write
-      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Configure GitHub Pages
-        id: pages
-        uses: actions/configure-pages@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
 
       - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
+        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1
         with:
           source: ./docs
           destination: ./_site
 
-      - name: Validate rendered public experiences
-        run: node scripts/validate-rendered-experiences.mjs ./_site ./docs/_experiences
+      - name: Validate rendered public content
+        run: node scripts/validate-rendered-experiences.mjs ./_site ./docs/_experiences ./docs/_questions
+
+  build:
+    name: Build public site
+    if: github.event_name != 'pull_request' && ((github.event.repository.visibility == 'public' && github.event.repository.has_pages == true) || vars.ENABLE_PAGES == 'true')
+    needs: validate
+    permissions:
+      contents: read
+      pages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1
+        with:
+          source: ./docs
+          destination: ./_site
+
+      - name: Validate rendered public content
+        run: node scripts/validate-rendered-experiences.mjs ./_site ./docs/_experiences ./docs/_questions
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
 
   deploy:
     name: Deploy public site
@@ -71,5 +96,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
 

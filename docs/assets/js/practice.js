@@ -18,14 +18,13 @@ import { clearMath, renderMath } from './math-render.mjs';
   const summarySection = document.querySelector('#practice-summary');
   if (!source || !setup || !session || !summarySection) return;
 
-  const questions = [...source.querySelectorAll('template[data-question-id]')].map((template) => ({
-    id: template.dataset.questionId,
-    title: template.dataset.title,
-    category: template.dataset.category,
-    difficulty: template.dataset.difficulty,
-    verified: template.dataset.verified === 'true',
-    url: template.dataset.url,
-    template,
+  const questions = [...source.querySelectorAll('[data-question-id]')].map((element) => ({
+    id: element.dataset.questionId,
+    title: element.dataset.title,
+    category: element.dataset.category,
+    difficulty: element.dataset.difficulty,
+    verified: element.dataset.verified === 'true',
+    url: element.dataset.url,
   }));
   const questionById = new Map(questions.map((question) => [question.id, question]));
   const repositoryId = source.dataset.repositoryId || `${window.location.host}${window.location.pathname}`;
@@ -89,6 +88,9 @@ import { clearMath, renderMath } from './math-render.mjs';
   let timerInterval = 0;
   let timerCheckpointAt = 0;
   let storageWarningShown = false;
+  let answerRenderToken = 0;
+  const answerCache = new Map();
+  const answerRequests = new Map();
 
   const clock = () => window.performance?.now?.() ?? Date.now();
 
@@ -158,6 +160,97 @@ import { clearMath, renderMath } from './math-render.mjs';
     const minutes = Math.floor(seconds / 60);
     const remaining = seconds % 60;
     return remaining ? `${minutes} 分 ${remaining} 秒` : `${minutes} 分钟`;
+  };
+
+  const cacheAnswer = (id, fragment) => {
+    answerCache.delete(id);
+    answerCache.set(id, fragment);
+    if (answerCache.size > 20) answerCache.delete(answerCache.keys().next().value);
+  };
+
+  const readCachedAnswer = (id) => {
+    const cached = answerCache.get(id);
+    if (!cached) return null;
+    answerCache.delete(id);
+    answerCache.set(id, cached);
+    return cached;
+  };
+
+  const makeAnswerFragment = (html, pageUrl) => {
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const answer = parsed.querySelector('.question-answer');
+    if (!answer) throw new Error('题解页中没有找到答案内容');
+
+    answer.querySelectorAll('[href], [src]').forEach((element) => {
+      ['href', 'src'].forEach((attribute) => {
+        const value = element.getAttribute(attribute);
+        if (!value || value.startsWith('#')) return;
+        try {
+          element.setAttribute(attribute, new URL(value, pageUrl).href);
+        } catch {
+          element.removeAttribute(attribute);
+        }
+      });
+    });
+
+    const fragment = document.createDocumentFragment();
+    [...answer.childNodes].forEach((node) => fragment.append(node.cloneNode(true)));
+    if (!fragment.hasChildNodes()) throw new Error('题解内容为空');
+    return fragment;
+  };
+
+  const loadQuestionAnswer = async (question) => {
+    const cached = readCachedAnswer(question.id);
+    if (cached) return Promise.resolve(cached);
+    if (answerRequests.has(question.id)) return answerRequests.get(question.id);
+
+    const requestUrl = new URL(question.url, window.location.href);
+    if (requestUrl.origin !== window.location.origin) {
+      return Promise.reject(new Error('题解地址不是本站地址'));
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    const request = fetch(requestUrl.href, {
+      headers: { Accept: 'text/html' },
+      credentials: 'same-origin',
+      cache: 'force-cache',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`题解加载失败（${response.status}）`);
+        const responseUrl = new URL(response.url || requestUrl.href, requestUrl.href);
+        if (responseUrl.origin !== window.location.origin) throw new Error('题解被重定向到站外');
+        const html = await response.text();
+        if (html.length > 2000000) throw new Error('题解页面体积异常');
+        const fragment = makeAnswerFragment(html, responseUrl.href);
+        cacheAnswer(question.id, fragment);
+        return fragment;
+      })
+      .finally(() => {
+        window.clearTimeout(timeout);
+        answerRequests.delete(question.id);
+      });
+
+    answerRequests.set(question.id, request);
+    return request;
+  };
+
+  const lowerAnswerHeadings = (answer) => {
+    answer.querySelectorAll('h2, h3, h4, h5').forEach((heading) => {
+      const level = Math.min(Number(heading.tagName.slice(1)) + 1, 6);
+      const replacement = document.createElement(`h${level}`);
+      [...heading.attributes].forEach((attribute) => replacement.setAttribute(attribute.name, attribute.value));
+      replacement.append(...heading.childNodes);
+      heading.replaceWith(replacement);
+    });
+  };
+
+  const makeAnswerStatus = (message) => {
+    const statusMessage = document.createElement('p');
+    statusMessage.setAttribute('role', 'status');
+    statusMessage.textContent = message;
+    return statusMessage;
   };
 
   const currentElapsedMs = () => {
@@ -252,6 +345,7 @@ import { clearMath, renderMath } from './math-render.mjs';
 
   const showSetup = () => {
     pauseTimer(false);
+    answerRenderToken += 1;
     state = null;
     session.hidden = true;
     summarySection.hidden = true;
@@ -261,35 +355,70 @@ import { clearMath, renderMath } from './math-render.mjs';
     categorySelect.focus();
   };
 
-  const showAnswer = (moveFocus = true) => {
+  const showAnswer = async (moveFocus = true) => {
     const question = currentQuestion();
-    if (!question?.template) return;
-    const answer = question.template.content.cloneNode(true);
-    answer.querySelectorAll('h2, h3, h4, h5').forEach((heading) => {
-      const level = Math.min(Number(heading.tagName.slice(1)) + 1, 6);
-      const replacement = document.createElement(`h${level}`);
-      [...heading.attributes].forEach((attribute) => replacement.setAttribute(attribute.name, attribute.value));
-      replacement.append(...heading.childNodes);
-      heading.replaceWith(replacement);
-    });
+    if (!question?.url) return;
+    const renderToken = ++answerRenderToken;
+
     clearMath(answerContent);
-    answerContent.replaceChildren(answer);
-    void renderMath(answerContent);
+    answerContent.replaceChildren(makeAnswerStatus('正在加载这道题的参考回答…'));
+    answerContent.setAttribute('aria-busy', 'true');
     answerSection.hidden = false;
-    ratingFieldset.hidden = false;
+    ratingFieldset.hidden = true;
     revealButton.hidden = true;
     skipButton.hidden = true;
     revealButton.setAttribute('aria-expanded', 'true');
-    ratingInputs.forEach((input) => { input.checked = input.value === state.pendingRating; });
-    nextButton.disabled = !isRating(state.pendingRating);
-    nextButton.textContent = state.cursor === state.queue.length - 1 ? '完成本轮' : '下一题';
     if (moveFocus) moveFocusTo(answerTitle);
-    announce('答题提示与参考回答已展开，请对照后完成自我评价。');
+    announce('正在加载这道题的参考回答。');
+
+    try {
+      const cachedAnswer = await loadQuestionAnswer(question);
+      if (renderToken !== answerRenderToken || !state || state.phase !== 'revealed' || currentQuestion()?.id !== question.id) return;
+
+      const answer = cachedAnswer.cloneNode(true);
+      lowerAnswerHeadings(answer);
+      answerContent.replaceChildren(answer);
+      answerContent.removeAttribute('aria-busy');
+      void renderMath(answerContent);
+      ratingFieldset.hidden = false;
+      ratingInputs.forEach((input) => { input.checked = input.value === state.pendingRating; });
+      nextButton.disabled = !isRating(state.pendingRating);
+      nextButton.textContent = state.cursor === state.queue.length - 1 ? '完成本轮' : '下一题';
+      announce('答题提示与参考回答已展开，请对照后完成自我评价。');
+    } catch {
+      if (renderToken !== answerRenderToken || !state || state.phase !== 'revealed' || currentQuestion()?.id !== question.id) return;
+
+      answerContent.removeAttribute('aria-busy');
+      const message = makeAnswerStatus('参考回答暂时没有加载成功。你可以重试，或直接打开题解页查看。');
+      const actions = document.createElement('p');
+      const retry = document.createElement('button');
+      const directLink = document.createElement('a');
+      retry.className = 'secondary-button';
+      retry.type = 'button';
+      retry.textContent = '重新加载参考回答';
+      retry.addEventListener('click', () => { void showAnswer(true); });
+      directLink.className = 'text-link';
+      directLink.href = question.url;
+      directLink.target = '_blank';
+      directLink.rel = 'noopener noreferrer';
+      directLink.textContent = '打开完整题解 →';
+      actions.append(retry, document.createTextNode(' '), directLink);
+      answerContent.replaceChildren(message, actions);
+      ratingFieldset.hidden = false;
+      ratingInputs.forEach((input) => { input.checked = input.value === state.pendingRating; });
+      nextButton.disabled = !isRating(state.pendingRating);
+      nextButton.textContent = state.cursor === state.queue.length - 1 ? '完成本轮' : '下一题';
+      skipButton.hidden = false;
+      skipButton.textContent = '跳过本题，继续';
+      announce('参考回答加载失败，可以重试、打开完整题解，或直接自评后继续。');
+      if (moveFocus && document.activeElement === answerTitle) retry.focus();
+    }
   };
 
   const renderQuestion = ({ moveFocus = true } = {}) => {
     const question = currentQuestion();
     if (!question) return;
+    answerRenderToken += 1;
 
     setup.hidden = true;
     summarySection.hidden = true;
@@ -313,14 +442,16 @@ import { clearMath, renderMath } from './math-render.mjs';
     answerContent.replaceChildren();
     revealButton.hidden = false;
     skipButton.hidden = false;
+    skipButton.textContent = '暂时跳过';
     revealButton.setAttribute('aria-expanded', 'false');
     ratingInputs.forEach((input) => { input.checked = false; });
     nextButton.disabled = true;
 
     if (state.phase === 'revealed') {
-      showAnswer(false);
+      void showAnswer(false);
       pauseTimer(false);
     } else {
+      void loadQuestionAnswer(question).catch(() => {});
       startTimer();
     }
 
@@ -404,6 +535,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   function finishSession(endedEarly) {
     if (!state) return;
     pauseTimer(false);
+    answerRenderToken += 1;
     if (state.phase === 'revealed' && isRating(state.pendingRating)) {
       recordCurrent(state.pendingRating);
     }
@@ -528,11 +660,11 @@ import { clearMath, renderMath } from './math-render.mjs';
     state.phase = 'revealed';
     state.pendingRating = '';
     persistSession();
-    showAnswer();
+    void showAnswer();
   });
 
   skipButton.addEventListener('click', () => {
-    if (!state || state.phase !== 'asking') return;
+    if (!state || !['asking', 'revealed'].includes(state.phase)) return;
     pauseTimer(false);
     if (recordCurrent('skipped')) advance();
   });
@@ -615,6 +747,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     if (event.key !== activeSessionKey) return;
 
     pauseTimer(false);
+    answerRenderToken += 1;
     state = null;
     session.hidden = true;
     summarySection.hidden = true;

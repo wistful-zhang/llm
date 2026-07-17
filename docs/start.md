@@ -45,7 +45,7 @@ permalink: /start/
   <a class="path-card path-private" href="#private-flow" data-open-details="private-flow">
     <span class="status-badge status-private">Private</span>
     <strong>私有题库</strong>
-    <span>只有本人和受邀者能查看仓库，适合保存原始面试速记和个人复习内容；不部署公开网站。</span>
+    <span>只有本人和受邀者能查看仓库，适合保存原始速记；只在 CMS 编辑，不提供在线题库浏览或随机模拟。</span>
     <b>我选私有 →</b>
   </a>
 </div>
@@ -148,7 +148,7 @@ permalink: /start/
       <li>在 Pages CMS 的 <strong>Open a project</strong> 中打开仓库和 <code>main</code> 分支。</li>
       <li>进入“面试题与解答”，点击 <strong>Add an entry</strong>（手机端显示 <code>+</code>）。</li>
       <li>第一次可以只填写<strong>面试题目</strong>；日期会自动使用本地当天，答案可以稍后补。</li>
-      <li>只想自己保存：保持“在阅读网站显示这道题”关闭。想先公开问题：打开它，并让“答案状态”保持<strong>待解答</strong>。</li>
+      <li>使用 Private 仓库个人保存，或在 Public 仓库暂不展示：保持“在阅读网站显示这道题”关闭。想先公开问题：最后再打开它，并让“答案状态”保持<strong>待解答</strong>。</li>
       <li>点击 <strong>Save</strong>（手机端是软盘图标）。待解答题只显示问题，不展示半成品，也不会进入模拟面试。</li>
       <li>答案完成后，把分类和难度改为正式值、复习状态改为“待复习”或“已掌握”，再把答案状态改成<strong>已完成</strong>并保存。</li>
     </ol>
@@ -169,7 +169,7 @@ permalink: /start/
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
   <h2>以后按需要走四条日常路径</h2>
-  <p><strong>真实面试：</strong>在浏览器记录公司、轮次、结果和复盘，默认选择“仅自己”；需要分享时先改为“可整理公开”，再匿名检查并二次发布。<strong>只发布问题：</strong>打开发布开关，答案保持待解答。<strong>只给自己记题：</strong>关闭发布开关。<strong>准备复习：</strong>从答案已完成的题目中随机抽题。</p>
+  <p><strong>真实面试：</strong>在浏览器记录公司、轮次、结果和复盘，默认选择“仅自己”；需要分享时先改为“可整理公开”，再匿名检查并二次发布。<strong>只发布问题：</strong>最后打开发布开关，答案保持待解答。<strong>个人仓库速记：</strong>使用 Private 仓库并关闭发布开关。<strong>准备复习：</strong>Public 题库可从答案已完成的题目中随机抽题。</p>
   <a class="primary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
   <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看匿名面经发布步骤</a>
   <a class="secondary-button" href="{{ '/manage/' | relative_url }}#question-only-workflow">查看记题流程</a>
@@ -209,7 +209,7 @@ permalink: /start/
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。
-- **私有题库没有阅读网址**：这是预期行为，请直接收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。
+- **私有题库没有阅读网址或随机模拟**：这是当前模式的明确限制；请收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。在线浏览和模拟只能使用可公开的 Public 题库内容。
 - **组织账号没有某个按钮**：可能被组织策略限制，需要组织管理员批准。
 
 </div>

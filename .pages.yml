@@ -32,12 +32,6 @@ content:
           minlength: 2
           maxlength: 160
 
-      - name: published
-        label: 在阅读网站显示这道题
-        type: boolean
-        default: false
-        description: 只填题目也可以打开；“答案状态”保持待解答时，网站只公开问题。注意：此开关只控制阅读网站是否显示；如果仓库是 Public，未发布的源文件仍可在 GitHub 中被看到。
-
       - name: answer_status
         label: 答案状态
         type: select
@@ -107,6 +101,12 @@ content:
         options:
           format: yyyy-MM-dd
 
+      - name: published
+        label: 最后确认：在阅读网站显示这道题
+        type: boolean
+        default: false
+        description: 请在内容填写完成后最后决定。打开后，待解答状态只显示问题，已完成状态会同时显示答案并进入模拟。这个开关只控制阅读网站；Public 仓库里的所有源文件（包括关闭开关的草稿）本来就是公开的。
+
   - name: experiences
     label: 匿名公开面经
     type: collection
@@ -140,18 +140,6 @@ content:
           minlength: 2
           maxlength: 120
 
-      - name: published
-        label: 在公开网站显示这篇面经
-        type: boolean
-        default: false
-        description: 关闭时不会出现在阅读网站；但如果仓库是 Public，草稿源文件仍可在 GitHub 看到。真正私密的经历请只保存在“面试记录”页面，不要保存到这里。
-
-      - name: consent_to_publish
-        label: 我确认内容已匿名，并且有权公开
-        type: boolean
-        default: false
-        description: 打开网站显示前必须确认。请删除真实姓名、联系方式、会议链接、精确薪资、公司机密和受 NDA 约束的内容。
-
       - name: company_alias
         label: 公司匿名代号
         type: string
@@ -176,6 +164,9 @@ content:
         type: string
         required: true
         description: 只填写 YYYY-MM，例如 2026-07；不要保存具体面试日期。
+        pattern:
+          regex: '^\d{4}-(0[1-9]|1[0-2])$'
+          message: 请使用 YYYY-MM，例如 2026-07。
         options:
           minlength: 7
           maxlength: 7
@@ -202,6 +193,18 @@ content:
           format: markdown
           switcher: false
           media: false
+
+      - name: consent_to_publish
+        label: 发布前确认：已匿名并且有权公开
+        type: boolean
+        default: false
+        description: 请逐项确认正文和标题不含真实姓名、联系方式、会议链接、精确薪资、公司机密、受 NDA 约束内容，也没有直接粘贴本地私人复盘。自动校验发生在提交 GitHub 之后，不能替你保护 Public 仓库历史。
+
+      - name: published
+        label: 最后一步：在公开网站显示这篇面经
+        type: boolean
+        default: false
+        description: 只在完成上面的匿名检查后打开。关闭时仅代表网站不展示；Public 仓库中的草稿源文件仍然公开。真正私密的经历请留在浏览器“面试记录”中，不要提交到这个集合。
 
   - name: site_settings
     label: 站点设置

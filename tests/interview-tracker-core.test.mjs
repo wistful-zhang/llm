@@ -69,6 +69,33 @@ test('v1 数据无损迁移到 v2，并把既有流程设为仅自己', () => {
   assert.deepEqual(migrated.rounds, current.rounds);
 });
 
+test('清洗数据遇到非法或重复实体会停止，显式诊断模式才允许检查可恢复部分', () => {
+  const payload = createEmptyTracker('owner/repo');
+  payload.companies = [
+    { id: 'company_1', name: '甲公司' },
+    { id: 'company_1', name: '重复公司' },
+    null,
+  ];
+  payload.applications = [{ id: 'application_1', companyId: 'missing_company', role: '算法岗' }];
+
+  assert.throws(
+    () => sanitizeTracker(payload),
+    (error) => error instanceof TrackerDataError
+      && error.code === 'lossy_sanitization'
+      && error.diagnostics.length === 3,
+  );
+
+  const diagnostics = [];
+  const inspected = sanitizeTracker(payload, { strict: false, diagnostics });
+  assert.equal(inspected.companies.length, 1);
+  assert.equal(inspected.applications.length, 0);
+  assert.deepEqual(diagnostics.map((item) => item.reason), [
+    'duplicate_id',
+    'invalid_entity',
+    'missing_company',
+  ]);
+});
+
 test('新流程默认仅自己，明确选择后可记录允许整理公开', () => {
   const ids = makeIds();
   let tracker = add(createEmptyTracker('owner/repo'), {}, ids);
@@ -327,6 +354,22 @@ test('未来数据版本会被拒绝且不会降级覆盖', () => {
   assert.throws(
     () => parseTrackerBackup(payload, { repositoryId: 'owner/repo' }),
     (error) => error instanceof TrackerDataError && error.code === 'future_version',
+  );
+});
+
+test('恢复 JSON 遇到孤立或重复实体会拒绝导入，避免把裁剪结果当成完整备份', () => {
+  const payload = createEmptyTracker('owner/repo');
+  payload.rounds = [{
+    id: 'round_orphan',
+    applicationId: 'application_missing',
+    date: '2026-07-16',
+  }];
+
+  assert.throws(
+    () => parseTrackerBackup(payload, { repositoryId: 'owner/repo' }),
+    (error) => error instanceof TrackerDataError
+      && error.code === 'lossy_sanitization'
+      && error.diagnostics[0].reason === 'missing_application',
   );
 });
 
