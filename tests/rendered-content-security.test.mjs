@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   extractMarkedArticle,
@@ -37,4 +38,9 @@ test('危险 URL 的实体、百分号和空白混淆也会被拒绝', () => {
 test('普通站内链接、HTTPS 资料和图片可以通过', () => {
   const html = question('<p><a href="/start/">指南</a><a href="https://example.com/paper">论文</a><img src="/assets/demo.png" alt="示例"></p>');
   assert.deepEqual(validateRenderedPublicArticleHtml(html, 'q.html'), []);
+});
+
+test('页面 CSP 允许 MathJax 使用同源 Blob Worker', () => {
+  const layout = readFileSync(new URL('../docs/_layouts/default.html', import.meta.url), 'utf8');
+  assert.match(layout, /worker-src 'self' blob:/);
 });
