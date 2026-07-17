@@ -9,6 +9,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ page.description | default: site_description | escape }}">
     <meta name="theme-color" content="#101828">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; script-src 'self' https://cdn.jsdelivr.net; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://api.github.com; form-action 'self'; upgrade-insecure-requests">
     <title>{% if page.title %}{{ page.title | escape }} · {% endif %}{{ site_title | escape }}</title>
     <link rel="canonical" href="{{ canonical_url }}">
     <link rel="icon" type="image/svg+xml" href="{{ '/assets/favicon.svg' | relative_url }}">
@@ -19,19 +21,6 @@
     <meta property="og:url" content="{{ canonical_url }}">
     <meta property="og:site_name" content="{{ site_title | escape }}">
     <meta name="twitter:card" content="summary">
-    {% if page.collection == 'questions' %}
-      <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "Article",
-          "headline": {{ page.title | jsonify }},
-          "datePublished": {{ page.date | date: '%Y-%m-%d' | jsonify }},
-          "articleSection": {{ page.category | jsonify }},
-          "keywords": {{ page.tags | join: ', ' | jsonify }},
-          "url": {{ canonical_url | jsonify }}
-        }
-      </script>
-    {% endif %}
     <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
     {% if page.url == '/practice/' %}<noscript><style>#practice-setup{display:none!important}</style></noscript>{% endif %}
   </head>
@@ -54,7 +43,7 @@
       </div>
     </header>
 
-    <main id="main-content">{{ content }}</main>
+    <main id="main-content" tabindex="-1">{{ content }}</main>
 
     <footer class="site-footer">
       <div class="container footer-wrap">

@@ -75,11 +75,33 @@ test('浏览器存储不可用时明确降级而不是抛出未处理错误', ()
   assert.equal(loaded.data.repositoryId, 'owner/repo');
 });
 
-test('清空和备份操作保持显式', () => {
+test('清除损坏数据默认保留安全副本，彻底删除会同时移除副本', () => {
   const storage = new MemoryStorage();
   storage.setItem('key', 'value');
   assert.equal(preserveTrackerBackup(storage, 'key', 'value'), true);
   assert.equal(clearTrackerStorage(storage, 'key'), true);
   assert.equal(storage.getItem('key'), null);
   assert.equal(storage.getItem('key:backup'), 'value');
+
+  storage.setItem('key', 'restored');
+  assert.equal(clearTrackerStorage(storage, 'key', { includeBackup: true }), true);
+  assert.equal(storage.getItem('key'), null);
+  assert.equal(storage.getItem('key:backup'), null);
+});
+
+test('结构合法但含重复实体的本地数据按损坏处理，不会读取裁剪后的结果', () => {
+  const storage = new MemoryStorage();
+  const key = trackerStorageKey('owner/repo');
+  const payload = createEmptyTracker('owner/repo');
+  payload.companies = [
+    { id: 'company_1', name: '甲公司' },
+    { id: 'company_1', name: '被静默丢弃的公司' },
+  ];
+  storage.setItem(key, JSON.stringify(payload));
+
+  const loaded = readTrackerStorage(storage, key, 'owner/repo');
+  assert.equal(loaded.status, 'corrupt');
+  assert.equal(loaded.data, null);
+  assert.equal(loaded.error.code, 'lossy_sanitization');
+  assert.equal(storage.getItem(key), JSON.stringify(payload));
 });

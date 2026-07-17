@@ -63,7 +63,7 @@ title: 题库
     </div>
   </div>
 
-  <div id="question-list" class="question-list">
+  <div id="question-list" class="question-list" data-search-index-url="{{ '/search-index.json' | relative_url }}">
     {% assign questions = published_questions | sort: 'date' | reverse %}
     {% for question in questions %}
       {% assign search_tags = question.tags | join: ' ' %}
@@ -74,13 +74,12 @@ title: 题库
       {% elsif question.answer_status == nil or question.answer_status == empty %}
         {% if answer_text != empty %}{% assign answer_ready = true %}{% endif %}
       {% endif %}
-      {% assign search_body = '' %}
-      {% if answer_ready %}{% assign search_body = answer_text %}{% endif %}
       <a class="question-card"
          href="{{ question.url | relative_url }}"
          data-category="{{ question.category | escape }}"
          data-answer-status="{% if answer_ready %}complete{% else %}pending{% endif %}"
-         data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: search_tags | append: ' ' | append: search_body | downcase | escape }}">
+         data-search-id="{{ question.url | escape }}"
+         data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: search_tags | downcase | escape }}">
         <div class="card-number">{% if forloop.index < 10 %}0{% endif %}{{ forloop.index }}</div>
         <div class="card-body">
           <div class="card-meta">

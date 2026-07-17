@@ -1,3 +1,5 @@
+import { validatePublicMarkdown } from './public-markup-security.mjs';
+
 const ALLOWED_FIELDS = new Set([
   'title',
   'published',
@@ -275,16 +277,11 @@ export function validateExperienceDocument(source, filename = 'experience.md') {
   if (isPublished && renderedLikeText(body).replace(/\s+/g, ' ').trim().length < 80) {
     errors.push(filename + ': 公开面经正文至少需要 80 个有效字符');
   }
-  if (isPublished && /\{[{%]/.test(body)) {
-    errors.push(filename + ': 公开面经正文不允许使用 Liquid 模板语法');
-  }
-  if (isPublished && /<\/?[A-Za-z][^>]*>/.test(body)) {
-    errors.push(filename + ': 公开面经正文不允许使用原始 HTML，请使用普通 Markdown');
-  }
   if (isPublished && /!\[/.test(body)) {
     errors.push(filename + ': 公开面经不允许嵌入图片或截图，因为自动校验无法确认图片中是否包含隐私信息');
   }
   if (isPublished) {
+    errors.push(...validatePublicMarkdown(body, filename, '公开面经正文'));
     findSensitivePublicContent(title, companyAlias, role, roundSummary, tags, body)
       .forEach((label) => errors.push(filename + ': 公开内容包含' + label + '，请先删除或匿名处理'));
   }

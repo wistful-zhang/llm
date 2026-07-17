@@ -63,6 +63,10 @@ const isPlainObject = (value) => (
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
+const addSanitizationDiagnostic = (diagnostics, collection, index, reason, id = '') => {
+  diagnostics.push({ collection, index, reason, id: cleanInlineText(id, 120) });
+};
+
 const cleanText = (value, maxLength = 2000) => String(value ?? '')
   .normalize('NFKC')
   .replace(/\r\n?/g, '\n')
@@ -165,13 +169,30 @@ export function sanitizeTracker(value, options = {}) {
   }
 
   const fallbackNow = cleanTimestamp(options.now, new Date().toISOString());
+  const diagnostics = Array.isArray(options.diagnostics) ? options.diagnostics : [];
+  const diagnosticStart = diagnostics.length;
+  const collection = (name) => {
+    if (Array.isArray(value[name])) return value[name];
+    addSanitizationDiagnostic(diagnostics, name, -1, 'invalid_collection');
+    return [];
+  };
   const companies = [];
   const companyIds = new Set();
-  for (const item of asArray(value.companies)) {
-    if (!isPlainObject(item)) continue;
+  for (const [index, item] of collection('companies').entries()) {
+    if (!isPlainObject(item)) {
+      addSanitizationDiagnostic(diagnostics, 'companies', index, 'invalid_entity');
+      continue;
+    }
     const id = cleanId(item.id);
     const name = cleanInlineText(item.name, 80);
-    if (!id || !name || companyIds.has(id)) continue;
+    if (!id || !name) {
+      addSanitizationDiagnostic(diagnostics, 'companies', index, 'missing_required_field', item.id);
+      continue;
+    }
+    if (companyIds.has(id)) {
+      addSanitizationDiagnostic(diagnostics, 'companies', index, 'duplicate_id', id);
+      continue;
+    }
     companyIds.add(id);
     companies.push({
       id,
@@ -184,12 +205,26 @@ export function sanitizeTracker(value, options = {}) {
 
   const applications = [];
   const applicationIds = new Set();
-  for (const item of asArray(value.applications)) {
-    if (!isPlainObject(item)) continue;
+  for (const [index, item] of collection('applications').entries()) {
+    if (!isPlainObject(item)) {
+      addSanitizationDiagnostic(diagnostics, 'applications', index, 'invalid_entity');
+      continue;
+    }
     const id = cleanId(item.id);
     const companyId = cleanId(item.companyId);
     const role = cleanInlineText(item.role, 80);
-    if (!id || !companyIds.has(companyId) || !role || applicationIds.has(id)) continue;
+    if (!id || !role) {
+      addSanitizationDiagnostic(diagnostics, 'applications', index, 'missing_required_field', item.id);
+      continue;
+    }
+    if (!companyIds.has(companyId)) {
+      addSanitizationDiagnostic(diagnostics, 'applications', index, 'missing_company', id);
+      continue;
+    }
+    if (applicationIds.has(id)) {
+      addSanitizationDiagnostic(diagnostics, 'applications', index, 'duplicate_id', id);
+      continue;
+    }
     applicationIds.add(id);
     applications.push({
       id,
@@ -206,11 +241,25 @@ export function sanitizeTracker(value, options = {}) {
 
   const rounds = [];
   const roundIds = new Set();
-  for (const item of asArray(value.rounds)) {
-    if (!isPlainObject(item)) continue;
+  for (const [index, item] of collection('rounds').entries()) {
+    if (!isPlainObject(item)) {
+      addSanitizationDiagnostic(diagnostics, 'rounds', index, 'invalid_entity');
+      continue;
+    }
     const id = cleanId(item.id);
     const applicationId = cleanId(item.applicationId);
-    if (!id || !applicationIds.has(applicationId) || !isValidDate(item.date) || roundIds.has(id)) continue;
+    if (!id || !isValidDate(item.date)) {
+      addSanitizationDiagnostic(diagnostics, 'rounds', index, 'missing_required_field', item.id);
+      continue;
+    }
+    if (!applicationIds.has(applicationId)) {
+      addSanitizationDiagnostic(diagnostics, 'rounds', index, 'missing_application', id);
+      continue;
+    }
+    if (roundIds.has(id)) {
+      addSanitizationDiagnostic(diagnostics, 'rounds', index, 'duplicate_id', id);
+      continue;
+    }
 
     const outcome = Object.hasOwn(OUTCOMES, item.outcome) ? item.outcome : roundOutcome(item);
     const state = OUTCOME_STATE[outcome];
@@ -229,6 +278,16 @@ export function sanitizeTracker(value, options = {}) {
       createdAt: cleanTimestamp(item.createdAt, fallbackNow),
       updatedAt: cleanTimestamp(item.updatedAt, fallbackNow),
     });
+  }
+
+  const newDiagnostics = diagnostics.slice(diagnosticStart);
+  if (newDiagnostics.length && options.strict !== false) {
+    const error = new TrackerDataError(
+      `记录中有 ${newDiagnostics.length} 条无效或重复数据。为避免静默丢失内容，已停止读取；请保留原文件并检查后重试。`,
+      'lossy_sanitization',
+    );
+    error.diagnostics = newDiagnostics;
+    throw error;
   }
 
   return {

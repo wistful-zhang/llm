@@ -89,9 +89,10 @@ export function preserveTrackerBackup(storage, key, raw) {
   }
 }
 
-export function clearTrackerStorage(storage, key) {
+export function clearTrackerStorage(storage, key, options = {}) {
   try {
     storage.removeItem(key);
+    if (options.includeBackup) storage.removeItem(`${key}:backup`);
     return true;
   } catch {
     return false;

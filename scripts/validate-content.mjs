@@ -17,6 +17,10 @@ import {
   isExperienceDocumentPath,
   validateExperienceDocument,
 } from './experience-publication.mjs';
+import {
+  isQuestionDocumentPath,
+  parseQuestionDocument,
+} from './question-publication.mjs';
 
 const questionsDir = fileURLToPath(new URL('../docs/_questions/', import.meta.url));
 const experiencesDir = fileURLToPath(new URL('../docs/_experiences/', import.meta.url));
@@ -38,13 +42,6 @@ const guidancePrefixOwners = new Map();
 const errors = [];
 let publishedCount = 0;
 let verifiedCount = 0;
-const questionsPathExists = existsSync(questionsDir);
-const questionsPathIsDirectory = questionsPathExists && statSync(questionsDir).isDirectory();
-const files = questionsPathIsDirectory
-  ? readdirSync(questionsDir).filter((name) => name.endsWith('.md')).sort()
-  : [];
-const experiencesPathExists = existsSync(experiencesDir);
-const experiencesPathIsDirectory = experiencesPathExists && statSync(experiencesDir).isDirectory();
 const listContentFiles = (directory, prefix = '') => readdirSync(directory, { withFileTypes: true })
   .sort((left, right) => left.name.localeCompare(right.name, 'zh-CN'))
   .flatMap((entry) => {
@@ -53,6 +50,12 @@ const listContentFiles = (directory, prefix = '') => readdirSync(directory, { wi
     if (entry.isDirectory()) return listContentFiles(join(directory, entry.name), relativePath);
     return [relativePath];
   });
+const questionsPathExists = existsSync(questionsDir);
+const questionsPathIsDirectory = questionsPathExists && statSync(questionsDir).isDirectory();
+const questionEntries = questionsPathIsDirectory ? listContentFiles(questionsDir) : [];
+const files = questionEntries.filter(isQuestionDocumentPath);
+const experiencesPathExists = existsSync(experiencesDir);
+const experiencesPathIsDirectory = experiencesPathExists && statSync(experiencesDir).isDirectory();
 const experienceEntries = experiencesPathIsDirectory ? listContentFiles(experiencesDir) : [];
 const experienceFiles = experienceEntries.filter(isExperienceDocumentPath);
 
@@ -62,28 +65,12 @@ if (questionsPathExists && !questionsPathIsDirectory) {
 if (experiencesPathExists && !experiencesPathIsDirectory) {
   errors.push('docs/_experiences 必须是目录');
 }
+questionEntries
+  .filter((name) => !isQuestionDocumentPath(name))
+  .forEach((name) => errors.push(`${name}: 题目内容必须使用 .md 或 .markdown 扩展名`));
 experienceEntries
   .filter((name) => !isExperienceDocumentPath(name))
   .forEach((name) => errors.push(`${name}: 公开面经内容必须使用 .md 或 .markdown 扩展名`));
-
-const unquote = (value) => {
-  const trimmed = value.trim();
-  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-      (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-    return trimmed.slice(1, -1).trim();
-  }
-  return trimmed;
-};
-
-const field = (frontmatter, name) => {
-  const match = frontmatter.match(new RegExp(`^${name}:\\s*(.+?)\\s*$`, 'm'));
-  return match ? unquote(match[1]) : '';
-};
-
-const rawField = (frontmatter, name) => {
-  const match = frontmatter.match(new RegExp(`^${name}:\\s*(.+?)\\s*$`, 'm'));
-  return match ? match[1].trim() : '';
-};
 
 const normalizeTitle = (value) => value
   .normalize('NFKC')
@@ -92,25 +79,25 @@ const normalizeTitle = (value) => value
 
 for (const filename of files) {
   const source = readFileSync(join(questionsDir, filename), 'utf8').replace(/^\uFEFF/, '');
-  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/);
-
-  if (!match) {
-    errors.push(`${filename}: 缺少有效的 YAML frontmatter`);
+  const parsedDocument = parseQuestionDocument(source, filename);
+  errors.push(...parsedDocument.errors);
+  if (!parsedDocument.hasFrontmatter) {
     continue;
   }
 
-  const [, frontmatter, body] = match;
-  const title = field(frontmatter, 'title');
-  const category = field(frontmatter, 'category');
-  const difficulty = field(frontmatter, 'difficulty');
-  const sourceNote = field(frontmatter, 'source');
-  const reviewStatus = field(frontmatter, 'review_status');
-  const published = rawField(frontmatter, 'published');
-  const verified = rawField(frontmatter, 'verified');
-  const answerStatus = field(frontmatter, 'answer_status');
-  const date = field(frontmatter, 'date');
-  const isPublished = published === 'true';
-  const isVerified = verified === 'true';
+  const { body, values } = parsedDocument;
+  const value = (name) => String(values.get(name) ?? '');
+  const title = value('title');
+  const category = value('category');
+  const difficulty = value('difficulty');
+  const sourceNote = value('source');
+  const reviewStatus = value('review_status');
+  const published = values.get('published');
+  const verified = values.get('verified');
+  const answerStatus = value('answer_status');
+  const date = value('date');
+  const isPublished = published === true;
+  const isVerified = verified === true;
   const effectiveAnswerStatus = getEffectiveAnswerStatus({ answerStatus, body });
   const hasAnswer = hasCompleteAnswer({ answerStatus, body });
   validateMathFormatting(body).forEach((message) => {
@@ -149,7 +136,7 @@ for (const filename of files) {
   if (isVerified && !hasAnswer) {
     errors.push(`${filename}: verified: true 只能用于答案状态为 complete 且正文有效的题目`);
   }
-  if (verified && !['true', 'false'].includes(verified)) {
+  if (verified !== undefined && ![true, false].includes(verified)) {
     errors.push(`${filename}: verified 必须是未加引号的 YAML 布尔值 true 或 false`);
   }
   if (isVerified && !sourceNote) {
@@ -161,7 +148,7 @@ for (const filename of files) {
   if (isPublished && hasAnswer && reviewStatus === '待整理') {
     errors.push(`${filename}: 发布前必须把 review_status 从“待整理”改为“待复习”或“已掌握”`);
   }
-  if (!['true', 'false'].includes(published)) {
+  if (![true, false].includes(published)) {
     errors.push(`${filename}: published 必须是未加引号的 YAML 布尔值 true 或 false`);
   }
   const parsedDate = new Date(`${date}T00:00:00Z`);

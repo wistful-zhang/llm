@@ -454,7 +454,8 @@ import {
       ? `${filtering ? `显示 ${filtered.length} / ${views.length} 个流程 · ${filteredRoundCount} 轮记录` : `${views.length} 个流程 · ${roundCount} 轮记录`}`
       : '还没有记录';
     toolbar.hidden = views.length === 0;
-    clearAllButton.disabled = views.length === 0;
+    // “彻底删除”也负责清除恢复流程留下的安全副本，因此即使列表为空也要可用。
+    clearAllButton.disabled = storageBlocked;
     firstEmpty.hidden = views.length !== 0;
     filterEmpty.hidden = views.length === 0 || filtered.length !== 0;
     flowList.hidden = filtered.length === 0;
@@ -938,17 +939,16 @@ import {
   });
 
   clearAllButton.addEventListener('click', () => {
-    if (!tracker.rounds.length) return;
-    if (!window.confirm('确定清空全部公司、流程和面试记录吗？建议先导出 JSON 备份。此操作无法撤销。')) return;
-    if (storageAvailable && !clearTrackerStorage(storage, storageKey)) {
-      setAlert('没有清空记录', '浏览器拒绝了清空操作，现有数据仍保留。请检查站点存储设置后重试。');
+    if (!window.confirm('确定彻底删除本机的全部公司、流程、面试记录和系统安全副本吗？建议先导出 JSON 备份。此操作无法撤销。')) return;
+    if (storageAvailable && !clearTrackerStorage(storage, storageKey, { includeBackup: true })) {
+      setAlert('没有彻底删除本机记录', '浏览器拒绝了删除操作，仍可能保留记录或安全副本。请检查站点存储设置后重试。');
       return;
     }
     tracker = createEmptyTracker(repositoryId);
     saveSuccess.hidden = true;
     closeForm(true);
     renderAll();
-    announce('全部面试记录已清空。');
+    announce('本机面试记录和系统安全副本已彻底删除。');
   });
 
   downloadRawButton.addEventListener('click', () => {

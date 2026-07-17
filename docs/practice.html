@@ -203,13 +203,13 @@ permalink: /practice/
 
     <div id="practice-question-data" data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}" hidden>
       {% for question in published_questions %}
-        <template
+        <span
           data-question-id="{{ question.url | escape }}"
           data-title="{{ question.title | escape }}"
           data-category="{{ question.category | escape }}"
           data-difficulty="{{ question.difficulty | escape }}"
           data-verified="{{ question.verified | default: false }}"
-          data-url="{{ question.url | relative_url | escape }}">{{ question.content | markdownify }}</template>
+          data-url="{{ question.url | relative_url | escape }}"></span>
       {% endfor %}
     </div>
   {% endif %}

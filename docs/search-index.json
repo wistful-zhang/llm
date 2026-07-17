@@ -1,0 +1,19 @@
+---
+layout: null
+permalink: /search-index.json
+---
+[
+{% assign published_questions = site.questions | where: 'published', true %}
+{% for question in published_questions %}
+  {% assign answer_text = question.content | strip_html | strip_newlines | strip %}
+  {% assign answer_ready = false %}
+  {% if question.answer_status == 'complete' and answer_text != empty %}
+    {% assign answer_ready = true %}
+  {% elsif question.answer_status == nil or question.answer_status == empty %}
+    {% if answer_text != empty %}{% assign answer_ready = true %}{% endif %}
+  {% endif %}
+  {% assign search_body = '' %}
+  {% if answer_ready %}{% assign search_body = answer_text %}{% endif %}
+  {"id": {{ question.url | jsonify }}, "search": {{ search_body | downcase | jsonify }}}{% unless forloop.last %},{% endunless %}
+{% endfor %}
+]
