@@ -46,9 +46,9 @@ content:
               label: 已完成（显示答案并进入模拟）
 
       - name: body
-        label: 解答 / 私下整理区（可以留空）
+        label: 解答草稿区（可以留空）
         type: rich-text
-        description: 答案状态为“待解答”时，即使这里有半成品也不会在网站展示或进入模拟。可在题目页复制补答指令交给 Codex；手动写完后请把答案状态改为“已完成”。
+        description: 答案状态为“待解答”时，半成品不会在阅读网站展示或进入模拟；但 Public 仓库中的源文件始终可见。可在题目页复制补答指令交给 Codex；手动写完后请把答案状态改为“已完成”。
         options:
           format: markdown
           switcher: false
@@ -284,6 +284,17 @@ content:
         description: 显示在每个页面底部，可留空。
         options:
           maxlength: 80
+
+actions:
+  - name: validate-and-publish
+    label: 检查内容并更新网站
+    workflow: pages.yml
+    ref: current
+    cancelable: false
+    confirm:
+      title: 重新检查并更新网站？
+      message: 当前分支会先运行检查；只有默认分支的 Public 仓库会继续更新网站，Private 仓库通常只检查。
+      button: 开始检查
 
 settings:
   hide: true

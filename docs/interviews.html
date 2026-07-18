@@ -13,13 +13,13 @@ permalink: /interviews/
     <p>记录真实面试的公司、岗位、轮次和结果。系统会自动区分“面试了几家公司”和“总共面了几轮”，不用自己维护数字。</p>
     <div class="interview-header-actions">
       <button id="interview-add" class="primary-button" type="button" aria-expanded="false" aria-controls="interview-form-panel">新增一场面试</button>
-      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">先保存为题库草稿</a>
+      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">去题库只记问题</a>
     </div>
   </header>
 
   <div class="interview-privacy" role="note">
     <strong>这些记录只保存在当前浏览器。</strong>
-    <span>不会写入 GitHub，访问同一网站的其他人也看不到。共享电脑上的同一浏览器用户仍可能看到，敏感公司建议使用匿名代号。</span>
+    <span>不会写入 GitHub，其他设备和普通网站访客看不到。但浏览器本地存储不是加密保险箱：同一 github.io 域名下的其他项目页面，以及能使用同一浏览器资料的用户，理论上可能读取这些数据。请使用公司匿名代号，不要保存联系方式、会议链接或公司机密。</span>
     <div class="interview-migration-note">
       <strong>准备从当前站点切换到自己的站点？</strong>
       <span>不同站点之间不会自动带走记录。请先在当前站导出 JSON，再到新站使用“恢复 JSON”；换设备或清理浏览器前也要这样备份。</span>
@@ -108,18 +108,18 @@ permalink: /interviews/
           </label>
 
           <fieldset class="interview-visibility-field interview-field-wide interview-application-field" aria-describedby="interview-visibility-hint">
-            <legend>面试经历可见性</legend>
+            <legend>分享计划</legend>
             <div class="interview-visibility-options">
               <label>
                 <input type="radio" name="visibility" value="private" checked>
-                <span><strong>仅自己</strong><small>保留在本机，不提供公开整理入口（推荐）</small></span>
+                <span><strong>仅当前浏览器</strong><small>不提供匿名分享整理入口（推荐）</small></span>
               </label>
               <label>
                 <input type="radio" name="visibility" value="public">
-                <span><strong>可整理公开</strong><small>只标记为候选，仍需匿名检查和二次发布</small></span>
+                <span><strong>准备匿名分享</strong><small>只增加整理入口，仍不会自动上传</small></span>
               </label>
             </div>
-            <p id="interview-visibility-hint">选择“可整理公开”也不会自动上传。公开前必须移除公司身份、来源、下一步、个人复盘等敏感信息，并在整理页再次确认发布。改回“仅自己”只影响本机记录，不会自动撤下已经发布的文章。</p>
+            <p id="interview-visibility-hint">这只是当前浏览器里的分享计划，不是真正的公开 / 私有权限。选择“准备匿名分享”不会自动上传；公开前必须移除公司身份、来源、下一步、个人复盘等敏感信息，并在整理页再次确认。改回“仅当前浏览器”也不会自动撤下已经发布的文章。同一 github.io 域名下的其他项目和同一浏览器资料用户理论上仍可能访问本地存储。</p>
           </fieldset>
 
           <label class="interview-field interview-round-field" for="interview-date">
@@ -168,9 +168,9 @@ permalink: /interviews/
       </fieldset>
 
       <details id="interview-more-fields" class="interview-more-fields">
-        <summary><strong id="interview-more-title">补充复盘与下一步</strong> <span id="interview-more-hint">选填，但建议面完顺手写</span></summary>
+        <summary><strong id="interview-more-title">补充题目、复盘与下一步</strong> <span id="interview-more-hint">选填，但建议面完顺手写</span></summary>
         <fieldset class="interview-fieldset interview-fieldset-more">
-          <legend class="sr-only">复盘与下一步</legend>
+          <legend class="sr-only">题目、复盘与下一步</legend>
           <div class="interview-form-grid">
             <label class="interview-field interview-round-field" for="interview-rating">
               <span>自我感觉</span>
@@ -182,6 +182,12 @@ permalink: /interviews/
                 <option value="4">4 · 发挥不错</option>
                 <option value="5">5 · 很有把握</option>
               </select>
+            </label>
+
+            <label class="interview-field interview-field-wide interview-round-field" for="interview-questions">
+              <span>本轮被问题目</span>
+              <textarea id="interview-questions" name="questions" rows="6" maxlength="3300" placeholder="每行一道，例如：&#10;为什么 KV Cache 能加速推理？&#10;RAG 的召回率和最终回答质量应该怎样评估？"></textarea>
+              <small>每行一道，最多 20 道，每道不超过 160 字。题目只随本轮记录保存在浏览器和你的导出文件中，不会自动写入题库或上传；保存前仍要移除未授权题库、身份线索和受 NDA 约束内容。</small>
             </label>
 
             <label class="interview-field interview-application-field" for="interview-source">
@@ -218,10 +224,10 @@ permalink: /interviews/
   <section id="interview-save-success" class="interview-save-success" role="status" tabindex="-1" hidden>
     <div>
       <strong id="interview-save-success-title">面试记录已保存</strong>
-      <p>公司和轮次统计已经更新。题目不会自动关联到这条本地记录；如果还记得原题，可以继续保存为未发布题库草稿。Public 仓库中的草稿源文件仍可见。</p>
+      <p>公司、轮次和本轮被问题目已经保存在当前浏览器。题目不会自动上传到题库；可以在流程卡片中复制全部题目的批量整理稿，再交给 Codex 或逐题粘贴到 Pages CMS。Public 仓库中的未发布源文件仍可见。</p>
     </div>
     <div class="interview-save-success-actions">
-      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">先保存为题库草稿</a>
+      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">打开题库整理指南</a>
       <button id="interview-save-success-close" class="text-button" type="button">暂时完成</button>
     </div>
   </section>
@@ -238,7 +244,7 @@ permalink: /interviews/
     <div id="interview-toolbar" class="interview-toolbar">
       <label class="search-box interview-search" for="interview-search">
         <span aria-hidden="true">⌕</span>
-        <input id="interview-search" type="search" aria-label="搜索面试记录" placeholder="搜索公司、岗位或复盘…" autocomplete="off">
+        <input id="interview-search" type="search" aria-label="搜索面试记录" placeholder="搜索公司、岗位、题目或复盘…" autocomplete="off">
       </label>
       <div class="interview-filter-grid">
         <label class="interview-field" for="interview-filter-outcome">

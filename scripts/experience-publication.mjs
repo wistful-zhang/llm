@@ -1,4 +1,10 @@
 import { validatePublicMarkdown } from './public-markup-security.mjs';
+import {
+  findSensitivePublicContent,
+  renderedLikeText,
+} from './public-content-privacy.mjs';
+
+export { findSensitivePublicContent } from './public-content-privacy.mjs';
 
 const ALLOWED_FIELDS = new Set([
   'title',
@@ -12,84 +18,6 @@ const ALLOWED_FIELDS = new Set([
 ]);
 
 const BOOLEAN_FIELDS = new Set(['published', 'consent_to_publish']);
-
-const namedEntities = new Map([
-  ['amp', '&'],
-  ['apos', "'"],
-  ['colon', ':'],
-  ['commat', '@'],
-  ['gt', '>'],
-  ['hyphen', '-'],
-  ['lt', '<'],
-  ['num', '#'],
-  ['period', '.'],
-  ['quot', '"'],
-  ['sol', '/'],
-]);
-
-const decodeHtmlEntitiesOnce = (value) => String(value || '')
-  .replace(/&#(x[0-9a-f]+|\d+);/gi, (match, token) => {
-    const radix = token[0].toLowerCase() === 'x' ? 16 : 10;
-    const digits = radix === 16 ? token.slice(1) : token;
-    const codePoint = Number.parseInt(digits, radix);
-    if (!Number.isInteger(codePoint) || codePoint < 0 || codePoint > 0x10ffff) return match;
-    return String.fromCodePoint(codePoint);
-  })
-  .replace(/&([a-z]+);/gi, (match, name) => namedEntities.get(name.toLowerCase()) || match);
-
-const decodeHtmlEntities = (value) => {
-  let decoded = String(value || '');
-  for (let pass = 0; pass < 2; pass += 1) decoded = decodeHtmlEntitiesOnce(decoded);
-  return decoded;
-};
-
-const decodePercentEncoding = (value) => {
-  let decoded = String(value || '');
-  for (let pass = 0; pass < 2; pass += 1) {
-    try {
-      decoded = decodeURIComponent(decoded);
-    } catch {
-      break;
-    }
-  }
-  return decoded;
-};
-
-const renderedLikeText = (value) => decodeHtmlEntities(value)
-  .normalize('NFKC')
-  .replace(/<!--[\s\S]*?-->/g, ' ')
-  .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-  .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-  .replace(/<\/?[A-Za-z][^>]*>/g, '')
-  .replace(/(?:\*{1,3}|_{1,3}|~{2}|\x60+)/g, '')
-  .replace(/\\(?=\S)/g, '')
-  .replace(/\p{Default_Ignorable_Code_Point}/gu, '');
-
-const sensitivePatterns = [
-  {
-    pattern: /(?:^|[^\d])1[3-9](?:[\s().\-–—_*~\x60\u200b-\u200d]*\d){9}(?!\d)/,
-    label: '疑似手机号码',
-  },
-  {
-    pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i,
-    label: '疑似邮箱地址',
-  },
-  {
-    pattern: /https?:\/\/(?:[A-Z0-9-]+\.)*(?:zoom\.us|meet\.google\.com|webex\.com|teams\.microsoft\.com|teams\.microsoft\.us|meeting\.tencent\.com|voovmeeting\.com|feishu\.cn|larksuite\.com|dingtalk\.com|skype\.com|whereby\.com|meet\.jit\.si|gotomeeting\.com|goto\.com|bluejeans\.com|ringcentral\.com)(?=[:/?#\s]|$)/i,
-    label: '疑似会议链接',
-  },
-];
-
-export const findSensitivePublicContent = (...values) => {
-  const candidates = values.flat(Infinity).flatMap((value) => {
-    const decoded = decodeHtmlEntities(value).normalize('NFKC');
-    const percentDecoded = decodePercentEncoding(decoded);
-    return [decoded, renderedLikeText(decoded), percentDecoded, renderedLikeText(percentDecoded)];
-  });
-  return sensitivePatterns
-    .filter(({ pattern }) => candidates.some((candidate) => pattern.test(candidate)))
-    .map(({ label }) => label);
-};
 
 const parseSafeScalar = (rawValue, fieldName, lineNumber, filename, errors) => {
   const raw = String(rawValue || '').trim();

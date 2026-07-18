@@ -4,6 +4,7 @@ import {
   STAGES,
   buildApplicationViews,
   buildPublicExperienceDraft,
+  buildQuestionBatchDraft,
   createEmptyTracker,
   createTrackerBackup,
   filterApplicationViews,
@@ -67,6 +68,7 @@ import {
   const sourceInput = document.querySelector('#interview-source');
   const nextActionInput = document.querySelector('#interview-next-action');
   const nextDateInput = document.querySelector('#interview-next-date');
+  const questionsInput = document.querySelector('#interview-questions');
   const reflectionInput = document.querySelector('#interview-reflection');
   const visibilityInputs = [...form.querySelectorAll('input[name="visibility"]')];
   const basicLegend = document.querySelector('#interview-basic-legend');
@@ -300,11 +302,11 @@ import {
     const badge = makeElement(
       'span',
       `interview-visibility-badge interview-visibility-${visibility}`,
-      visibility === 'public' ? '可整理公开' : '仅自己',
+      visibility === 'public' ? '准备匿名分享' : '仅当前浏览器',
     );
     badge.title = visibility === 'public'
       ? '仍只保存在当前浏览器，必须匿名检查并二次发布'
-      : '只保存在当前浏览器';
+      : '仅保存在当前网页所属域名的浏览器本地存储中';
     return badge;
   };
 
@@ -322,9 +324,9 @@ import {
     const note = makeElement(
       'p',
       'interview-publication-note',
-      '下面只是本地生成的脱敏草稿，不会自动上传。已排除流程中的来源、下一步、个人复盘等信息；公开前仍要人工检查并二次确认。',
+      '只有主动打开这个整理预览时，本流程记录的题目才会加入草稿。草稿不会自动上传；流程来源、下一步和个人复盘已排除，但题目文字仍需逐条检查授权、身份线索和保密要求。',
     );
-    const preview = makeElement('pre', 'interview-publication-preview', buildPublicExperienceDraft(view));
+    const preview = makeElement('pre', 'interview-publication-preview');
     preview.tabIndex = 0;
 
     const actions = makeElement('div', 'interview-publication-actions');
@@ -359,6 +361,14 @@ import {
     item.append(top);
 
     if (round.rating) item.append(makeElement('p', 'interview-round-rating', `自我感觉：${round.rating} / 5`));
+    if (round.questions.length > 0) {
+      const asked = makeElement('div', 'interview-round-reflection');
+      asked.append(makeElement('strong', '', `被问题目（${round.questions.length}）`));
+      const list = makeElement('ol');
+      round.questions.forEach((question) => list.append(makeElement('li', '', question)));
+      asked.append(list);
+      item.append(asked);
+    }
     if (round.reflection) item.append(makeElement('p', 'interview-round-reflection', round.reflection));
 
     const actions = makeElement('div', 'interview-round-actions');
@@ -427,13 +437,28 @@ import {
       publicationButton.setAttribute('aria-controls', publicationPanel.id);
       footer.append(publicationButton);
     }
-    const questionLink = makeElement('a', 'text-link', '保存本轮题目草稿');
+    const questionCount = view.rounds.reduce((total, round) => total + round.questions.length, 0);
+    let questionCopyStatus = null;
+    if (questionCount > 0) {
+      footer.append(button(
+        `复制全部被问题目（${questionCount}）`,
+        'copy-questions',
+        'secondary-button',
+        { applicationId: view.application.id },
+      ));
+      questionCopyStatus = makeElement('p', 'interview-publication-status');
+      questionCopyStatus.id = `interview-question-copy-${view.application.id}`;
+      questionCopyStatus.setAttribute('role', 'status');
+      questionCopyStatus.setAttribute('aria-live', 'polite');
+    }
+    const questionLink = makeElement('a', 'text-link', '到题库整理这些问题');
     questionLink.href = root.dataset.manageUrl || '../manage/#capture-workflow';
     footer.append(
       questionLink,
       button('删除整个流程', 'delete-application', 'text-button interview-danger-button', { applicationId: view.application.id }),
     );
     article.append(footer);
+    if (questionCopyStatus) article.append(questionCopyStatus);
     if (publicationPanel) article.append(publicationPanel);
     return article;
   };
@@ -544,10 +569,13 @@ import {
     setIdentityLocked(false);
     basicLegend.textContent = '基本信息';
     fieldsetHint.textContent = '带“必填”的 5 项就能保存；同一流程继续面试时，使用记录卡片里的“预约 / 记录下一轮”。';
-    moreTitle.textContent = '补充复盘与下一步';
+    moreTitle.textContent = '补充题目、复盘与下一步';
     moreHint.textContent = '选填，但建议面完顺手写';
     moreFields.open = false;
-    [...form.elements].forEach((element) => element.removeAttribute?.('aria-invalid'));
+    [...form.elements].forEach((element) => {
+      element.removeAttribute?.('aria-invalid');
+      element.setCustomValidity?.('');
+    });
     formDirty = false;
   };
 
@@ -591,7 +619,7 @@ import {
     outcomeInput.value = 'scheduled';
     setIdentityLocked(true);
     setApplicationFieldsEnabled(false);
-    moreTitle.textContent = '补充本轮复盘';
+    moreTitle.textContent = '记录题目与本轮复盘';
     moreHint.textContent = '可在面试结束后补写';
     moreFields.open = false;
     formKicker.textContent = `${view.company.name} · ${view.application.role}`;
@@ -617,6 +645,7 @@ import {
     outcomeInput.value = roundOutcome(round);
     modeInput.value = round.mode;
     ratingInput.value = String(round.rating || 0);
+    questionsInput.value = round.questions.join('\n');
     sourceInput.value = view.application.source;
     nextActionInput.value = view.application.nextAction;
     nextDateInput.value = view.application.nextActionOn;
@@ -624,12 +653,12 @@ import {
     reflectionInput.value = round.reflection;
     setIdentityLocked(true);
     setApplicationFieldsEnabled(false);
-    moreTitle.textContent = '补充本轮复盘';
-    moreHint.textContent = '自我感觉与改进动作';
-    moreFields.open = Boolean(round.rating || round.reflection);
+    moreTitle.textContent = '记录题目与本轮复盘';
+    moreHint.textContent = '被问题目、自我感觉与改进动作';
+    moreFields.open = Boolean(round.rating || round.questions.length || round.reflection);
     formKicker.textContent = `${view.company.name} · ${view.application.role}`;
     formTitle.textContent = '编辑本轮记录';
-    fieldsetHint.textContent = '这里只修改当前轮次的日期、结果和复盘；公司、岗位及流程待办请使用“编辑流程信息”。';
+    fieldsetHint.textContent = '这里只修改当前轮次的日期、结果、被问题目和复盘；公司、岗位及流程待办请使用“编辑流程信息”。';
     saveButton.textContent = '保存修改';
     saveSuccess.hidden = true;
     revealForm();
@@ -725,6 +754,7 @@ import {
     source: sourceInput.value,
     nextAction: nextActionInput.value,
     nextActionOn: nextDateInput.value,
+    questions: questionsInput.value,
     reflection: reflectionInput.value,
   });
 
@@ -756,7 +786,10 @@ import {
 
   const openPublicationPanel = (applicationId, trigger) => {
     const panel = publicationPanelFor(applicationId);
-    if (!panel) return;
+    const view = getView(applicationId);
+    if (!panel || !view || applicationVisibility(view.application) !== 'public') return;
+    const preview = panel.querySelector('.interview-publication-preview');
+    if (preview) preview.textContent = buildPublicExperienceDraft(view, { includeQuestions: true });
     panel.hidden = false;
     trigger?.setAttribute('aria-expanded', 'true');
     panel.querySelector('h4')?.focus({ preventScroll: true });
@@ -778,12 +811,26 @@ import {
     const status = panel?.querySelector('.interview-publication-status');
     if (!view || !panel || !status || applicationVisibility(view.application) !== 'public') return;
     try {
-      await copyText(buildPublicExperienceDraft(view));
+      await copyText(buildPublicExperienceDraft(view, { includeQuestions: true }));
       status.textContent = '匿名草稿已复制。进入整理页后仍需人工检查，并再次确认发布。';
       announce('匿名面经草稿已复制。');
     } catch {
       status.textContent = '复制失败，请手动选中上方预览文本后复制。';
       announce('匿名草稿复制失败。');
+    }
+  };
+
+  const copyQuestionBatch = async (applicationId) => {
+    const view = getView(applicationId);
+    const status = document.getElementById(`interview-question-copy-${applicationId}`);
+    if (!view || !status) return;
+    try {
+      await copyText(buildQuestionBatchDraft(view));
+      status.textContent = '全部被问题目和批量整理说明已复制；它们仍未上传或发布。可以交给 Codex，或按编号逐题粘贴到 Pages CMS。';
+      announce('全部被问题目的批量整理稿已复制，不会自动上传。');
+    } catch {
+      status.textContent = '复制失败，请重试；本机记录没有改变，也没有上传。';
+      announce('被问题目批量整理稿复制失败。');
     }
   };
 
@@ -823,6 +870,8 @@ import {
       const field = error.field ? form.elements.namedItem(error.field) : null;
       if (field) {
         field.setAttribute('aria-invalid', 'true');
+        field.setCustomValidity?.(error.message || '请检查这个字段。');
+        field.reportValidity?.();
         field.focus();
       }
       announce(error.message || '记录未保存，请检查表单。');
@@ -832,6 +881,7 @@ import {
   form.addEventListener('input', (event) => {
     formDirty = true;
     event.target.removeAttribute?.('aria-invalid');
+    event.target.setCustomValidity?.('');
   });
 
   addButton.addEventListener('click', (event) => (formPanel.hidden ? openNewForm(event.currentTarget) : closeForm()));
@@ -850,6 +900,7 @@ import {
     if (action === 'prepare-publication') openPublicationPanel(applicationId, target);
     if (action === 'close-publication') closePublicationPanel(applicationId);
     if (action === 'copy-publication') await copyPublication(applicationId);
+    if (action === 'copy-questions') await copyQuestionBatch(applicationId);
 
     if (action === 'delete-round') {
       const context = getRoundContext(roundId);
@@ -890,6 +941,7 @@ import {
     importFileInput.value = '';
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
+      setAlert('备份没有导入', '文件超过 5 MB。请选择本页面导出的 JSON 备份，或先确认文件没有被错误替换。');
       announce('备份文件超过 5 MB，已停止导入。');
       return;
     }
@@ -897,7 +949,9 @@ import {
     try {
       const parsed = parseTrackerBackup(await file.text(), { repositoryId });
       const crossRepositoryText = parsed.crossRepository ? ' 这份备份来自另一个仓库，导入后会改为当前题库。' : '';
-      const message = `备份中有 ${parsed.data.companies.length} 家公司、${parsed.data.applications.length} 个流程和 ${parsed.data.rounds.length} 轮记录。${crossRepositoryText}确定与当前记录合并吗？同编号内容冲突时会保留本机版本。`;
+      const sourceText = parsed.sourceRepositoryId ? `来源：${parsed.sourceRepositoryId}。` : '';
+      const timeText = parsed.exportedAt ? `导出时间：${new Date(parsed.exportedAt).toLocaleString('zh-CN')}。` : '';
+      const message = `备份中有 ${parsed.data.companies.length} 家公司、${parsed.data.applications.length} 个流程和 ${parsed.data.rounds.length} 轮记录。${sourceText}${timeText}${crossRepositoryText}确定与当前记录合并吗？同编号内容冲突时会保留本机版本。`;
       if (!window.confirm(message)) return;
 
       let preserved = false;

@@ -19,4 +19,23 @@ layout: default
   </div>
 
   <div class="prose experience-body">{{ content }}</div>
+  <aside class="content-utility" aria-label="分享与反馈">
+    <div class="content-utility-copy">
+      <strong>分享这篇匿名面经</strong>
+      <span>链接只包含已经公开的整理内容，不会带出浏览器里的私人记录。</span>
+    </div>
+    <div class="content-utility-actions" data-share-controls data-share-title="{{ page.title | escape }}" hidden>
+      <button class="secondary-button" type="button" data-share-page>分享面经</button>
+      <button class="text-button" type="button" data-copy-page-link>复制链接</button>
+    </div>
+    {% if site.github.repository_url %}
+      {% capture issue_title %}[公开面经] {{ page.title }}{% endcapture %}
+      <div class="content-utility-links">
+        <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=bug.yml&amp;title={{ issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">反馈内容错误 ↗</a>
+        <a class="text-link" href="{{ site.github.repository_url }}/security/policy" target="_blank" rel="noopener noreferrer">私密报告隐私或安全问题 ↗</a>
+      </div>
+    {% endif %}
+    <p class="content-utility-status" data-share-status role="status" aria-live="polite"></p>
+  </aside>
 </article>
+<script type="module" src="{{ '/assets/js/share.js' | relative_url }}"></script>

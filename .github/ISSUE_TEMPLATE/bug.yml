@@ -2,6 +2,11 @@ name: 报告问题
 description: 报告网页、构建、搜索或管理后台问题
 title: "[Bug] "
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Issue 的标题、正文和截图提交后会公开。隐私泄露、密钥或安全漏洞不要在这里描述，请改用仓库 **Security → Report a vulnerability** 私密报告。
+
   - type: textarea
     id: problem
     attributes:

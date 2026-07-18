@@ -1,10 +1,12 @@
 export const TRACKER_FORMAT = 'llm-interview-tracker';
 export const TRACKER_BACKUP_FORMAT = 'llm-interview-tracker-backup';
-export const TRACKER_SCHEMA_VERSION = 2;
+export const TRACKER_SCHEMA_VERSION = 3;
+export const MAX_INTERVIEW_QUESTIONS_PER_ROUND = 20;
+export const MAX_INTERVIEW_QUESTION_LENGTH = 160;
 
 export const VISIBILITIES = Object.freeze({
-  private: '仅自己',
-  public: '允许整理公开（不会自动上传）',
+  private: '仅当前浏览器',
+  public: '准备匿名分享（仍不会自动上传）',
 });
 
 export const OUTCOMES = Object.freeze({
@@ -76,6 +78,72 @@ const cleanText = (value, maxLength = 2000) => String(value ?? '')
 const cleanInlineText = (value, maxLength = 120) => cleanText(value, maxLength)
   .replace(/\s+/g, ' ');
 
+const normalizeInterviewQuestion = (value) => String(value ?? '')
+  .replace(/\r\n?/g, '\n')
+  .trim();
+
+export function parseInterviewQuestions(value) {
+  const candidates = Array.isArray(value) ? value : String(value ?? '').split(/\r?\n/);
+  const questions = [];
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') {
+      throw new TrackerDataError('每道被问题目都必须是文字。', 'invalid_questions', 'questions');
+    }
+    const question = normalizeInterviewQuestion(candidate);
+    if (!question) continue;
+    if (question.includes('\n')) {
+      throw new TrackerDataError('每道被问题目必须单独占一行。', 'multiline_question', 'questions');
+    }
+    if (question.length > MAX_INTERVIEW_QUESTION_LENGTH) {
+      throw new TrackerDataError(
+        `每道被问题目不能超过 ${MAX_INTERVIEW_QUESTION_LENGTH} 个字符。`,
+        'question_too_long',
+        'questions',
+      );
+    }
+    questions.push(question);
+  }
+  if (questions.length > MAX_INTERVIEW_QUESTIONS_PER_ROUND) {
+    throw new TrackerDataError(
+      `每轮最多记录 ${MAX_INTERVIEW_QUESTIONS_PER_ROUND} 道被问题目。`,
+      'too_many_questions',
+      'questions',
+    );
+  }
+  return questions;
+}
+
+const sanitizeStoredQuestions = (value, report) => {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    report('invalid_questions');
+    return [];
+  }
+  if (value.length > MAX_INTERVIEW_QUESTIONS_PER_ROUND) report('too_many_questions');
+  const questions = [];
+  value.slice(0, MAX_INTERVIEW_QUESTIONS_PER_ROUND).forEach((candidate) => {
+    if (typeof candidate !== 'string') {
+      report('invalid_question');
+      return;
+    }
+    const question = normalizeInterviewQuestion(candidate);
+    if (!question) {
+      report('empty_question');
+      return;
+    }
+    if (question.includes('\n')) {
+      report('multiline_question');
+      return;
+    }
+    if (question.length > MAX_INTERVIEW_QUESTION_LENGTH) {
+      report('question_too_long');
+      return;
+    }
+    questions.push(question);
+  });
+  return questions;
+};
+
 const cleanId = (value) => cleanInlineText(value, 120).replace(/[^a-zA-Z0-9:_-]/g, '');
 
 const cleanTimestamp = (value, fallback) => {
@@ -104,7 +172,7 @@ const cloneTracker = (value) => ({
   ...value,
   companies: value.companies.map((item) => ({ ...item })),
   applications: value.applications.map((item) => ({ ...item })),
-  rounds: value.rounds.map((item) => ({ ...item })),
+  rounds: value.rounds.map((item) => ({ ...item, questions: [...item.questions] })),
 });
 
 const newId = (prefix, idFactory) => {
@@ -164,7 +232,7 @@ export function sanitizeTracker(value, options = {}) {
   if (version > TRACKER_SCHEMA_VERSION) {
     throw new TrackerDataError('这份记录由更新版本创建，请先更新网站后再导入。', 'future_version');
   }
-  if (version !== 1 && version !== TRACKER_SCHEMA_VERSION) {
+  if (![1, 2, TRACKER_SCHEMA_VERSION].includes(version)) {
     throw new TrackerDataError('暂不支持这份旧版记录，请保留原文件并更新项目。', 'unsupported_version');
   }
 
@@ -263,6 +331,9 @@ export function sanitizeTracker(value, options = {}) {
 
     const outcome = Object.hasOwn(OUTCOMES, item.outcome) ? item.outcome : roundOutcome(item);
     const state = OUTCOME_STATE[outcome];
+    const questions = sanitizeStoredQuestions(item.questions, (reason) => {
+      addSanitizationDiagnostic(diagnostics, 'rounds', index, reason, id);
+    });
     roundIds.add(id);
     rounds.push({
       id,
@@ -274,6 +345,7 @@ export function sanitizeTracker(value, options = {}) {
       result: state.result,
       mode: pickEnum(item.mode, MODES, 'online'),
       rating: cleanRating(item.rating),
+      questions,
       reflection: cleanText(item.reflection, 3000),
       createdAt: cleanTimestamp(item.createdAt, fallbackNow),
       updatedAt: cleanTimestamp(item.updatedAt, fallbackNow),
@@ -309,6 +381,7 @@ export function upsertInterview(tracker, input, options = {}) {
   const role = cleanInlineText(input?.role, 80);
   const date = String(input?.date || '');
   const outcome = pickEnum(input?.outcome, OUTCOMES, 'waiting');
+  const questions = parseInterviewQuestions(input?.questions);
   const visibilityProvided = Object.hasOwn(input || {}, 'visibility');
   const visibility = pickEnum(input?.visibility, VISIBILITIES, 'private');
 
@@ -383,6 +456,7 @@ export function upsertInterview(tracker, input, options = {}) {
     result: state.result,
     mode: pickEnum(input?.mode, MODES, 'online'),
     rating: cleanRating(input?.rating),
+    questions,
     reflection: cleanText(input?.reflection, 3000),
     createdAt: round?.createdAt || now,
     updatedAt: now,
@@ -509,6 +583,7 @@ export function filterApplicationViews(views, filters = {}) {
       view.application?.role,
       view.application?.source,
       view.application?.nextAction,
+      ...view.rounds.flatMap((round) => round.questions),
       ...view.rounds.map((round) => round.reflection),
     ].join(' ').normalize('NFKC').toLocaleLowerCase('zh-CN');
     return searchable.includes(query);
@@ -586,7 +661,46 @@ export function listUpcomingItems(tracker, today) {
   return items.sort((left, right) => left.date.localeCompare(right.date));
 }
 
-export function buildPublicExperienceDraft(view) {
+const collectQuestionEntries = (view) => [...view.rounds]
+  .reverse()
+  .flatMap((round) => round.questions.map((question) => ({
+    question,
+    stage: STAGES[round.stage] || STAGES.other,
+  })));
+
+export function buildQuestionBatchDraft(view) {
+  if (!view?.application || !Array.isArray(view.rounds)) {
+    throw new TrackerDataError('找不到要整理的面试流程。', 'missing_application');
+  }
+  const entries = collectQuestionEntries(view);
+  if (entries.length === 0) {
+    throw new TrackerDataError('这个流程还没有记录被问题目。', 'missing_questions');
+  }
+  const role = cleanInlineText(view.application.role, 80) || '岗位方向待补充';
+  const sections = entries.flatMap((entry, index) => [
+    `## 题目 ${index + 1}`,
+    `题目：${entry.question}`,
+    `匿名轮次：${entry.stage}`,
+    '建议初始状态：待整理 / 待评估 / 待解答',
+    '',
+  ]);
+  return [
+    '面试题批量整理稿（仅复制到剪贴板，不会自动上传）',
+    '',
+    `岗位方向：${role}`,
+    `共 ${entries.length} 道题`,
+    '',
+    '使用说明：',
+    '- 交给 Codex 时，请先逐题整理为可粘贴到 Pages CMS 的字段；不要编造项目经历、公司归属或未经核验的答案。未经我明确确认，不要修改文件或上传 GitHub。',
+    '- 使用 Pages CMS 时，请按下面编号逐题 Add an entry；可以先只填题目，并保持“待整理 / 待评估 / 待解答”。',
+    '- Public 仓库中即使关闭网页显示，源文件仍然可见；保存前先删除公司身份、个人信息、内部题库和受 NDA 约束的内容。',
+    '',
+    ...sections,
+    '检查提示：以上题目按本机速记原样整理，没有自动判断真实性、授权范围或保密要求，请逐题检查后再决定是否保存或公开。',
+  ].join('\n').trim();
+}
+
+export function buildPublicExperienceDraft(view, options = {}) {
   if (!view?.application || !Array.isArray(view.rounds)) {
     throw new TrackerDataError('找不到可整理的面试流程。', 'missing_application');
   }
@@ -594,6 +708,14 @@ export function buildPublicExperienceDraft(view) {
   const rounds = view.rounds.map((round, index) => (
     `${index + 1}. ${STAGES[round.stage] || STAGES.other}：${OUTCOMES[roundOutcome(round)] || '待反馈'}`
   ));
+  const questionEntries = options.includeQuestions === true ? collectQuestionEntries(view) : [];
+  const questionSection = questionEntries.length > 0 ? [
+    '',
+    '被问题目（原始速记，需逐条确认匿名和公开权限）：',
+    ...questionEntries.map((entry, index) => `${index + 1}. [${entry.stage}] ${entry.question}`),
+    '',
+    '题目检查提示：题目文字按本机速记原样带入，系统没有判断其中是否包含公司身份、内部题库或受 NDA 约束内容；不适合公开的题目必须删除或改写。',
+  ] : [];
   return [
     '匿名面试经历（待二次整理）',
     '',
@@ -602,12 +724,13 @@ export function buildPublicExperienceDraft(view) {
     '',
     '流程概览：',
     ...rounds,
+    ...questionSection,
     '',
     '公开前请补充：',
-    '- 每轮主要问题与考察方向',
-    '- 可复用的回答思路与复习建议',
+    questionEntries.length > 0 ? '- 逐题整理可复用的回答思路' : '- 每轮主要问题与考察方向',
+    '- 补充整体复盘与复习建议',
     '',
-    '隐私检查：此草稿已排除公司名称、匿名来源、精确日期、下一步、个人复盘和自评分数。发布前仍需逐项检查，不要加入面试官信息、联系方式、会议链接、公司机密或受保密协议约束的内容。',
+    '隐私检查：流程字段已排除公司名称、匿名来源、精确日期、下一步、个人复盘和自评分数；题目文字如果被加入则仍是原始速记。发布前必须逐项检查，不要加入面试官信息、联系方式、会议链接、公司机密或受保密协议约束的内容。',
   ].join('\n');
 }
 
@@ -676,8 +799,13 @@ export function parseTrackerBackup(value, options = {}) {
     200,
   );
   const data = sanitizeTracker(payload, { ...options, repositoryId: sourceRepositoryId });
+  const exportedAt = parsed.format === TRACKER_BACKUP_FORMAT && typeof parsed.exportedAt === 'string'
+    && !Number.isNaN(Date.parse(parsed.exportedAt))
+    ? parsed.exportedAt
+    : '';
   return {
     data,
+    exportedAt,
     sourceRepositoryId,
     crossRepository: Boolean(options.repositoryId && sourceRepositoryId && options.repositoryId !== sourceRepositoryId),
   };
@@ -692,8 +820,8 @@ export function escapeCsvCell(value) {
 export function trackerToCsv(tracker) {
   const views = buildApplicationViews(tracker);
   const rows = [[
-    '公司 / 匿名代号', '岗位', '公开意愿', '面试日期', '轮次', '结果', '方式', '自评',
-    '匿名来源', '下一步', '跟进日期', '复盘',
+    '公司 / 匿名代号', '岗位', '分享计划', '面试日期', '轮次', '结果', '方式', '自评',
+    '匿名来源', '下一步', '跟进日期', '复盘', '被问题目（每行一道）',
   ]];
   for (const view of views) {
     for (const round of [...view.rounds].reverse()) {
@@ -710,6 +838,7 @@ export function trackerToCsv(tracker) {
         view.application.nextAction,
         view.application.nextActionOn,
         round.reflection,
+        round.questions.join('\n'),
       ]);
     }
   }
