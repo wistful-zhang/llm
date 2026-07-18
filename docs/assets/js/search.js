@@ -31,7 +31,13 @@
       }
 
       const current = await response.json();
-      const template = current.is_template ? current : current.template_repository;
+      const usesCurrentRepository = current.is_template === true;
+      const parentTemplate = current.parent?.is_template
+        ? current.parent
+        : current.parent?.template_repository;
+      const template = usesCurrentRepository
+        ? current
+        : current.template_repository || parentTemplate;
       if (!template?.html_url) {
         useRepositoryFallback();
         return;
@@ -39,7 +45,9 @@
 
       links.forEach((link) => {
         link.href = `${template.html_url.replace(/\/$/, '')}/generate`;
-        link.textContent = '打开 GitHub 模板创建页 ↗';
+        link.textContent = usesCurrentRepository
+          ? '复制当前题库到自己的 GitHub ↗'
+          : '从基础模板创建（不含本站新增内容） ↗';
       });
     } catch {
       // 网络或 API 限流时保留仓库首页链接，并说明仍需手动点击模板按钮。

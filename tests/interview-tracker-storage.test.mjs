@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createEmptyTracker } from '../docs/assets/js/interview-tracker-core.mjs';
+import {
+  TRACKER_SCHEMA_VERSION,
+  createEmptyTracker,
+  upsertInterview,
+} from '../docs/assets/js/interview-tracker-core.mjs';
 import {
   TrackerStorageError,
   clearTrackerStorage,
@@ -39,6 +43,29 @@ test('空存储返回可写的新数据，写入后可以恢复', () => {
   const updated = { ...createEmptyTracker('owner/repo'), revision: 1 };
   writeTrackerStorage(storage, key, updated, 0, 'owner/repo');
   assert.equal(readTrackerStorage(storage, key, 'owner/repo').data.revision, 1);
+});
+
+test('本地存储中的 v2 面试记录会升级，并为旧轮次补上空题目列表', () => {
+  const storage = new MemoryStorage();
+  const key = trackerStorageKey('owner/repo');
+  let sequence = 0;
+  const legacy = upsertInterview(createEmptyTracker('owner/repo'), {
+    company: '匿名公司 A',
+    role: '大模型工程师',
+    date: '2026-07-18',
+  }, {
+    idFactory: (prefix) => `${prefix}_${++sequence}`,
+    repositoryId: 'owner/repo',
+    now: '2026-07-18T08:00:00.000Z',
+  });
+  legacy.schemaVersion = 2;
+  delete legacy.rounds[0].questions;
+  storage.setItem(key, JSON.stringify(legacy));
+
+  const loaded = readTrackerStorage(storage, key, 'owner/repo');
+  assert.equal(loaded.status, 'ready');
+  assert.equal(loaded.data.schemaVersion, TRACKER_SCHEMA_VERSION);
+  assert.deepEqual(loaded.data.rounds[0].questions, []);
 });
 
 test('修订号冲突时拒绝静默覆盖', () => {

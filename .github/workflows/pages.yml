@@ -1,11 +1,14 @@
-name: Validate content and deploy public site
+name: 内容检查与网站发布
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      payload:
+        description: Pages CMS 触发信息（手动运行时可留空）
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -16,75 +19,75 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate content
+    name: 检查内容
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 读取仓库
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
 
-      - name: Validate question content
+      - name: 检查题目与公开面经
         run: node scripts/validate-content.mjs
 
-      - name: Test browser-side practice logic
+      - name: 运行网页功能测试
         run: node --test tests/*.test.mjs
 
   preview-build:
-    name: Verify rendered site (pull request)
+    name: 预览构建与安全检查
     if: github.event_name == 'pull_request'
     needs: validate
     permissions:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 读取仓库
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
 
-      - name: Build with Jekyll
+      - name: 构建预览网站
         uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1
         with:
           source: ./docs
           destination: ./_site
 
-      - name: Validate rendered public content
+      - name: 检查构建后的公开内容
         run: node scripts/validate-rendered-experiences.mjs ./_site ./docs/_experiences ./docs/_questions
 
   build:
-    name: Build public site
-    if: github.event_name != 'pull_request' && ((github.event.repository.visibility == 'public' && github.event.repository.has_pages == true) || vars.ENABLE_PAGES == 'true')
+    name: 构建公开网站
+    if: github.event_name != 'pull_request' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && github.event.repository.has_pages == true && (github.event.repository.visibility == 'public' || vars.ALLOW_PRIVATE_PAGES_DEPLOYMENT == 'true')
     needs: validate
     permissions:
       contents: read
       pages: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 读取仓库
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
 
-      - name: Configure GitHub Pages
+      - name: 读取 GitHub Pages 配置
         id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
 
-      - name: Build with Jekyll
+      - name: 构建网站
         uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1
         with:
           source: ./docs
           destination: ./_site
 
-      - name: Validate rendered public content
+      - name: 检查构建后的公开内容
         run: node scripts/validate-rendered-experiences.mjs ./_site ./docs/_experiences ./docs/_questions
 
-      - name: Upload Pages artifact
+      - name: 上传待发布网站
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
 
   deploy:
-    name: Deploy public site
-    if: github.event_name != 'pull_request' && ((github.event.repository.visibility == 'public' && github.event.repository.has_pages == true) || vars.ENABLE_PAGES == 'true')
+    name: 发布公开网站
+    if: github.event_name != 'pull_request' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && github.event.repository.has_pages == true && (github.event.repository.visibility == 'public' || vars.ALLOW_PRIVATE_PAGES_DEPLOYMENT == 'true')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -94,7 +97,7 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name: Deploy to GitHub Pages
+      - name: 发布到 GitHub Pages
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
 

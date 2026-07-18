@@ -1,0 +1,44 @@
+name: 建议功能或体验改进
+description: 建议一个新功能，或反馈第一次使用时不顺畅的流程
+title: "[建议] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issue 的标题、正文和截图提交后会公开。请勿填写姓名、联系方式、面试安排、密钥或公司机密；隐私及安全问题请改用仓库的 Security 页面私密报告。
+
+  - type: dropdown
+    id: role
+    attributes:
+      label: 你主要怎样使用这个项目？
+      options:
+        - 浏览和练习公开题库
+        - 记录自己的面试
+        - 创建和维护自己的题库
+        - 向当前题库贡献内容
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 请说明你当时想完成什么，以及在哪一步遇到困难。
+      placeholder: 我第一次从模板创建仓库，准备……
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 希望怎样改进？
+      description: 可以描述理想流程，不要求提供技术方案。
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 其他信息
+      description: 可选。可以提供截图或浏览器信息，请先移除账号、Token 和个人隐私。

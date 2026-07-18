@@ -50,7 +50,7 @@ permalink: /start/
   </a>
 </div>
 
-{% if site.github.repository_url %}<div class="template-launch"><div><strong>已经选好模式？</strong><br><span>接下来打开仓库，点击 Use this template，并在创建页按上面的决定选择 Public 或 Private。</span></div><a class="primary-button" href="{{ site.github.repository_url }}" data-template-repository="{{ site.github.repository_nwo | escape }}" target="_blank" rel="noopener noreferrer">打开 GitHub 仓库，再点 Use this template ↗</a></div>{% endif %}
+{% if site.github.repository_url %}<div class="template-launch"><div><strong>已经选好模式？</strong><br><span>创建独立题库时使用基础模板，可以选择 Public 或 Private；如果要参与当前公开题库，用 Fork 保留当前内容并提交贡献。</span></div><div class="template-launch-actions"><a class="primary-button" href="{{ site.github.repository_url }}" data-template-repository="{{ site.github.repository_nwo | escape }}" target="_blank" rel="noopener noreferrer">打开 GitHub 仓库，再点 Use this template ↗</a><a class="secondary-button" href="{{ site.github.repository_url }}/fork" target="_blank" rel="noopener noreferrer">Fork 当前公开题库 ↗</a></div></div>{% endif %}
 
 ## 1. 从模板创建仓库
 
@@ -60,6 +60,7 @@ permalink: /start/
     <h3>打开模板</h3>
     <p>点击上方按钮进入 GitHub，然后选择 <strong>Use this template → Create a new repository</strong>。</p>
     <p class="guide-note"><strong>没有 Use this template？</strong> 优先点击仓库顶部的“generated from”来源；仓库主人也可以在 <strong>Settings → General</strong> 中开启 <strong>Template repository</strong>。</p>
+    <p class="guide-note"><strong>模板和 Fork 的区别：</strong>模板用于建立完全独立的个人题库，可选择 Public 或 Private；Fork 会复制当前公开仓库并保留关联，适合投稿和跟进当前项目，但 Fork 仍是 Public。二次定制站点若没有开启 Template，基础模板按钮不会包含该站点后来新增的内容。</p>
   </div>
   <figure class="guide-figure">
     <a href="{{ '/assets/guides/01-use-template.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 GitHub 模板按钮示意图（在新窗口打开）"><img src="{{ '/assets/guides/01-use-template.svg' | relative_url }}" loading="lazy" alt="GitHub 仓库页面中 Use this template 按钮的位置示意图"></a>
@@ -94,14 +95,14 @@ permalink: /start/
     <ol>
       <li>打开新仓库的 <strong>Settings → Pages</strong>。</li>
       <li>在 <strong>Build and deployment → Source</strong> 选择 <strong>GitHub Actions</strong>。项目已经包含工作流，不要再点击 Jekyll 或 Static HTML 的 Configure。</li>
-      <li>进入 <strong>Actions → Validate content and deploy public site → Run workflow</strong>，Branch 选择 <code>main</code>，手动运行第一次部署。</li>
+      <li>进入 <strong>Actions → 内容检查与网站发布 → Run workflow</strong>，Branch 选择仓库默认分支（通常是 <code>main</code>），手动运行第一次部署。</li>
       <li>工作流变为绿色后，回到 <strong>Settings → Pages</strong> 点击 <strong>Visit site</strong>。</li>
     </ol>
     <figure class="guide-figure guide-wide">
       <a href="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 GitHub Pages 设置示意图（在新窗口打开）"><img src="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" loading="lazy" alt="GitHub Settings Pages 中选择 GitHub Actions 的操作示意图"></a>
       <figcaption>图 3：这张图只适用于公开题库。点击查看大图。</figcaption>
     </figure>
-    <p class="mode-outcome">以后从 Pages CMS 保存题目，会先校验内容，再自动更新公开网页。</p>
+    <p class="mode-outcome">以后点击 Pages CMS 的 Save，内容会先写入 GitHub，随后自动校验；只有校验通过，公开网页才会更新。</p>
   </div>
 </details>
 
@@ -111,7 +112,7 @@ permalink: /start/
     <ol>
       <li><strong>不要启用 GitHub Pages</strong>，直接继续连接 Pages CMS。</li>
       <li>需要共同编辑时，在 GitHub 仓库中邀请协作者，并在 Pages CMS 中补充仓库授权。</li>
-      <li>每次保存只更新私有仓库并执行内容校验，不会部署公开网页。</li>
+      <li>每次保存会先更新私有仓库，再执行内容校验，不会部署公开网页。</li>
     </ol>
     <p class="mode-outcome"><strong>Private repository 不等于 private Pages。</strong> 真正带访问控制的私有 Pages 主要面向 GitHub Enterprise Cloud；机密内容不要发布到 Pages。</p>
   </div>
@@ -131,6 +132,7 @@ permalink: /start/
       <li>选择 <strong>Only select repositories</strong>。</li>
       <li>只选择刚创建的题库仓库，再点 <strong>Install</strong>。</li>
     </ol>
+    <p class="guide-note"><strong>第三方权限说明：</strong>Pages CMS 获得授权后可以读取和修改所选仓库，并缓存项目配置与内容。Private 仓库内容也会经过该服务。以后可在 GitHub 的 <strong>Settings → Applications → Installed GitHub Apps</strong> 中复查、缩小或撤销权限；不想授权时，也可以在 GitHub 网页中复制 <code>docs/_templates/question.md</code> 手动编辑。</p>
   </div>
   <figure class="guide-figure">
     <a href="{{ '/assets/guides/04-connect-pages-cms.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 Pages CMS 授权示意图（在新窗口打开）"><img src="{{ '/assets/guides/04-connect-pages-cms.svg' | relative_url }}" loading="lazy" alt="Pages CMS 登录和 Only select repositories 授权操作示意图"></a>
@@ -145,7 +147,7 @@ permalink: /start/
     <span class="step-number">5</span>
     <h3>填表并保存</h3>
     <ol>
-      <li>在 Pages CMS 的 <strong>Open a project</strong> 中打开仓库和 <code>main</code> 分支。</li>
+      <li>在 Pages CMS 的 <strong>Open a project</strong> 中打开仓库和默认分支（通常是 <code>main</code>）。</li>
       <li>进入“面试题与解答”，点击 <strong>Add an entry</strong>（手机端显示 <code>+</code>）。</li>
       <li>第一次可以只填写<strong>面试题目</strong>；日期会自动使用本地当天，答案可以稍后补。</li>
       <li>使用 Private 仓库个人保存，或在 Public 仓库暂不展示：保持“在阅读网站显示这道题”关闭。想先公开问题：最后再打开它，并让“答案状态”保持<strong>待解答</strong>。</li>
@@ -169,7 +171,7 @@ permalink: /start/
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
   <h2>以后按需要走四条日常路径</h2>
-  <p><strong>真实面试：</strong>在浏览器记录公司、轮次、结果和复盘，默认选择“仅自己”；需要分享时先改为“可整理公开”，再匿名检查并二次发布。<strong>只发布问题：</strong>最后打开发布开关，答案保持待解答。<strong>个人仓库速记：</strong>使用 Private 仓库并关闭发布开关。<strong>准备复习：</strong>Public 题库可从答案已完成的题目中随机抽题。</p>
+  <p><strong>真实面试：</strong>在浏览器记录公司、轮次、结果和复盘，分享计划默认“仅当前浏览器”；需要分享时先改为“准备匿名分享”，再匿名检查并二次发布。<strong>只发布问题：</strong>最后打开发布开关，答案保持待解答。<strong>个人仓库速记：</strong>使用 Private 仓库并关闭发布开关。<strong>准备复习：</strong>Public 题库可从答案已完成的题目中随机抽题。</p>
   <a class="primary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
   <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看匿名面经发布步骤</a>
   <a class="secondary-button" href="{{ '/manage/' | relative_url }}#question-only-workflow">查看记题流程</a>
@@ -205,11 +207,30 @@ permalink: /start/
 
 ## 常见问题
 
+<p><a class="primary-button" href="{{ '/setup-check/' | relative_url }}">打开公开仓库配置自检</a></p>
+
+| 看到的状态 | 代表什么 | 下一步 |
+| --- | --- | --- |
+| Actions 没有任何运行 | 工作流未触发，或仓库禁用了 Actions | 确认选择了仓库默认分支，并在 Settings → Actions 中允许 Actions |
+| 灰色 / Skipped | Private 模式正常跳过公开构建和部署 | 只要“检查内容”绿色即可；Private 本来就没有公开网站 |
+| “检查内容”红色 | 文件已经保存到 GitHub，但本次没有发布 | 展开失败步骤，按日志最后的中文提示修改，然后再次 Save |
+| “发布公开网站”红色 | Pages 设置或发布权限不正确 | 确认 Settings → Pages → Source 已选择 GitHub Actions |
+| 全部绿色但网页暂时 404 | GitHub Pages 仍在生效，或打开的网址不完整 | 等几分钟，从 Settings → Pages 的 Visit site 进入 |
+| 全部绿色但仍是旧内容 | 浏览器缓存，或看的不是最新一次运行 | 强制刷新，并确认最新运行对应刚才的提交 |
+
+<div class="privacy-warning" markdown="1">
+
+**如果误传了密码、Token 或密钥：**先立即去对应服务撤销或轮换，再处理 GitHub 历史。删除文件、关闭发布开关或新增修正提交，都不能让旧凭据重新安全，也不能自动清除 Git 历史。
+
+</div>
+
 - **Pages CMS 看不到仓库**：点击账号旁的齿轮或 **Manage GitHub App**，补选仓库并保存。
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。
 - **私有题库没有阅读网址或随机模拟**：这是当前模式的明确限制；请收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。在线浏览和模拟只能使用可公开的 Public 题库内容。
 - **组织账号没有某个按钮**：可能被组织策略限制，需要组织管理员批准。
+- **模板副本会自动收到更新吗**：不会。模板创建的是独立仓库；升级前请先阅读仓库中的 `UPGRADING.md`，保护自己的题目、公开面经和站点设置。
+- **企业确实需要受控的 Private Pages**：先在企业策略下启用带访问控制的 Pages，再把仓库变量 `ALLOW_PRIVATE_PAGES_DEPLOYMENT` 设为 `true`。普通个人 Private 仓库不要设置该变量。
 
 </div>

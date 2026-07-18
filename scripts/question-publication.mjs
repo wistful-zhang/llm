@@ -1,4 +1,8 @@
 import { validatePublicMarkdown } from './public-markup-security.mjs';
+import {
+  containsVisibleMarkdownImage,
+  findSensitivePublicContent,
+} from './public-content-privacy.mjs';
 
 const ALLOWED_FIELDS = new Set([
   'title',
@@ -182,6 +186,17 @@ export function parseQuestionDocument(source, filename = 'question.md') {
   const errors = [...parsed.errors];
   if (parsed.values.get('published') === true) {
     errors.push(...validatePublicMarkdown(body, filename, '公开题目正文'));
+    if (containsVisibleMarkdownImage(body)) {
+      errors.push(`${filename}: 公开题目不允许嵌入图片或截图，因为自动校验无法确认图片中是否包含隐私信息`);
+    }
+    findSensitivePublicContent(filename)
+      .forEach((label) => errors.push(`${filename}: 文件名或路径包含${label}，请先改为匿名名称`));
+    findSensitivePublicContent(
+      parsed.values.get('title'),
+      parsed.values.get('source'),
+      parsed.values.get('tags'),
+      body,
+    ).forEach((label) => errors.push(`${filename}: 公开题目包含${label}，请先删除或匿名处理`));
   }
   return {
     body,

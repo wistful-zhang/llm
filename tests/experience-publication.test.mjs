@@ -45,6 +45,21 @@ test('公开内容会拦截常见联系方式和会议链接', () => {
   assert.ok(errors.some((message) => message.includes('会议链接')));
 });
 
+test('公开面经中的畸形百分号和无分号实体不能掩盖联系方式', () => {
+  const prefix = '公开内容已经完成基础匿名处理，但仍需要自动检查联系方式。'.repeat(8);
+  const bodies = [
+    `${prefix} 干扰内容 %ZZ，联系 person%40example.com。`,
+    `${prefix} 联系 person&#64example.com。`,
+    `${prefix} 混合十六进制实体后的联系方式是 person&#x40example.com。`,
+  ];
+  bodies.forEach((body) => {
+    assert.ok(
+      validateExperienceDocument(document({ body })).some((message) => message.includes('邮箱地址')),
+      body,
+    );
+  });
+});
+
 test('重复的公开字段会被拒绝，不能利用 YAML 末值绕过校验', () => {
   const source = document().replace('published: true', 'published: false\npublished: true');
   const errors = validateExperienceDocument(source);
