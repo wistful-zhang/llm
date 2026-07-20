@@ -127,10 +127,11 @@ test('公开仓库配置自检不收集 Token，并提供可执行修复入口',
   assert.match(script, /safeHttpUrl\(repo\.homepage\)/);
 });
 
-test('空题库会给题库主人明确的第一题入口', async () => {
+test('空题库会给新手无需后台的第一题入口', async () => {
   const home = await read('../docs/index.html');
   assert.match(home, /published_questions\.size == 0/);
   assert.match(home, /还没有发布题目/);
   assert.match(home, /添加第一道题/);
-  assert.match(home, /question-only-workflow/);
+  assert.match(home, /href="{{ '\/capture\/' \| relative_url }}"/);
+  assert.match(home, /默认只保存到当前浏览器/);
 });

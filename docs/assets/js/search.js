@@ -97,7 +97,7 @@
     });
 
     if (cards.length === 0) {
-      empty.textContent = '题库还没有内容，请从管理后台添加第一道题。';
+      empty.textContent = '题库还没有公开内容；“＋记题”可以先保存本机草稿，但写入仓库并审核发布后才会出现在这里。';
     } else if (answerIndexState === 'failed' && keyword) {
       empty.textContent = '题目、分类和标签中没有匹配项；答案全文暂时无法搜索，请稍后重试。';
     } else {

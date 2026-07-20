@@ -6,14 +6,14 @@ permalink: /interviews/
 {% assign experience_manage_pages = site.pages | where: "url", "/experiences/manage/" %}
 {% assign experience_manage_page = experience_manage_pages | first %}
 
-<div id="interview-tracker" class="container interview-page" data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}" data-manage-url="{{ '/manage/' | relative_url }}#capture-workflow" data-publication-url="{% if experience_manage_page %}{{ experience_manage_page.url | relative_url }}{% else %}{{ '/manage/' | relative_url }}#experience-publication{% endif %}">
+<div id="interview-tracker" class="container interview-page" data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}" data-question-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}" data-capture-url="{{ '/capture/' | relative_url }}" data-manage-url="{{ '/manage/' | relative_url }}#capture-workflow" data-publication-url="{% if experience_manage_page %}{{ experience_manage_page.url | relative_url }}{% else %}{{ '/manage/' | relative_url }}#experience-publication{% endif %}">
   <header class="interview-intro">
     <span class="status-badge">浏览器本地 · 默认不上传</span>
     <h1>面试记录</h1>
     <p>记录真实面试的公司、岗位、轮次和结果。系统会自动区分“面试了几家公司”和“总共面了几轮”，不用自己维护数字。</p>
     <div class="interview-header-actions">
       <button id="interview-add" class="primary-button" type="button" aria-expanded="false" aria-controls="interview-form-panel">新增一场面试</button>
-      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">去题库只记问题</a>
+      <a class="secondary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
     </div>
   </header>
 
@@ -224,10 +224,10 @@ permalink: /interviews/
   <section id="interview-save-success" class="interview-save-success" role="status" tabindex="-1" hidden>
     <div>
       <strong id="interview-save-success-title">面试记录已保存</strong>
-      <p>公司、轮次和本轮被问题目已经保存在当前浏览器。题目不会自动上传到题库；可以在流程卡片中复制全部题目的批量整理稿，再交给 Codex 或逐题粘贴到 Pages CMS。Public 仓库中的未发布源文件仍可见。</p>
+      <p>公司、轮次和本轮被问题目已经保存在当前浏览器。题目不会自动进入题库或上传 GitHub；可以在流程卡片中点击“加入本机题目”，再到记题页补答案、分类和发布信息。</p>
     </div>
     <div class="interview-save-success-actions">
-      <a class="secondary-button" href="{{ '/manage/' | relative_url }}#capture-workflow">打开题库整理指南</a>
+      <a class="secondary-button" href="{{ '/capture/' | relative_url }}">打开本机题目</a>
       <button id="interview-save-success-close" class="text-button" type="button">暂时完成</button>
     </div>
   </section>

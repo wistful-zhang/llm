@@ -35,6 +35,7 @@
         <nav aria-label="主导航">
           <a href="{{ '/' | relative_url }}"{% if page.url == '/' or page.collection == 'questions' %} aria-current="page"{% endif %}>题库</a>
           <a class="practice-link" href="{{ '/practice/' | relative_url }}"{% if page.url == '/practice/' %} aria-current="page"{% endif %}>模拟</a>
+          <a class="capture-link" href="{{ '/capture/' | relative_url }}"{% if page.url == '/capture/' %} aria-current="page"{% endif %}>＋记题</a>
           <a class="tracker-link" href="{{ '/interviews/' | relative_url }}"{% if page.url == '/interviews/' %} aria-current="page"{% endif %}>记录</a>
           <a class="start-link" href="{{ '/start/' | relative_url }}"{% if page.url == '/start/' %} aria-current="page"{% endif %}>创建题库</a>
           <a class="optional-link" href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>关于</a>
@@ -49,7 +50,7 @@
       <div class="container footer-wrap">
         <span>{{ site.data.settings.footer | default: '内容持续整理，欢迎补充和纠错。' | escape }}</span>
         <span>
-          <a href="{{ '/experiences/' | relative_url }}">公开面经</a> · <a href="{{ '/start/' | relative_url }}">创建自己的题库</a> · <a href="{{ '/privacy/' | relative_url }}">隐私说明</a> · {% if site.github.repository_url %}<a href="{{ site.github.repository_url }}/issues/new/choose">投稿与纠错</a> · <a href="{{ site.github.repository_url }}">GitHub 仓库</a> · {% endif %}Built with GitHub Pages
+          <a href="{{ '/capture/' | relative_url }}">快速记题</a> · <a href="{{ '/experiences/' | relative_url }}">公开面经</a> · <a href="{{ '/start/' | relative_url }}">创建自己的题库</a> · <a href="{{ '/privacy/' | relative_url }}">隐私说明</a> · {% if site.github.repository_url %}<a href="{{ site.github.repository_url }}/issues/new/choose">投稿与纠错</a> · <a href="{{ site.github.repository_url }}">GitHub 仓库</a> · {% endif %}Built with GitHub Pages
         </span>
       </div>
     </footer>

@@ -41,8 +41,9 @@ permalink: /practice/
       {% endif %}
       <div class="practice-empty-actions">
         <a class="primary-button" href="{{ '/' | relative_url }}">返回题库</a>
-        <a class="secondary-button" href="{{ '/manage/' | relative_url }}">我是题库主人：添加题目</a>
+        <a class="secondary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
       </div>
+      <p class="practice-empty-note">“＋记题”保存的是当前浏览器草稿，可在记题页单题练习；写入仓库并审核发布后，才会进入这里的随机模拟。</p>
     </section>
   {% else %}
     <p id="practice-storage-status" class="practice-storage-status" role="status" hidden></p>

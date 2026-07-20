@@ -1,0 +1,176 @@
+---
+title: 快速记题
+description: 直接在网站表单中记录、编辑和练习面试题；默认只保存到当前浏览器，需要时再写入 GitHub 并审核发布。
+permalink: /capture/
+---
+{% assign published_categories = site.questions | where: 'published', true | map: 'category' | uniq | sort %}
+<div
+  class="container question-capture-page"
+  data-question-capture
+  data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
+  data-repository-url="{{ site.github.repository_url | escape }}"
+  data-codex-path="docs/_questions/">
+  <header class="capture-intro">
+    <span class="status-badge">不进后台 · 先记到当前浏览器</span>
+    <h1>想到一道题，现在就记下来</h1>
+    <p>直接填写正常文字，不需要 Markdown，也不用先打开 Pages CMS。保存后可以在本页编辑、搜索和口述练习；只有你主动执行写入仓库，内容才会进入 GitHub。</p>
+  </header>
+
+  <div class="capture-boundary" role="note">
+    <strong>分清三个状态</strong>
+    <span><b>本机草稿</b>只在当前浏览器；<b>仓库草稿</b>需要 GitHub 身份和写入权限，Public 仓库里的源文件会公开；只有审核后把 <code>published</code> 改为 <code>true</code>，题目才会<b>显示在阅读网站</b>。本站不会要求你填写 Token，也不会自动上传。</span>
+  </div>
+
+  <section class="capture-workspace" aria-labelledby="capture-form-title">
+    <form id="question-draft-form" class="question-draft-form">
+      <input id="question-draft-id" type="hidden">
+      <div class="capture-section-heading">
+        <div>
+          <span class="section-kicker">本机草稿</span>
+          <h2 id="capture-form-title" tabindex="-1">记录一道题</h2>
+        </div>
+        <span id="question-draft-mode" class="status-badge">新题</span>
+      </div>
+
+      <div class="question-draft-grid">
+        <label class="question-draft-field question-draft-field-wide" for="question-draft-title">
+          <span>面试题目 <b>必填</b></span>
+          <textarea id="question-draft-title" name="title" rows="3" minlength="2" maxlength="160" placeholder="例如：为什么 KV Cache 能加速推理？" required></textarea>
+          <small>尽量保留面试官原本的问法，不确定答案也可以先保存。</small>
+        </label>
+
+        <label class="question-draft-field" for="question-draft-category">
+          <span>分类</span>
+          <input id="question-draft-category" name="category" type="text" maxlength="30" list="question-draft-categories" value="待整理" autocomplete="off">
+          <datalist id="question-draft-categories">
+            <option value="待整理"></option>
+            {% for category in published_categories %}<option value="{{ category | escape }}"></option>{% endfor %}
+          </datalist>
+        </label>
+
+        <label class="question-draft-field" for="question-draft-difficulty">
+          <span>难度</span>
+          <select id="question-draft-difficulty" name="difficulty">
+            <option value="待评估" selected>待评估</option>
+            <option value="简单">简单</option>
+            <option value="中等">中等</option>
+            <option value="困难">困难</option>
+          </select>
+        </label>
+
+        <label class="question-draft-field" for="question-draft-answer-status">
+          <span>答案状态</span>
+          <select id="question-draft-answer-status" name="answerStatus">
+            <option value="pending" selected>待解答（可以先记思路）</option>
+            <option value="complete">已完成（可用于正式题解）</option>
+          </select>
+          <small>写了几句思路也不会自动算完成；确认能作为参考答案后再手动修改。</small>
+        </label>
+
+        <label class="question-draft-field" for="question-draft-tags">
+          <span>标签</span>
+          <input id="question-draft-tags" name="tags" type="text" maxlength="240" placeholder="例如：Transformer，推理，二面">
+          <small>使用逗号分隔，最多 12 个。</small>
+        </label>
+
+        <label class="question-draft-field" for="question-draft-source">
+          <span>匿名来源 / 轮次</span>
+          <input id="question-draft-source" name="source" type="text" maxlength="80" placeholder="例如：应用岗 · 二面">
+          <small>不要写公司、面试官、联系方式或会议链接。</small>
+        </label>
+
+        <label class="question-draft-field question-draft-field-wide" for="question-draft-answer">
+          <span>我的答案或思路 <i>可留空</i></span>
+          <textarea id="question-draft-answer" name="answer" rows="10" maxlength="12000" placeholder="直接写你会怎样回答，普通段落即可，不要求 Markdown。也可以只记关键词，以后交给 Codex 补全。"></textarea>
+          <small>这里仍是浏览器明文本地存储，不适合保存密码、个人隐私、公司机密、未授权题库或受 NDA 约束的材料。</small>
+        </label>
+      </div>
+
+      <div class="question-draft-form-actions">
+        <button id="question-draft-save" class="primary-button" type="submit">保存到当前浏览器</button>
+        <button id="question-draft-reset" class="secondary-button" type="button">清空表单</button>
+      </div>
+      <p id="question-draft-form-status" class="question-draft-status" role="status" aria-live="polite"></p>
+    </form>
+
+    <aside class="capture-next-steps" aria-label="保存后的操作">
+      <span class="section-kicker">保存以后</span>
+      <h2>先积累，再决定是否公开</h2>
+      <ol>
+        <li><strong>现场速记</strong><span>只填题目也能保存，不会自动进入公开题库。</span></li>
+        <li><strong>本页整理</strong><span>补答案、搜索、练习口述，并随时导出备份。</span></li>
+        <li><strong>写入仓库草稿</strong><span>下载 Markdown 或复制给 Codex；默认不在阅读网站展示。</span></li>
+        <li><strong>审核后上线</strong><span>确认答案、分类、隐私和仓库可见性，再决定是否公开展示或投稿。</span></li>
+      </ol>
+      <a class="text-link" href="{{ '/privacy/' | relative_url }}">查看本机存储的完整隐私边界 →</a>
+      <a class="text-link" href="{{ '/start/' | relative_url }}#mode-choice">不确定 Public / Private？先看区别 →</a>
+    </aside>
+  </section>
+
+  <section id="question-draft-alert" class="capture-storage-alert" role="alert" hidden>
+    <div>
+      <strong id="question-draft-alert-title">本机题目暂时无法读取</strong>
+      <p id="question-draft-alert-message"></p>
+    </div>
+    <div class="capture-alert-actions">
+      <button id="question-draft-download-raw" class="secondary-button" type="button" hidden>下载原始数据</button>
+      <button id="question-draft-clear-damaged" class="text-button interview-danger-button" type="button" hidden>确认后重置</button>
+    </div>
+  </section>
+
+  <section id="question-draft-practice" class="capture-practice" aria-labelledby="question-draft-practice-title" hidden>
+    <div class="capture-section-heading">
+      <div>
+        <span class="section-kicker">本机口述练习</span>
+        <h2 id="question-draft-practice-title" tabindex="-1"></h2>
+      </div>
+      <button id="question-draft-practice-close" class="text-button" type="button">结束练习</button>
+    </div>
+    <p>先完整说一遍，再看自己保存的答案。答案只是个人草稿，不代表标准答案。</p>
+    <button id="question-draft-practice-reveal" class="primary-button" type="button" aria-expanded="false" aria-controls="question-draft-practice-answer">看我的答案</button>
+    <div id="question-draft-practice-answer" class="capture-practice-answer" tabindex="-1" hidden></div>
+  </section>
+
+  <section class="question-draft-library" aria-labelledby="question-draft-library-title">
+    <div class="capture-section-heading">
+      <div>
+        <span class="section-kicker">当前浏览器</span>
+        <h2 id="question-draft-library-title">我的题目</h2>
+      </div>
+      <p id="question-draft-count">还没有本机题目</p>
+    </div>
+
+    <label class="search-box question-draft-search" for="question-draft-search">
+      <span aria-hidden="true">⌕</span>
+      <input id="question-draft-search" type="search" aria-label="搜索本机题目、答案、分类或标签" placeholder="搜索本机题目、答案、分类或标签…" autocomplete="off">
+    </label>
+
+    <div id="question-draft-list" class="question-draft-list"></div>
+    <div id="question-draft-empty" class="capture-empty" role="status">
+      <strong>还没有保存本机题目</strong>
+      <span>在上面的表单里先写一道问题；答案可以以后再补。</span>
+    </div>
+    <div id="question-draft-filter-empty" class="capture-empty" role="status" hidden>
+      <strong>没有匹配的本机题目</strong>
+      <span>换个关键词，或清空搜索后再看。</span>
+    </div>
+  </section>
+
+  <section class="capture-backup" aria-labelledby="capture-backup-title">
+    <div>
+      <span class="section-kicker">换设备前先备份</span>
+      <h2 id="capture-backup-title">导出和恢复本机题目</h2>
+      <p>JSON 用于完整恢复，文件是未加密明文。Markdown 用于把单题交给 Codex 或上传到自己的仓库。</p>
+    </div>
+    <div class="capture-backup-actions">
+      <button id="question-draft-export" class="secondary-button" type="button">导出全部 JSON</button>
+      <button id="question-draft-import" class="secondary-button" type="button">恢复 JSON</button>
+      <input id="question-draft-import-file" type="file" accept="application/json,.json" hidden>
+      <button id="question-draft-clear-all" class="text-button interview-danger-button" type="button">删除全部本机题目</button>
+    </div>
+  </section>
+
+  <noscript><p class="capture-storage-alert">快速记题需要启用 JavaScript。你仍然可以浏览公开题库。</p></noscript>
+</div>
+
+<script type="module" src="{{ '/assets/js/question-capture.js' | relative_url }}"></script>
