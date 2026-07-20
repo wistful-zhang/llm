@@ -28,6 +28,13 @@ import {
   trackerStorageKey,
   writeTrackerStorage,
 } from './interview-tracker-storage.mjs';
+import {
+  addQuestionDraft,
+  createEmptyQuestionDrafts,
+  parseQuestionDraftsJson,
+  questionDraftsStorageKey,
+  serializeQuestionDrafts,
+} from './question-drafts-core.mjs';
 
 (() => {
   const root = document.querySelector('#interview-tracker');
@@ -36,6 +43,9 @@ import {
 
   const repositoryId = root.dataset.repositoryId || `${window.location.host}${window.location.pathname}`;
   const storageKey = trackerStorageKey(repositoryId);
+  const questionRepositoryId = root.dataset.questionRepositoryId || 'local/llm-interview-notes';
+  const questionStorageKey = questionDraftsStorageKey(questionRepositoryId);
+  const captureUrl = root.dataset.captureUrl || '../capture/';
   let storage;
   try {
     storage = window.localStorage;
@@ -440,19 +450,28 @@ import {
     const questionCount = view.rounds.reduce((total, round) => total + round.questions.length, 0);
     let questionCopyStatus = null;
     if (questionCount > 0) {
-      footer.append(button(
-        `复制全部被问题目（${questionCount}）`,
-        'copy-questions',
-        'secondary-button',
-        { applicationId: view.application.id },
-      ));
+      footer.append(
+        button(
+          `加入本机题目（${questionCount}）`,
+          'save-questions-locally',
+          'primary-button',
+          { applicationId: view.application.id },
+        ),
+        button(
+          `复制全部被问题目（${questionCount}）`,
+          'copy-questions',
+          'secondary-button',
+          { applicationId: view.application.id },
+        ),
+      );
       questionCopyStatus = makeElement('p', 'interview-publication-status');
       questionCopyStatus.id = `interview-question-copy-${view.application.id}`;
       questionCopyStatus.setAttribute('role', 'status');
       questionCopyStatus.setAttribute('aria-live', 'polite');
+      questionCopyStatus.textContent = '“加入本机题目”只复制题目文字，不额外带入公司、岗位、来源或复盘等流程字段；不会上传 GitHub。请仍检查题目原文是否含敏感信息。';
     }
-    const questionLink = makeElement('a', 'text-link', '到题库整理这些问题');
-    questionLink.href = root.dataset.manageUrl || '../manage/#capture-workflow';
+    const questionLink = makeElement('a', 'text-link', '打开本机题目页');
+    questionLink.href = captureUrl;
     footer.append(
       questionLink,
       button('删除整个流程', 'delete-application', 'text-button interview-danger-button', { applicationId: view.application.id }),
@@ -834,6 +853,102 @@ import {
     }
   };
 
+  const saveQuestionBatchLocally = (applicationId) => {
+    const view = getView(applicationId);
+    const status = document.getElementById(`interview-question-copy-${applicationId}`);
+    if (!view || !status) return;
+
+    const questionTitles = view.rounds.flatMap((round) => round.questions);
+    if (questionTitles.length === 0) return;
+
+    let originalRaw;
+    let drafts;
+    try {
+      originalRaw = storage.getItem(questionStorageKey) || '';
+      drafts = originalRaw
+        ? parseQuestionDraftsJson(originalRaw, { repositoryId: questionRepositoryId })
+        : createEmptyQuestionDrafts(questionRepositoryId);
+    } catch (error) {
+      status.textContent = error?.name === 'QuestionDraftDataError'
+        ? '本机题目数据无法读取，已停止写入以免覆盖原数据。请打开本机题目页处理存储提示。'
+        : '浏览器不允许读取本机题目，未添加任何内容。请检查站点存储或隐私设置。';
+      announce('本机题目没有改变，也没有上传 GitHub。');
+      return;
+    }
+
+    let next = drafts;
+    let added = 0;
+    let duplicate = 0;
+    let invalid = 0;
+    let limitReached = false;
+    const now = new Date().toISOString();
+
+    questionTitles.forEach((title) => {
+      if (limitReached) return;
+      try {
+        next = addQuestionDraft(next, {
+          title,
+          answer: '',
+          answerStatus: 'pending',
+          category: '待整理',
+          difficulty: '待评估',
+          tags: [],
+          source: '',
+        }, {
+          repositoryId: questionRepositoryId,
+          now,
+          localDate: localDate(),
+          idFactory: makeId,
+        });
+        added += 1;
+      } catch (error) {
+        if (error?.code === 'duplicate_title') {
+          duplicate += 1;
+        } else if (error?.code === 'too_many_questions') {
+          limitReached = true;
+        } else {
+          invalid += 1;
+        }
+      }
+    });
+
+    if (added === 0) {
+      const reasons = [
+        duplicate ? `${duplicate} 道已存在或重复` : '',
+        invalid ? `${invalid} 道格式不符合要求` : '',
+        limitReached ? '本机题目已达到 500 道上限' : '',
+      ].filter(Boolean).join('，');
+      status.textContent = `${reasons || '没有可加入的题目'}；本机题目没有改变，也没有上传 GitHub。`;
+      announce('没有新增本机题目，也没有上传 GitHub。');
+      return;
+    }
+
+    try {
+      const latestRaw = storage.getItem(questionStorageKey) || '';
+      if (latestRaw !== originalRaw) {
+        status.textContent = '另一个页面刚刚更新了本机题目，本次没有写入。请刷新记录或再点一次，避免覆盖新内容。';
+        announce('检测到本机题目并发更新，本次没有写入。');
+        return;
+      }
+      storage.setItem(
+        questionStorageKey,
+        serializeQuestionDrafts(next, { repositoryId: questionRepositoryId }),
+      );
+    } catch {
+      status.textContent = '浏览器保存空间不足或已禁用站点存储，本次没有加入题目。面试记录没有改变。';
+      announce('浏览器未能保存本机题目。');
+      return;
+    }
+
+    const skipped = [
+      duplicate ? `${duplicate} 道重复` : '',
+      invalid ? `${invalid} 道格式不符合要求` : '',
+      limitReached ? '已达到 500 道上限' : '',
+    ].filter(Boolean);
+    status.textContent = `已加入 ${added} 道本机题目${skipped.length ? `；跳过${skipped.join('、')}` : ''}。只保存到当前浏览器，仍未上传 GitHub；可点击“打开本机题目页”继续补答案和整理。`;
+    announce(`已加入 ${added} 道本机题目，仍未上传 GitHub。`);
+  };
+
   const showSaveSuccess = (message) => {
     const summary = summarizeTracker(tracker, localDate());
     saveSuccessTitle.textContent = `${message}：已面 ${summary.interviewedCompanies} 家公司，共 ${summary.completedRounds} 轮`;
@@ -901,6 +1016,7 @@ import {
     if (action === 'close-publication') closePublicationPanel(applicationId);
     if (action === 'copy-publication') await copyPublication(applicationId);
     if (action === 'copy-questions') await copyQuestionBatch(applicationId);
+    if (action === 'save-questions-locally') saveQuestionBatchLocally(applicationId);
 
     if (action === 'delete-round') {
       const context = getRoundContext(roundId);

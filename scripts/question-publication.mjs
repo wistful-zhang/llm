@@ -24,8 +24,16 @@ const parseSafeScalar = (rawValue, fieldName, lineNumber, filename, errors) => {
   const prefix = `${filename}: frontmatter 第 ${lineNumber} 行字段 ${fieldName}`;
   if (!raw) return '';
 
+  if (raw.startsWith("'")) {
+    if (!/^'(?:[^']|'')*'$/.test(raw)) {
+      errors.push(`${prefix} 的单引号没有按 YAML 规则闭合`);
+      return raw;
+    }
+    return raw.slice(1, -1).replace(/''/g, "'");
+  }
+
   if (raw.includes('\\')) {
-    errors.push(`${prefix} 不允许使用转义字符，请直接填写可见文本`);
+    errors.push(`${prefix} 不允许在非单引号字段中使用转义字符，请直接填写可见文本`);
     return raw;
   }
 
@@ -42,14 +50,6 @@ const parseSafeScalar = (rawValue, fieldName, lineNumber, filename, errors) => {
       errors.push(`${prefix} 不是安全的单行字符串`);
       return raw;
     }
-  }
-
-  if (raw.startsWith("'")) {
-    if (!/^'(?:[^']|'')*'$/.test(raw)) {
-      errors.push(`${prefix} 的单引号没有按 YAML 规则闭合`);
-      return raw;
-    }
-    return raw.slice(1, -1).replace(/''/g, "'");
   }
 
   if (/^(?:[!&*?|>@%`{},\[\]]|-[ \t])/.test(raw) ||
