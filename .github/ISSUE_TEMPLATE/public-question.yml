@@ -1,0 +1,63 @@
+name: 公开增加一道题
+description: 用普通表单增加问题，答案可以留空，不需要 Markdown
+title: "[新增题目] "
+labels: ["public-question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交后会公开，其他人可以看到、回答和评论；你的 GitHub 用户名也会显示。请保留标题开头的 `[新增题目]`，否则题目不会出现在网站列表。请勿填写真实姓名、联系方式、公司机密、内部题库或受保密协议约束的内容。想只留给自己时，请返回网站并选择“只留给自己”，不要提交此表单。隐私或安全问题请改用仓库的 **Security** 页面私密报告。
+
+  - type: input
+    id: question
+    attributes:
+      label: 面试题目
+      description: 只写问题也可以，答案可以留空或以后再补。
+      placeholder: 例如：为什么 KV Cache 能加速推理？
+    validations:
+      required: true
+
+  - type: input
+    id: category
+    attributes:
+      label: 分类
+      description: 例如 LLM 基础、RAG、Agent、推理与部署；不确定时填“待整理”。
+      placeholder: 待整理
+    validations:
+      required: true
+
+  - type: input
+    id: difficulty
+    attributes:
+      label: 难度
+      description: 填写“待评估、简单、中等、困难”之一。
+      placeholder: 待评估
+    validations:
+      required: true
+
+  - type: textarea
+    id: answer
+    attributes:
+      label: 你的答案或思路（可选）
+      description: 直接写正常文字即可。不会也没关系，其他人可以在题目下方补充。
+      placeholder: 我会先从……回答，然后说明……
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 标签或匿名背景（可选）
+      description: 可以写技术标签和轮次，但不要写公司、面试官、日期或其他可识别信息。
+
+  - type: input
+    id: source
+    attributes:
+      label: 公开来源（可选）
+      description: 如果参考了论文或官方文档，可以提供链接；不要复制大段原文。
+
+  - type: checkboxes
+    id: compliance
+    attributes:
+      label: 公开确认
+      options:
+        - label: 我明白内容和 GitHub 用户名提交后会公开，并确认已经移除个人隐私、公司机密、内部题库和 NDA 内容，也有权公开这道题。
+          required: true

@@ -35,7 +35,7 @@ title: 题库
       <div class="hero-actions">
         {% if published_questions.size > 0 %}
           <a class="primary-button" href="{{ '/practice/' | relative_url }}">开始随机模拟面试</a>
-          <a class="secondary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
+          <a class="secondary-button" href="{{ '/capture/' | relative_url }}">增加题目</a>
           <a class="secondary-button" href="#question-list-section">浏览全部题目</a>
         {% else %}
           <a class="primary-button" href="{{ '/capture/' | relative_url }}">直接添加第一题</a>
@@ -46,8 +46,7 @@ title: 题库
       <div class="hero-support-links">
         <a href="{{ '/interviews/' | relative_url }}">刚面试完？记录公司和结果 →</a>
         <a href="{{ '/experiences/' | relative_url }}">查看匿名公开面经 →</a>
-        <a href="{{ '/community/' | relative_url }}">投稿题目、补答案或参与评论 →</a>
-        <a href="{{ '/capture/' | relative_url }}">不用后台：直接在网页快速记题 →</a>
+        <a href="{{ '/capture/' | relative_url }}">增加题目：可只留给自己，也可公开给大家 →</a>
         <a href="{{ '/start/' | relative_url }}">第一次使用？创建自己的题库 →</a>
       </div>
     </div>
@@ -61,6 +60,28 @@ title: 题库
 </section>
 
 <section id="question-list-section" class="container library">
+  <section class="public-questions-section"
+           data-public-questions
+           data-repository-nwo="{{ site.github.repository_nwo | escape }}"
+           aria-labelledby="public-questions-title">
+    <div class="public-questions-heading">
+      <div>
+        <span class="eyebrow">题库公开补充</span>
+        <h2 id="public-questions-title">使用者新增的题目</h2>
+        <p>主动选择公开的问题会先列在正式题库上方；点开后，题目、回答和评论都在同一个 GitHub 页面。</p>
+      </div>
+      <div class="public-questions-heading-actions">
+        <a class="secondary-button" href="{{ '/capture/' | relative_url }}">＋ 增加一道题</a>
+        {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+label%3Apublic-question" target="_blank" rel="noopener noreferrer">查看全部公开补充 ↗</a>{% endif %}
+      </div>
+    </div>
+    <p class="public-questions-status" data-public-questions-status role="status" aria-live="polite">正在读取公开补充…</p>
+    <div class="public-questions-list" data-public-questions-list hidden></div>
+    <p data-public-questions-fallback hidden>
+      {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+label%3Apublic-question" target="_blank" rel="noopener noreferrer">前往 GitHub 查看全部公开补充 ↗</a>{% endif %}
+    </p>
+    <noscript><p>公开补充列表需要 JavaScript；你仍可浏览下方正式题库，或使用“查看全部公开补充”。</p></noscript>
+  </section>
   {% if published_questions.size == 0 %}
   <section class="experience-empty" role="status">
     <span class="empty-number" aria-hidden="true">01</span>
@@ -130,7 +151,7 @@ title: 题库
             {% if question.difficulty != '待评估' %}<span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>{% endif %}
             {% unless answer_ready %}<span class="answer-state-badge">待解答</span>{% endunless %}
             {% if answer_ready and question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
-            {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="题目和参考答案均已发布，可参与社区校对；尚未逐题对照一手资料核验">参考答案 · 待校对</span>{% endif %}
+            {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="题目和参考答案均已发布，可在题目下方评论校对；尚未逐题对照一手资料核验">参考答案 · 待校对</span>{% endif %}
           </div>
           <h2>{{ question.title | escape }}</h2>
           <div class="tag-list">

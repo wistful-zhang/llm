@@ -1,0 +1,42 @@
+name: 评论一道题
+description: 补充另一种答法、追问或纠错；评论会显示在对应题目下方
+title: "[题目评论] "
+labels: ["question-comments"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交后会公开，并成为这道题唯一的评论线程。请不要修改页面自动填写的 Issue 标题，否则评论无法显示回原题。请聚焦题目和答案，不要填写真实面试官信息、公司内部材料、联系方式或其他隐私。隐私或安全问题请改用仓库的 **Security** 页面私密报告。
+
+  - type: input
+    id: question_url
+    attributes:
+      label: 题目页面
+      description: 从题目下方进入时会自动填写，请勿改成其他题目。
+    validations:
+      required: true
+
+  - type: input
+    id: context
+    attributes:
+      label: 题目
+      description: 用于提交前确认自己正在评论哪一道题。
+    validations:
+      required: true
+
+  - type: textarea
+    id: comment
+    attributes:
+      label: 你的评论、补充或纠错
+      description: 可以给出不同回答、继续追问、补充资料，或指出具体哪句话需要修改。
+      placeholder: 我会补充……；原因是……
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: compliance
+    attributes:
+      label: 公开确认
+      options:
+        - label: 我明白评论和 GitHub 用户名提交后会公开，并确认内容不包含个人隐私、公司机密、内部题库或 NDA 材料。
+          required: true

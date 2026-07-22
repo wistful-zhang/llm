@@ -19,9 +19,11 @@ export const QUESTION_DIFFICULTIES = Object.freeze([
   '困难',
 ]);
 export const QUESTION_ANSWER_STATUSES = Object.freeze(['pending', 'complete']);
+export const QUESTION_VISIBILITIES = Object.freeze(['private', 'public']);
 
 const DIFFICULTY_SET = new Set(QUESTION_DIFFICULTIES);
 const ANSWER_STATUS_SET = new Set(QUESTION_ANSWER_STATUSES);
+const VISIBILITY_SET = new Set(QUESTION_VISIBILITIES);
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,119}$/;
 const REPOSITORY_SEGMENT_PATTERN = /^[A-Za-z0-9_.-]{1,100}$/;
 
@@ -158,6 +160,14 @@ const cleanAnswerStatus = (value, answer) => {
   return answerStatus;
 };
 
+const cleanVisibility = (value) => {
+  const visibility = cleanInlineText(requireString(value, 'visibility', 'private'));
+  if (!VISIBILITY_SET.has(visibility)) {
+    fail('visibility 必须是 private 或 public。', 'invalid_visibility', 'visibility');
+  }
+  return visibility;
+};
+
 export function parseQuestionTags(value = []) {
   let candidates;
   if (Array.isArray(value)) {
@@ -200,6 +210,7 @@ const sanitizeQuestion = (value) => {
     title: cleanTitle(value.title),
     answer,
     answerStatus: cleanAnswerStatus(value.answerStatus, answer),
+    visibility: cleanVisibility(value.visibility),
     category: cleanCategory(value.category),
     difficulty: cleanDifficulty(value.difficulty),
     tags: parseQuestionTags(value.tags),
@@ -293,6 +304,7 @@ const cleanQuestionInput = (value) => {
     title: cleanTitle(value.title),
     answer,
     answerStatus: cleanAnswerStatus(value.answerStatus, answer),
+    visibility: cleanVisibility(value.visibility),
     category: cleanCategory(value.category),
     difficulty: cleanDifficulty(value.difficulty),
     tags: parseQuestionTags(value.tags),
@@ -368,6 +380,7 @@ const comparableQuestion = (question) => JSON.stringify({
   title: question.title,
   answer: question.answer,
   answerStatus: question.answerStatus,
+  visibility: question.visibility,
   category: question.category,
   difficulty: question.difficulty,
   tags: question.tags,
@@ -706,6 +719,7 @@ export function buildQuestionAnswerPrompt(value) {
   const metadata = JSON.stringify({
     title: question.title,
     answerStatus: question.answerStatus,
+    visibility: question.visibility,
     category: question.category,
     difficulty: question.difficulty,
     tags: question.tags,

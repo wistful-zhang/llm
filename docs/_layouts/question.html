@@ -35,6 +35,7 @@ layout: default
     <div class="tag-list" role="list" aria-label="标签">
       {% for tag in page.tags %}<span class="tag" role="listitem">{{ tag | escape }}</span>{% endfor %}
     </div>
+    <a class="text-link question-comments-jump" data-question-comments-jump href="#question-comments">评论与补充 ↓</a>
   </header>
   {% if answer_ready %}
     <section class="answer-coach" data-question-coach aria-labelledby="answer-coach-title">
@@ -61,30 +62,59 @@ layout: default
         <button class="primary-button" type="button" data-copy-answer-prompt>复制给 Codex 的补答指令</button>
         <button class="secondary-button" type="button" data-copy-question>只复制题目</button>
         <a class="text-link" href="{{ '/manage/' | relative_url }}#question-only-workflow">题库主人：去网页编辑</a>
-        {% if site.github.repository_url %}
-          {% capture answer_issue_title %}[题目校对] 补充答案：{{ page.title }}{% endcapture %}
-          <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question-review.yml&amp;title={{ answer_issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">访客：在社区补充答案 ↗</a>
-        {% endif %}
+        <a class="text-link" href="#question-comments">去评论区补充答案 ↓</a>
       </div>
       <p class="copy-status" data-copy-status role="status" aria-live="polite">答案补好且状态改为“已完成”后，这个提示会自动消失。</p>
     </section>
   {% endif %}
+  {% capture comment_issue_title %}[题目评论] question:{{ page.slug }}{% endcapture %}
+  {% capture comment_search_query %}is:issue in:title "{{ comment_issue_title }}"{% endcapture %}
+  <section id="question-comments"
+           class="question-comments"
+           data-question-comments
+           data-question-slug="{{ page.slug | escape }}"
+           data-question-title="{{ page.title | escape }}"
+           data-question-url="{{ page.url | absolute_url | escape }}"
+           data-repository-nwo="{{ site.github.repository_nwo | escape }}"
+           aria-labelledby="question-comments-title">
+    <div class="question-comments-heading">
+      <div>
+        <span class="eyebrow">围绕这道题</span>
+        <h2 id="question-comments-title">评论与补充</h2>
+      </div>
+      <div class="question-comments-actions">
+        <a class="primary-button" data-question-comments-start href="#" target="_blank" rel="noopener noreferrer" hidden>写第一条评论 ↗</a>
+        <a class="primary-button" data-question-comments-open href="#" target="_blank" rel="noopener noreferrer" hidden>发表评论 ↗</a>
+      </div>
+    </div>
+    <p class="question-comments-intro">可以补充另一种答法、继续追问或指出错误。评论会公开显示；登录 GitHub 后即可留言，请勿填写个人隐私或公司机密。</p>
+    <p class="question-comments-status" data-question-comments-status role="status" aria-live="polite">正在读取这道题的评论…</p>
+    <div class="question-comments-list" data-question-comments-list hidden></div>
+    <p class="question-comments-fallback" data-question-comments-fallback hidden>
+      {% if site.github.repository_url %}
+        <a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">① 前往 GitHub 查找这道题的评论 ↗</a>
+        <button class="text-button" type="button" data-question-comments-confirm-empty>② 我已检查，没有已有评论</button>
+      {% else %}发布到 GitHub Pages 后即可启用评论。{% endif %}
+    </p>
+    <noscript>
+      {% if site.github.repository_url %}
+        <p><a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">先在 GitHub 查找已有评论 ↗</a>；确认没有后，再<a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question-comment.yml&amp;title={{ comment_issue_title | url_encode }}&amp;question_url={{ page.url | absolute_url | url_encode }}&amp;context={{ page.title | url_encode }}" target="_blank" rel="noopener noreferrer">写第一条评论 ↗</a>。</p>
+      {% else %}
+        <p>发布到 GitHub Pages 后即可启用评论。</p>
+      {% endif %}
+    </noscript>
+  </section>
   <aside class="content-utility" aria-label="分享与反馈">
     <div class="content-utility-copy">
       <strong>这道题对你有帮助？</strong>
-      <span>可以发给同伴练习；也可以发起公开校对，让其他人一起评论补充。</span>
+      <span>可以发给同伴练习；补充答法、追问和纠错请直接写在上面的题目评论区。</span>
     </div>
     <div class="content-utility-actions" data-share-controls data-share-title="{{ page.title | escape }}" hidden>
       <button class="secondary-button" type="button" data-share-page>分享题目</button>
       <button class="text-button" type="button" data-copy-page-link>复制链接</button>
     </div>
     {% if site.github.repository_url %}
-      {% if answer_ready %}
-        {% capture review_issue_title %}[题目校对] {{ page.title }}{% endcapture %}
-        <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question-review.yml&amp;title={{ review_issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">参与答案校对与讨论 ↗</a>
-      {% endif %}
-      {% capture discussion_query %}is:issue in:title "{{ page.title }}"{% endcapture %}
-      <a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ discussion_query | url_encode }}" target="_blank" rel="noopener noreferrer">查看已有社区评论 ↗</a>
+      <a class="text-link" href="#question-comments">查看或参与评论 ↑</a>
       {% capture issue_title %}[内容] {{ page.title }}{% endcapture %}
       <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=bug.yml&amp;title={{ issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">反馈内容问题 ↗</a>
     {% endif %}
@@ -106,3 +136,4 @@ layout: default
   <script type="module" src="{{ '/assets/js/unanswered-question.js' | relative_url }}"></script>
 {% endif %}
 <script type="module" src="{{ '/assets/js/share.js' | relative_url }}"></script>
+<script type="module" src="{{ '/assets/js/question-comments.js' | relative_url }}"></script>

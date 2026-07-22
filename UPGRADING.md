@@ -4,7 +4,7 @@
 
 ## 升级前先保护数据
 
-1. 分别在“＋记题”和“面试记录”中导出 JSON；这些浏览器数据不在 GitHub 仓库里。
+1. 分别在“＋题目”和“面试记录”中导出 JSON；这些浏览器数据不在 GitHub 仓库里。
 2. 确认自己的题目、匿名公开面经和站点设置已经提交到 GitHub。
 3. 给仓库建立一个备份分支，或从 GitHub 下载 ZIP。
 4. 在单独升级分支中操作，通过 Pull Request 检查差异，不要直接覆盖默认分支。
@@ -19,6 +19,8 @@
 
 从 1.2.x 升级到 1.3.0 时，需要一起复制 `docs/community.html`、`docs/assets/js/community*.{js,mjs}`、两个新的 Issue Form、布局和样式改动。社区入口会自动读取副本自己的 `site.github.repository_nwo`，不需要填写原仓库用户名。请确认副本已启用 Issues；Public 仓库可在站内展示动态，Private 仓库成员需要直接在 GitHub 中查看和评论。
 
+从 1.3.x 升级到 1.4.0 时，独立社区入口会被题目内协作替代。请一起复制 `question-collaboration-core.mjs`、`question-comments.js`、`public-questions.js`、两个新 Issue Form，以及题目布局、首页、增加题目页和样式改动；删除旧 `community*.js`、`community-question.yml` 和 `question-review.yml`。在 Public 仓库中创建 `public-question` 与 `question-comments` 标签并保持 Issues 开启。旧本机题目缺少 `visibility` 时会自动按“只留给自己”读取，不需要手工迁移 JSON。
+
 ## 推荐升级方法
 
 先在自己仓库标题下方寻找 **generated from**，它指向创建副本时使用的基础模板。若看不到该标记，请从自己保存的创建记录、README 或可信维护者说明确认来源；不要把名称相似的陌生仓库直接当成上游。
@@ -27,10 +29,10 @@
 2. 只复制需要的布局、脚本、样式、工作流、校验器和测试改动。
 3. 如果数据格式版本发生变化，先阅读对应迁移说明。
 4. 运行 `npm run check`，再通过 Pull Request 合并。
-5. 合并后确认 GitHub Actions 全部绿色，并实际打开题库、快速记题、模拟面试和面试记录页检查。
+5. 合并后确认 GitHub Actions 全部绿色，并实际打开题库、增加题目、题目评论、模拟面试和面试记录页检查。
 
 模板仓库与个人副本的 Git 历史彼此独立，直接 `git merge` 上游通常不适合新手。没有把握时，可以保留现有稳定版本，或让 Codex 在你的仓库中对照上游改动并保护上述内容目录。
 
 ## 仓库改名或转移 Owner
 
-快速记题、面试记录和练习进度会按仓库标识隔离。改名或转移前先分别导出快速记题与面试记录 JSON；新网址上线后再恢复。公开网站地址改变时，也要检查 README、仓库 Website 和分享链接。
+本机题目、面试记录和练习进度会按仓库标识隔离。改名或转移前先分别导出题目与面试记录 JSON；新网址上线后再恢复。公开网站地址改变时，也要检查 README、仓库 Website 和分享链接。
