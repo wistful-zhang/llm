@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - 数据并行
   - 张量并行

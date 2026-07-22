@@ -4,6 +4,7 @@ source: "公开 LLM 系统设计题库；依据语义缓存论文原创整理"
 review_status: "待复习"
 category: "系统设计"
 difficulty: "中等"
+study_tier: "role"
 tags:
   - 语义缓存
   - Cache Invalidation

@@ -4,6 +4,7 @@ source: "公开真实面试题整理；答案依据原论文原创整理"
 review_status: "待复习"
 category: "RAG"
 difficulty: "简单"
+study_tier: "core"
 tags:
   - BM25
   - Dense Retrieval

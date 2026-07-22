@@ -15,7 +15,7 @@ content:
         update: "更新面试题：{filename}"
         delete: "删除面试题：{filename}"
     view:
-      fields: [title, published, answer_status, review_status, category, date]
+      fields: [title, published, answer_status, study_tier, review_status, category, date]
       primary: title
       sort: [date, title, review_status, category, difficulty]
       search: [title, source, category, tags, body]
@@ -86,6 +86,22 @@ content:
         default: 待评估
         options:
           values: [待评估, 简单, 中等, 困难]
+
+      - name: study_tier
+        label: 备考层级
+        type: select
+        default: archive
+        description: 可选。表示统一的备考顺序，不等于题目难度或答案核验状态；旧题不填写时按“未分级”兼容。未经整理的新题默认进入“待重整”。
+        options:
+          values:
+            - name: core
+              label: 核心必会
+            - name: role
+              label: 岗位专项
+            - name: extended
+              label: 扩展知识点
+            - name: archive
+              label: 待重整
 
       - name: tags
         label: 标签

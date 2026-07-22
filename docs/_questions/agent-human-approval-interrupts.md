@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "Agent"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - Human in the Loop
   - Interrupt

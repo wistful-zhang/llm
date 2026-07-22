@@ -4,6 +4,7 @@ source: "公开 LLM 工程面试题整理；依据 PEFT 文档与适配器服务
 review_status: "待复习"
 category: "工程实践"
 difficulty: "中等"
+study_tier: "role"
 tags:
   - LoRA Serving
   - 模型合并

@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "工程实践"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - Evals
   - 回归测试

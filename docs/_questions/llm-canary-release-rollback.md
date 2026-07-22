@@ -4,6 +4,7 @@ source: "公开 AI 工程面试题库；依据 Evals 与渐进式发布官方文
 review_status: "待复习"
 category: "工程实践"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - 灰度发布
   - 在线评测

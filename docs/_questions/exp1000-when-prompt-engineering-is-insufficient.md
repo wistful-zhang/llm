@@ -1,10 +1,11 @@
 ---
 title: '遇到效果问题时，怎么判断继续改 Prompt 已经不划算？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'Prompt 与上下文工程'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - '方案选型'
   - 'Prompt'

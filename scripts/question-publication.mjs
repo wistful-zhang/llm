@@ -3,6 +3,11 @@ import {
   containsVisibleMarkdownImage,
   findSensitivePublicContent,
 } from './public-content-privacy.mjs';
+import { STUDY_TIERS, isStudyTier } from './question-study-tier.mjs';
+
+export { STUDY_TIERS };
+export const QUESTION_STUDY_TIERS = Object.freeze(Object.keys(STUDY_TIERS));
+export const isQuestionStudyTier = isStudyTier;
 
 const ALLOWED_FIELDS = new Set([
   'title',
@@ -10,6 +15,7 @@ const ALLOWED_FIELDS = new Set([
   'verified',
   'category',
   'difficulty',
+  'study_tier',
   'tags',
   'review_status',
   'published',

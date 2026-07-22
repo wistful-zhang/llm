@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "中等"
+study_tier: "core"
 tags: [Query Rewrite, HyDE, 查询变换]
 published: true
 answer_status: complete

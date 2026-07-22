@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "多模态"
 difficulty: "中等"
+study_tier: "role"
 tags:
   - Document VLM
   - OCR

@@ -1,10 +1,11 @@
 ---
 title: 'Agent 可观测性里的 Trace 应该怎样串起模型、工具和人工确认？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'Agent'
 difficulty: '困难'
+study_tier: 'extended'
 tags:
   - 'Tracing'
   - '可观测性'

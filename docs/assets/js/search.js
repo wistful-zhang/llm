@@ -58,6 +58,7 @@
   resolveTemplateLinks();
 
   const search = document.querySelector('#question-search');
+  const studyTier = document.querySelector('#question-study-tier');
   const difficulty = document.querySelector('#question-difficulty');
   const reviewState = document.querySelector('#question-review-state');
   const questionList = document.querySelector('#question-list');
@@ -90,6 +91,7 @@
 
   const update = () => {
     const keyword = normalize(search.value);
+    const activeStudyTier = studyTier?.value || '';
     const activeDifficulty = difficulty?.value || '';
     const activeReviewState = reviewState?.value || '';
     let matchingCount = 0;
@@ -97,6 +99,7 @@
 
     cards.forEach((card) => {
       const matchesCategory = activeCategory === null || card.dataset.category === activeCategory;
+      const matchesStudyTier = !activeStudyTier || card.dataset.studyTier === activeStudyTier;
       const matchesDifficulty = !activeDifficulty || card.dataset.difficulty === activeDifficulty;
       const cardReviewState = card.dataset.answerStatus === 'pending'
         ? 'pending'
@@ -105,7 +108,7 @@
       const metadata = normalize(card.dataset.search || '');
       const answer = answerSearchById.get(card.dataset.searchId) || '';
       const matchesKeyword = !keyword || metadata.includes(keyword) || answer.includes(keyword);
-      const matches = matchesCategory && matchesDifficulty && matchesReviewState && matchesKeyword;
+      const matches = matchesCategory && matchesStudyTier && matchesDifficulty && matchesReviewState && matchesKeyword;
       if (matches) matchingCount += 1;
       const visible = matches && matchingCount <= visibleLimit;
       card.hidden = !visible;
@@ -117,7 +120,9 @@
     } else if (answerIndexState === 'failed' && keyword) {
       empty.textContent = '题目、分类和标签中没有匹配项；答案全文暂时无法搜索，请稍后重试。';
     } else {
-      empty.textContent = '没有找到匹配的题目，换个关键词试试。';
+      empty.textContent = activeStudyTier
+        ? '当前备考层级没有匹配题目；可以更换层级或关键词。'
+        : '没有找到匹配的题目，换个关键词试试。';
     }
 
     const loadingAnswers = Boolean(keyword) && answerIndexState === 'loading';
@@ -207,6 +212,11 @@
   });
 
   difficulty?.addEventListener('change', () => {
+    visibleLimit = pageSize;
+    update();
+  });
+
+  studyTier?.addEventListener('change', () => {
     visibleLimit = pageSize;
     update();
   });

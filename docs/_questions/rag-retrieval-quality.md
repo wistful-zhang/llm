@@ -4,6 +4,7 @@ source: "公开面经高频主题；答案依据论文原创整理"
 verified: true
 category: "RAG"
 difficulty: "困难"
+study_tier: "core"
 tags: [检索, Rerank, 评估]
 review_status: 已掌握
 published: true

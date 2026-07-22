@@ -4,6 +4,7 @@ source: "公开 LLM 推理面试题整理；依据推测解码原论文原创整
 review_status: "待复习"
 category: "工程实践"
 difficulty: "中等"
+study_tier: "role"
 tags:
   - 推测解码
   - 推理优化

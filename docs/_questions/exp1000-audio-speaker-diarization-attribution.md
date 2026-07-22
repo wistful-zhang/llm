@@ -1,10 +1,11 @@
 ---
 title: '会议语音中，ASR 文本正确但说话人归属错误，怎样排查 Diarization？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '多模态'
 difficulty: '困难'
+study_tier: 'extended'
 tags:
   - '说话人分离'
   - 'ASR'

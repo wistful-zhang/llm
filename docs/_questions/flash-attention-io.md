@@ -4,6 +4,7 @@ source: "2025—2026 公开大模型面试题整理中的 FlashAttention 高频�
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - FlashAttention
   - IO Awareness

@@ -4,6 +4,7 @@ source: "公开 LLM 部署面试题整理；依据 Kubernetes 与 vLLM 官方文
 review_status: "待复习"
 category: "系统设计"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - Autoscaling
   - GPU

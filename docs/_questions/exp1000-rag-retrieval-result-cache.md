@@ -1,10 +1,11 @@
 ---
 title: '检索结果缓存应该用什么做 Key，怎样避免权限和时效错误？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'RAG'
 difficulty: '困难'
+study_tier: 'extended'
 tags:
   - '检索缓存'
   - '缓存键'

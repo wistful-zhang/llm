@@ -1,10 +1,11 @@
 ---
 title: '为什么有人在 Transformer 中间层加 Auxiliary Loss？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '训练工程'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - 'Auxiliary Loss'
   - '深层监督'

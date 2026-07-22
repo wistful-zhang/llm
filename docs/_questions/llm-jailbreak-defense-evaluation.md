@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "评测与安全"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - Jailbreak
   - Red Team

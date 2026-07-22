@@ -1,10 +1,11 @@
 ---
 title: '没有独立 PAD Token 时，为什么常借用 EOS，又有什么风险？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'LLM 基础'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - 'PAD'
   - 'EOS'

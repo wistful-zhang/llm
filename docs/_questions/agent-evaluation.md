@@ -4,6 +4,7 @@ source: "Datawhale 公开真实面试题整理；答案依据 Agent 评估论文
 review_status: "待复习"
 category: "Agent"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - Agent Evaluation
   - ToolSandbox

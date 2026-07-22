@@ -4,6 +4,7 @@ source: "公开真实面试问题汇总中的 MoE 高频题；答案依据 Switc
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - MoE
   - Router

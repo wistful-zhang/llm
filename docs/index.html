@@ -9,7 +9,17 @@ title: 题库
 {% assign answered_count = 0 %}
 {% assign unanswered_count = 0 %}
 {% assign verified_count = 0 %}
+{% assign core_count = 0 %}
+{% assign role_count = 0 %}
+{% assign extended_count = 0 %}
+{% assign archive_count = 0 %}
 {% for question in published_questions %}
+  {% case question.study_tier %}
+    {% when 'core' %}{% assign core_count = core_count | plus: 1 %}
+    {% when 'role' %}{% assign role_count = role_count | plus: 1 %}
+    {% when 'extended' %}{% assign extended_count = extended_count | plus: 1 %}
+    {% when 'archive' %}{% assign archive_count = archive_count | plus: 1 %}
+  {% endcase %}
   {% assign answer_text = question.content | strip_html | strip_newlines | strip %}
   {% assign answer_ready = false %}
   {% if question.answer_status == 'complete' and answer_text != empty %}
@@ -54,7 +64,7 @@ title: 题库
       <strong>{{ published_questions | size }}</strong>
       <span>道已发布题目</span>
       <div class="stat-line"></div>
-      <small>{{ answered_count }} 道已有解答 · {{ verified_count }} 道资料核验{% if review_count > 0 %} · {{ review_count }} 道参考答案待校对{% endif %}{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
+      <small>{{ core_count }} 道核心必会 · {{ role_count }} 道岗位专项 · {{ answered_count }} 道已有解答{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
     </div>
   </div>
 </section>
@@ -91,10 +101,28 @@ title: 题库
     <a class="secondary-button" href="{{ '/start/' | relative_url }}">查看新手指南</a>
   </section>
   {% else %}
+  <section class="study-tier-intro" aria-labelledby="study-tier-intro-title">
+    <div>
+      <span class="eyebrow">先学真正重要的</span>
+      <h2 id="study-tier-intro-title">1000 道是覆盖面，不是 1000 道都要背</h2>
+      <p>默认只显示 {{ core_count }} 道“核心必会”。准备专项岗位时再看 {{ role_count }} 道“岗位专项”；{{ extended_count }} 道扩展知识点用于查漏补缺，{{ archive_count }} 道批量题正在重整，不进入默认学习路径。</p>
+    </div>
+    <a class="text-link" href="{{ '/study-tiers/' | relative_url }}">分级依据与使用方法 →</a>
+  </section>
   <div class="toolbar">
     <label class="search-box">
       <span aria-hidden="true">⌕</span>
       <input id="question-search" type="search" aria-label="搜索题目、答案、分类或标签" placeholder="搜索题目、答案、分类或标签…" autocomplete="off">
+    </label>
+    <label class="library-select">
+      <span>备考层级</span>
+      <select id="question-study-tier" aria-label="按备考层级筛选题目">
+        <option value="core"{% if core_count > 0 %} selected{% endif %}>核心必会（{{ core_count }}）</option>
+        <option value="role">岗位专项（{{ role_count }}）</option>
+        <option value="extended">扩展知识点（{{ extended_count }}）</option>
+        <option value="archive">待重整（{{ archive_count }}）</option>
+        <option value=""{% if core_count == 0 %} selected{% endif %}>全部（{{ published_questions.size }}）</option>
+      </select>
     </label>
     <label class="library-select">
       <span>难度</span>
@@ -136,19 +164,29 @@ title: 题库
       {% elsif question.answer_status == nil or question.answer_status == empty %}
         {% if answer_text != empty %}{% assign answer_ready = true %}{% endif %}
       {% endif %}
+      {% assign study_tier = question.study_tier | default: 'unclassified' %}
+      {% assign study_tier_label = '未分级' %}
+      {% case study_tier %}
+        {% when 'core' %}{% assign study_tier_label = '核心必会' %}
+        {% when 'role' %}{% assign study_tier_label = '岗位专项' %}
+        {% when 'extended' %}{% assign study_tier_label = '扩展知识点' %}
+        {% when 'archive' %}{% assign study_tier_label = '待重整' %}
+      {% endcase %}
       <a class="question-card"
          href="{{ question.url | relative_url }}"
          data-category="{{ question.category | escape }}"
          data-difficulty="{{ question.difficulty | escape }}"
          data-verified="{{ question.verified | default: false }}"
          data-answer-status="{% if answer_ready %}complete{% else %}pending{% endif %}"
+         data-study-tier="{{ study_tier | escape }}"
          data-search-id="{{ question.url | escape }}"
-         data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: search_tags | downcase | escape }}">
+         data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: study_tier_label | append: ' ' | append: search_tags | downcase | escape }}">
         <div class="card-number">{% if forloop.index < 10 %}0{% endif %}{{ forloop.index }}</div>
         <div class="card-body">
           <div class="card-meta">
             <span>{% if question.category == '待整理' %}未分类{% else %}{{ question.category | escape }}{% endif %}</span>
             {% if question.difficulty != '待评估' %}<span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>{% endif %}
+            <span class="study-tier-badge study-tier-{{ study_tier | escape }}">{{ study_tier_label }}</span>
             {% unless answer_ready %}<span class="answer-state-badge">待解答</span>{% endunless %}
             {% if answer_ready and question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
             {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="题目和参考答案均已发布，可在题目下方评论校对；尚未逐题对照一手资料核验">参考答案 · 待校对</span>{% endif %}
@@ -163,7 +201,7 @@ title: 题库
     {% endfor %}
   </div>
   <div class="library-results-bar">
-    <p id="library-result-summary">共 {{ published_questions.size }} 道符合条件</p>
+    <p id="library-result-summary">默认显示 {{ core_count }} 道核心必会题</p>
     <button id="question-load-more" class="secondary-button" type="button" hidden>再显示 60 道</button>
   </div>
   <div id="result-status" class="sr-only" role="status" aria-live="polite"></div>

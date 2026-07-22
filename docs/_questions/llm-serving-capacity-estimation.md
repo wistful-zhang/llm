@@ -4,6 +4,7 @@ source: "公开 LLM 系统设计面试题；依据服务系统论文与官方指
 review_status: "待复习"
 category: "系统设计"
 difficulty: "简单"
+study_tier: "role"
 tags:
   - 容量估算
   - Token Throughput

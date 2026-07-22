@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "中等"
+study_tier: "core"
 tags:
   - RLHF
   - DPO

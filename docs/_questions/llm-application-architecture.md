@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "系统设计"
 difficulty: "简单"
+study_tier: "core"
 tags:
   - 系统架构
   - LLM 应用

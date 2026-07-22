@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "困难"
+study_tier: "core"
 tags: [Context Packing, Lost in the Middle, 证据排序]
 published: true
 answer_status: complete

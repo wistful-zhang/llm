@@ -1,10 +1,11 @@
 ---
 title: '报告“训练了多少 Token”时，应该算原始 Token、有效 Loss Token 还是重复消费 Token？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '预训练与数据'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - 'Token Accounting'
   - '训练预算'

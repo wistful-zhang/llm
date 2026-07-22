@@ -4,6 +4,7 @@ source: "公开真实面经整理；答案依据原论文原创整理"
 review_status: "待复习"
 category: "RAG"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - Hallucination
   - Faithfulness

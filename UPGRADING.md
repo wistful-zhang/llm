@@ -21,6 +21,8 @@
 
 从 1.3.x 升级到 1.4.0 时，独立社区入口会被题目内协作替代。请一起复制 `question-collaboration-core.mjs`、`question-comments.js`、`public-questions.js`、两个新 Issue Form，以及题目布局、首页、增加题目页和样式改动；删除旧 `community*.js`、`community-question.yml` 和 `question-review.yml`。在 Public 仓库中创建 `public-question` 与 `question-comments` 标签并保持 Issues 开启。旧本机题目缺少 `visibility` 时会自动按“只留给自己”读取，不需要手工迁移 JSON。
 
+从 1.4.x 升级到 1.5.0 时，新增的 `study_tier` 只表示备考顺序。如果要保留自己的题目，不要整目录覆盖 `docs/_questions/`；可以为每道题补上 `core`、`role`、`extended` 或 `archive`，也可先留空，旧题会兼容为“未分级”。请一起合并首页、模拟面试、题目布局、样式、`.pages.yml`、校验器和 `scripts/question-study-tier.mjs`；新题会默认进入 `archive`，避免未整理内容直接进入核心路径。
+
 ## 推荐升级方法
 
 先在自己仓库标题下方寻找 **generated from**，它指向创建副本时使用的基础模板。若看不到该标记，请从自己保存的创建记录、README 或可信维护者说明确认来源；不要把名称相似的陌生仓库直接当成上游。

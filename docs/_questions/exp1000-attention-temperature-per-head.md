@@ -1,10 +1,11 @@
 ---
 title: '给每个 Attention Head 单独学习 Temperature 有什么作用和风险？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'LLM 基础'
 difficulty: '困难'
+study_tier: 'extended'
 tags:
   - 'Attention Temperature'
   - '多头注意力'

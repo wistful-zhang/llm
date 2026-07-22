@@ -1,10 +1,11 @@
 ---
 title: '人工评测中标注员分歧很大，怎样设计仲裁而不是简单多数票？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '评测与安全'
 difficulty: '困难'
+study_tier: 'archive'
 tags:
   - '人工评测'
   - '仲裁'

@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "困难"
+study_tier: "role"
 tags: [ColBERT, Late Interaction, MaxSim]
 published: true
 answer_status: complete

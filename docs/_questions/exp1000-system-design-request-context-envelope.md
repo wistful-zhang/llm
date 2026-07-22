@@ -1,10 +1,11 @@
 ---
 title: '大模型请求在多个服务间传递时，统一 Context Envelope 应包含什么？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '系统设计'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - '请求上下文'
   - 'Trace'

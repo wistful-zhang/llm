@@ -19,6 +19,7 @@ import {
 } from './experience-publication.mjs';
 import {
   isQuestionDocumentPath,
+  isQuestionStudyTier,
   parseQuestionDocument,
 } from './question-publication.mjs';
 
@@ -90,6 +91,7 @@ for (const filename of files) {
   const title = value('title');
   const category = value('category');
   const difficulty = value('difficulty');
+  const studyTier = value('study_tier');
   const sourceNote = value('source');
   const reviewStatus = value('review_status');
   const published = values.get('published');
@@ -120,6 +122,9 @@ for (const filename of files) {
   }
   if (isPublished && hasAnswer && !publishableDifficulties.has(difficulty)) {
     errors.push(`${filename}: 发布前必须把 difficulty 从“待评估”改为正式难度`);
+  }
+  if (studyTier && !isQuestionStudyTier(studyTier)) {
+    errors.push(`${filename}: study_tier 必须是“core”“role”“extended”或“archive”；旧题可以暂时省略`);
   }
   if (sourceNote.length > 80) {
     errors.push(`${filename}: source 不能超过 80 个字符`);

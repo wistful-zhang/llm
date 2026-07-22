@@ -1,10 +1,11 @@
 ---
 title: '用户上传空白图、损坏图或与问题无关的图时，产品应该怎么响应？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '多模态'
 difficulty: '简单'
+study_tier: 'extended'
 tags:
   - '输入校验'
   - '异常处理'

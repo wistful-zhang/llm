@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseQuestionDocument } from './question-publication.mjs';
+import { isStudyTier, studyTierForExpansionBatch } from './question-study-tier.mjs';
 
 const rootDir = fileURLToPath(new URL('../', import.meta.url));
 const questionsDir = join(rootDir, 'docs', '_questions');
@@ -68,14 +69,16 @@ const renderQuestion = (record) => {
     .map(({ q, a }, index) => `${index + 1}. **${plainLine(q)}** ${plainLine(a)}`)
     .join('\n');
   const [referenceTitle, referenceUrl] = referenceFor(record);
+  const studyTier = studyTierForExpansionBatch(record.batch, record.slug);
 
   return `---
 title: ${yamlString(record.title)}
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: ${yamlString(record.category)}
 difficulty: ${yamlString(record.difficulty)}
+study_tier: ${yamlString(studyTier)}
 tags:
 ${tags}
 published: true
@@ -148,6 +151,7 @@ for (const record of batches) {
   const guide = plainLine(record.guide);
   const answer = plainLine(record.answer);
   const followups = Array.isArray(record.followups) ? record.followups : [];
+  const studyTier = studyTierForExpansionBatch(record.batch, record.slug);
 
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 100) {
     errors.push(`${owner}: slug 必须是 1～100 位英文 kebab-case`);
@@ -165,6 +169,7 @@ for (const record of batches) {
   }
   if (!category || category.length > 30) errors.push(`${owner}: category 必填且不能超过 30 个字符`);
   if (!allowedDifficulties.has(difficulty)) errors.push(`${owner}: difficulty 必须是简单、中等或困难`);
+  if (!isStudyTier(studyTier)) errors.push(`${owner}: study_tier 不是合法备考层级`);
   if (tags.length < 2 || tags.length > 4 || new Set(tags).size !== tags.length) {
     errors.push(`${owner}: tags 必须包含 2～4 个不重复标签`);
   }

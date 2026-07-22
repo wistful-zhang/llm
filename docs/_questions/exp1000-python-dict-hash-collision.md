@@ -1,10 +1,11 @@
 ---
 title: 'Python dict 查找为什么平均是 O(1)，最坏情况是什么？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '编程与框架'
 difficulty: '中等'
+study_tier: 'archive'
 tags:
   - 'Python'
   - '哈希表'

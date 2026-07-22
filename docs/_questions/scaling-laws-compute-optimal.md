@@ -4,6 +4,7 @@ source: "公开真实面试问题汇总中的 Scaling Laws 高频题；答案依
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - Scaling Laws
   - Chinchilla

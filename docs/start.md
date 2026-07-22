@@ -17,7 +17,7 @@ permalink: /start/
 
 <nav class="journey-grid" aria-label="选择当前目标">
   <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>我想马上增加题目</strong><span>普通文字填写，可只留给自己或公开给大家，答案可以留空。</span><b>打开增加题目 →</b></a>
-  <a class="journey-card" href="{{ '/practice/' | relative_url }}"><strong>我只想先练习</strong><span>直接按分类随机抽题，不需要 GitHub 账号。</span><b>开始模拟面试 →</b></a>
+  <a class="journey-card" href="{{ '/practice/' | relative_url }}"><strong>我只想先练习</strong><span>先练“核心必会”，再按目标岗位和分类随机抽题；不需要 GitHub 账号。</span><b>开始模拟面试 →</b></a>
   <a class="journey-card" href="{{ '/interviews/' | relative_url }}"><strong>我想记录真实面试</strong><span>不需要 GitHub 登录，记录只保存在自己的浏览器。</span><b>记录公司与进度 →</b></a>
   <a class="journey-card" href="#mode-choice"><strong>我是第一次创建</strong><span>继续下面 5 步，先决定公开还是私有。</span><b>开始首次配置 ↓</b></a>
 </nav>
@@ -173,7 +173,7 @@ permalink: /start/
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
   <h2>以后按需要走五条日常路径</h2>
-  <p><strong>现场记题：</strong>在“＋题目”只填问题，默认选择“只留给自己”。<strong>公开补题：</strong>改选“公开给大家”，先查重，再回题目卡打开预填表单并到 GitHub 最终确认。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>个人仓库速记：</strong>使用 Private 仓库。<strong>准备复习：</strong>Public 题库可从答案已完成的题目中随机抽题。</p>
+  <p><strong>现场记题：</strong>在“＋题目”只填问题，默认选择“只留给自己”。<strong>公开补题：</strong>改选“公开给大家”，先查重，再回题目卡打开预填表单并到 GitHub 最终确认。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>个人仓库速记：</strong>使用 Private 仓库。<strong>准备复习：</strong>先看<a href="{{ '/study-tiers/' | relative_url }}">学习分级说明</a>，从“核心必会”开始，再按目标岗位和分类随机抽题。</p>
   <a class="primary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
   <a class="secondary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
   <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看匿名面经发布步骤</a>
