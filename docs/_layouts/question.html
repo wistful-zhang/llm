@@ -79,7 +79,7 @@ layout: default
       <button class="text-button" type="button" data-copy-page-link>复制链接</button>
     </div>
     {% if site.github.repository_url %}
-      {% if answer_ready and page.verified != true %}
+      {% if answer_ready %}
         {% capture review_issue_title %}[题目校对] {{ page.title }}{% endcapture %}
         <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question-review.yml&amp;title={{ review_issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">参与答案校对与讨论 ↗</a>
       {% endif %}

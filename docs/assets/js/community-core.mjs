@@ -13,11 +13,15 @@ const validateRepositoryNwo = (repositoryNwo) => {
   return normalized;
 };
 
-export const buildCommunityIssuesApiUrl = (repositoryNwo, perPage = 30) => {
+export const buildCommunityIssuesApiUrl = (repositoryNwo, perPage = 30, page = 1) => {
   const repository = validateRepositoryNwo(repositoryNwo);
   const pageSize = Number(perPage);
+  const pageNumber = Number(page);
   if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
     throw new RangeError('社区列表每页数量必须是 1 到 100 的整数');
+  }
+  if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > 10) {
+    throw new RangeError('社区列表页码必须是 1 到 10 的整数');
   }
 
   const url = new URL(`https://api.github.com/repos/${repository}/issues`);
@@ -25,6 +29,7 @@ export const buildCommunityIssuesApiUrl = (repositoryNwo, perPage = 30) => {
   url.searchParams.set('sort', 'updated');
   url.searchParams.set('direction', 'desc');
   url.searchParams.set('per_page', String(pageSize));
+  url.searchParams.set('page', String(pageNumber));
   return url.toString();
 };
 
@@ -52,6 +57,7 @@ export const normalizeCommunityIssues = (payload, repositoryNwo) => {
       author: typeof issue.user?.login === 'string' ? issue.user.login : 'GitHub 用户',
       comments,
       state: issue.state === 'closed' ? 'closed' : 'open',
+      locked: issue.locked === true,
       updatedAt: typeof issue.updated_at === 'string' ? issue.updated_at : '',
       url: `https://github.com/${repository}/issues/${number}`,
     }];

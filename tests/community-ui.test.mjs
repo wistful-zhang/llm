@@ -74,6 +74,7 @@ test('公开社区列表只请求当前仓库的 Issues API，并拒绝无效仓
   assert.equal(url.searchParams.get('sort'), 'updated');
   assert.equal(url.searchParams.get('direction'), 'desc');
   assert.equal(url.searchParams.get('per_page'), '12');
+  assert.equal(url.searchParams.get('page'), '1');
 
   for (const value of ['', 'owner', 'owner/repo/extra', '../repo', 'owner/repo?x=1']) {
     assert.throws(() => buildCommunityIssuesApiUrl(value), /仓库|repository/i);
@@ -96,6 +97,7 @@ test('动态列表只保留社区 Issue，排除 PR 和普通维护 Issue', () =
       user: { login: 'bob' },
       comments: 1,
       state: 'closed',
+      locked: true,
       updated_at: '2026-07-21T08:00:00Z',
     },
     {
@@ -120,6 +122,7 @@ test('动态列表只保留社区 Issue，排除 PR 和普通维护 Issue', () =
   assert.deepEqual(issues.map((issue) => issue.number), [11, 12]);
   assert.deepEqual(issues.map((issue) => issue.kind), ['question', 'review']);
   assert.deepEqual(issues.map((issue) => issue.comments), [3, 1]);
+  assert.deepEqual(issues.map((issue) => issue.locked), [false, true]);
   assert.deepEqual(issues.map((issue) => issue.url), [
     'https://github.com/example-owner/example-repo/issues/11',
     'https://github.com/example-owner/example-repo/issues/12',
@@ -134,7 +137,10 @@ test('社区列表使用安全 DOM API 渲染，并在 API 不可用时保留 Gi
   assert.match(script, /normalizeCommunityIssues/);
   assert.match(script, /\bfetch\s*\(/);
   assert.match(script, /response\.ok/);
+  assert.match(script, /page <= maxPages/);
+  assert.match(script, /foundCount >= visibleLimit/);
   assert.match(script, /\.comments\b/);
+  assert.match(script, /issue\.locked/);
   assert.match(script, /createElement\(/);
   assert.match(script, /\.textContent\s*=/);
   assert.match(script, /replaceChildren\(/);

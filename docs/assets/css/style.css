@@ -1581,6 +1581,7 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .community-thread-kind-review { color: #7a2e0e; background: #fffaeb; }
 .community-thread-state { color: #067647; background: #dcfae6; }
 .community-thread-state-closed { color: #475467; background: #eaecf0; }
+.community-thread-state-locked { color: #7a2e0e; background: #fffaeb; }
 .community-thread h3 { margin: 0; overflow-wrap: anywhere; font-size: 1.18rem; line-height: 1.4; }
 .community-thread-meta { margin: 0; color: var(--muted); font-size: .84rem; }
 .community-thread-action { position: absolute; top: 50%; right: 4px; color: var(--accent-strong); font-size: .86rem; font-weight: 700; transform: translateY(-50%); }

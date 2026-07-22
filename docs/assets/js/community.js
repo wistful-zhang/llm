@@ -40,8 +40,9 @@ if (feed) {
     kind.textContent = issue.kind === 'question' ? '题目投稿' : '题目校对';
 
     const state = document.createElement('span');
-    state.className = `community-thread-state community-thread-state-${issue.state}`;
-    state.textContent = issue.state === 'closed' ? '已归档' : '讨论中';
+    const visibleState = issue.locked ? 'locked' : issue.state;
+    state.className = `community-thread-state community-thread-state-${visibleState}`;
+    state.textContent = issue.locked ? '已锁定' : issue.state === 'closed' ? '已归档' : '讨论中';
 
     heading.append(kind, state);
 
@@ -54,7 +55,7 @@ if (feed) {
 
     const action = document.createElement('span');
     action.className = 'community-thread-action';
-    action.textContent = issue.comments > 0 ? '查看评论 ↗' : '来写第一条评论 ↗';
+    action.textContent = issue.locked ? '查看讨论 ↗' : issue.comments > 0 ? '查看评论 ↗' : '来写第一条评论 ↗';
 
     link.append(heading, title, meta, action);
     return link;
@@ -69,27 +70,47 @@ if (feed) {
 
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    let failureMessage = '';
 
     try {
-      const response = await fetch(buildCommunityIssuesApiUrl(repositoryNwo, 50), {
-        headers: { Accept: 'application/vnd.github+json' },
-        signal: controller.signal,
-      });
-      if (!response.ok) throw new Error(`GitHub API ${response.status}`);
+      const payload = [];
+      const pageSize = 100;
+      const maxPages = 3;
+      const visibleLimit = 12;
 
-      const issues = normalizeCommunityIssues(await response.json(), repositoryNwo);
+      for (let page = 1; page <= maxPages; page += 1) {
+        const response = await fetch(buildCommunityIssuesApiUrl(repositoryNwo, pageSize, page), {
+          headers: { Accept: 'application/vnd.github+json' },
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          failureMessage = [404, 410].includes(response.status)
+            ? '无法读取社区动态：仓库可能为私有、已关闭 Issues，或当前访问者没有权限。'
+            : '暂时无法读取社区动态，可能是 GitHub API 限流或网络异常。';
+          throw new Error(`GitHub API ${response.status}`);
+        }
+
+        const batch = await response.json();
+        if (!Array.isArray(batch)) throw new TypeError('GitHub Issues API 返回格式异常');
+        payload.push(...batch);
+
+        const foundCount = normalizeCommunityIssues(payload, repositoryNwo).length;
+        if (foundCount >= visibleLimit || batch.length < pageSize) break;
+      }
+
+      const issues = normalizeCommunityIssues(payload, repositoryNwo).slice(0, visibleLimit);
       list.replaceChildren(...issues.map(createThread));
       list.hidden = issues.length === 0;
 
       if (issues.length === 0) {
-        setStatus('还没有社区投稿。可以成为第一个分享题目的人。');
+        setStatus('最近可读取的公开动态中还没有社区投稿。可以成为第一个分享题目的人。');
       } else {
         setStatus(`最近更新的 ${issues.length} 个公开讨论；点击帖子即可查看和评论。`);
       }
     } catch {
       list.replaceChildren();
       list.hidden = true;
-      setStatus('暂时无法读取社区动态，可能是 API 限流、网络异常或仓库为私有；投稿和评论入口仍可使用。');
+      setStatus(failureMessage || '暂时无法读取社区动态；如果仓库允许公开创建 Issue，仍可使用上方投稿和评论入口。');
       if (fallback) fallback.hidden = false;
     } finally {
       window.clearTimeout(timeoutId);
