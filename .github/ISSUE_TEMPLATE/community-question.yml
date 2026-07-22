@@ -1,0 +1,78 @@
+name: 向社区投稿一道面试题
+description: 用普通表单分享问题，可选填写答案，不需要 Markdown
+title: "[社区投稿] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        投稿提交后会公开，并立即成为可评论的社区帖子；它不会自动进入正式题库。请先匿名化，不要填写真实姓名、联系方式、内部链接、公司机密或受保密协议约束的材料。隐私或安全问题请改用仓库的 **Security** 页面私密报告。
+
+  - type: input
+    id: question
+    attributes:
+      label: 面试题目
+      description: 只写问题也可以，答案可以留空。
+      placeholder: 例如：为什么 KV Cache 能加速推理？
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 分类
+      options:
+        - 数学基础
+        - LLM 基础
+        - NLP 与机器学习
+        - 预训练与数据
+        - 训练与对齐
+        - 训练工程
+        - 推理与部署
+        - RAG
+        - Agent
+        - 多模态
+        - 评测与安全
+        - 工程实践
+        - 系统设计
+        - 其他 / 不确定
+    validations:
+      required: true
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: 你觉得有多难？
+      options:
+        - 不确定
+        - 简单
+        - 中等
+        - 困难
+    validations:
+      required: true
+
+  - type: textarea
+    id: answer
+    attributes:
+      label: 你的回答（可选）
+      description: 写面试时会怎样直接回答即可。不会也没关系，其他人可以在评论里补充。
+      placeholder: 我会先从……回答，然后说明……
+
+  - type: textarea
+    id: followups
+    attributes:
+      label: 追问或面试背景（可选）
+      description: 可以写岗位方向、轮次和后续追问，但请去掉公司、面试官和日期等识别信息。
+
+  - type: input
+    id: source
+    attributes:
+      label: 公开来源（可选）
+      description: 如果参考了论文、官方文档或公开帖子，请提供链接；不要复制大段原文。
+
+  - type: checkboxes
+    id: compliance
+    attributes:
+      label: 公开与授权确认
+      options:
+        - label: 我确认内容提交后会公开，已经移除个人隐私、公司机密和受保密协议约束的信息，并有权公开这次贡献。
+          required: true

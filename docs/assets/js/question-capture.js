@@ -228,8 +228,8 @@ if (root) {
   const issueUrl = (question) => {
     if (!repositoryUrl) return '';
     const params = new URLSearchParams({
-      template: 'question.yml',
-      title: `[题目] ${question.title}`,
+      template: 'community-question.yml',
+      title: `[社区投稿] ${question.title}`,
     });
     return `${repositoryUrl}/issues/new?${params.toString()}`;
   };

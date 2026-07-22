@@ -3,6 +3,10 @@ layout: default
 ---
 <article class="container question-page" data-public-question="true">
   {% assign source_note = page.source | default: '' | strip %}
+  {% assign source_display = source_note %}
+  {% if source_note contains '答案为面试口述稿，待逐题资料复核' %}
+    {% assign source_display = '公开岗位面试主题整理；参考答案已发布，尚未逐题对照一手资料' %}
+  {% endif %}
   {% assign answer_text = content | strip_html | strip_newlines | strip %}
   {% assign answer_ready = false %}
   {% if page.answer_status == 'complete' and answer_text != empty %}
@@ -24,8 +28,8 @@ layout: default
     {% if show_provenance %}
       <div class="question-provenance">
         {% if show_verified %}<span class="verification-badge">✓ 资料核验</span>{% endif %}
-        {% if answer_ready and page.verified != true %}<span class="review-pending-badge">答案待复核</span>{% endif %}
-        {% if source_note != empty %}<span>来源说明：{{ source_note | escape }}</span>{% endif %}
+        {% if answer_ready and page.verified != true %}<span class="review-pending-badge">参考答案 · 待校对</span>{% endif %}
+        {% if source_note != empty %}<span>来源说明：{{ source_display | escape }}</span>{% endif %}
       </div>
     {% endif %}
     <div class="tag-list" role="list" aria-label="标签">
@@ -58,8 +62,8 @@ layout: default
         <button class="secondary-button" type="button" data-copy-question>只复制题目</button>
         <a class="text-link" href="{{ '/manage/' | relative_url }}#question-only-workflow">题库主人：去网页编辑</a>
         {% if site.github.repository_url %}
-          {% capture answer_issue_title %}[答案] {{ page.title }}{% endcapture %}
-          <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question.yml&amp;title={{ answer_issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">访客：向题库投稿答案 ↗</a>
+          {% capture answer_issue_title %}[题目校对] 补充答案：{{ page.title }}{% endcapture %}
+          <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question-review.yml&amp;title={{ answer_issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">访客：在社区补充答案 ↗</a>
         {% endif %}
       </div>
       <p class="copy-status" data-copy-status role="status" aria-live="polite">答案补好且状态改为“已完成”后，这个提示会自动消失。</p>
@@ -68,13 +72,19 @@ layout: default
   <aside class="content-utility" aria-label="分享与反馈">
     <div class="content-utility-copy">
       <strong>这道题对你有帮助？</strong>
-      <span>可以发给同伴练习；发现内容问题也欢迎反馈。</span>
+      <span>可以发给同伴练习；也可以发起公开校对，让其他人一起评论补充。</span>
     </div>
     <div class="content-utility-actions" data-share-controls data-share-title="{{ page.title | escape }}" hidden>
       <button class="secondary-button" type="button" data-share-page>分享题目</button>
       <button class="text-button" type="button" data-copy-page-link>复制链接</button>
     </div>
     {% if site.github.repository_url %}
+      {% if answer_ready %}
+        {% capture review_issue_title %}[题目校对] {{ page.title }}{% endcapture %}
+        <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question-review.yml&amp;title={{ review_issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">参与答案校对与讨论 ↗</a>
+      {% endif %}
+      {% capture discussion_query %}is:issue in:title "{{ page.title }}"{% endcapture %}
+      <a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ discussion_query | url_encode }}" target="_blank" rel="noopener noreferrer">查看已有社区评论 ↗</a>
       {% capture issue_title %}[内容] {{ page.title }}{% endcapture %}
       <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=bug.yml&amp;title={{ issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">反馈内容问题 ↗</a>
     {% endif %}

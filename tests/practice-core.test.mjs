@@ -21,7 +21,7 @@ test('按分类和难度取交集，并按 ID 去重', () => {
   assert.deepEqual(result.map((question) => question.id), ['/q/1/']);
 });
 
-test('可以只抽资料已核验或答案待复核的题目', () => {
+test('可以只抽资料已核验或参考答案待校对的题目', () => {
   assert.deepEqual(filterQuestions(questions, { verification: 'verified' }).map((question) => question.id), ['/q/1/']);
   assert.deepEqual(filterQuestions(questions, { verification: 'review' }).map((question) => question.id), ['/q/2/', '/q/3/']);
   assert.equal(filterQuestions(questions, { verification: 'toString' }).length, 3);

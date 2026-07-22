@@ -125,8 +125,8 @@ test('GitHub Issue 投稿保持“两步操作”，不会预填或自动提交�
 
   const issueUrlBlock = script.match(/const issueUrl = \(question\) => \{[\s\S]*?\n  \};/);
   assert.ok(issueUrlBlock, '应集中构造受控的 Issue 地址');
-  assert.match(issueUrlBlock[0], /template: 'question\.yml'/);
-  assert.match(issueUrlBlock[0], /title: `\[题目\] \$\{question\.title\}`/);
+  assert.match(issueUrlBlock[0], /template: 'community-question\.yml'/);
+  assert.match(issueUrlBlock[0], /title: `\[社区投稿\] \$\{question\.title\}`/);
   assert.doesNotMatch(issueUrlBlock[0], /\bbody\s*:/);
 
   assert.match(script, /GitHub Issue 的标题、正文和附件提交后会公开/);

@@ -1,0 +1,78 @@
+---
+title: 面经社区
+description: 用可视化表单投稿面试题，在公开讨论中补答案、评论和校对，再由维护者收录进正式题库。
+permalink: /community/
+---
+<div class="container community-page">
+  <header class="community-intro">
+    <span class="status-badge">公开投稿 · 公开评论</span>
+    <h1>一道题，可以由很多人一起补完整</h1>
+    <p>你可以只投稿问题，也可以附上自己的回答。提交后会立即成为公开讨论帖，其他人能补答案、提追问和校对；内容确认可靠后，再整理进正式题库。</p>
+    {% if site.github.repository_url %}
+      <div class="community-intro-actions">
+        <a class="primary-button" href="{{ site.github.repository_url }}/issues/new?template=community-question.yml" target="_blank" rel="noopener noreferrer">投稿一道题 ↗</a>
+        <a class="secondary-button" href="{{ site.github.repository_url }}/issues/new?template=question-review.yml" target="_blank" rel="noopener noreferrer">校对现有答案 ↗</a>
+        <a class="text-link" href="{{ site.github.repository_url }}/issues" target="_blank" rel="noopener noreferrer">查看全部讨论与评论 ↗</a>
+      </div>
+    {% else %}
+      <p class="community-repository-note">当前是本地预览，尚未识别 GitHub 仓库。发布到 GitHub Pages 后，投稿与评论按钮会自动连接到你自己的仓库。</p>
+    {% endif %}
+  </header>
+
+  <section class="community-explainer" aria-labelledby="community-flow-title">
+    <div class="community-section-heading">
+      <span class="eyebrow">社区流程</span>
+      <h2 id="community-flow-title">帖子立即公开，正式题库单独收录</h2>
+      <p>这里没有让投稿者困惑的“待审核页面”。社区帖子提交后就能看和评论；只有进入正式题库前，才会检查隐私、来源和技术事实。</p>
+    </div>
+    <ol class="community-flow">
+      <li><b>01</b><strong>普通表单投稿</strong><span>不需要写 Markdown；不知道答案时只填问题即可。</span></li>
+      <li><b>02</b><strong>公开讨论补充</strong><span>每个投稿都是一条 GitHub 讨论线程，可继续评论和修正。</span></li>
+      <li><b>03</b><strong>整理进入题库</strong><span>确认内容可公开、事实可靠、表达适合面试后，再收录成正式题目。</span></li>
+    </ol>
+  </section>
+
+  <section class="community-boundaries" aria-labelledby="community-boundaries-title">
+    <div>
+      <span class="eyebrow">先说明两件事</span>
+      <h2 id="community-boundaries-title">公开社区与私人笔记不能混在一起</h2>
+    </div>
+    <div class="community-boundary-grid">
+      <article>
+        <span class="status-badge status-public">公开仓库</span>
+        <h3>任何人可看；仓库开放 Issues 时可投稿和评论</h3>
+        <p>登录 GitHub 后即可参与；仓库主人也可以关闭 Issues 或限制为协作者。帖子、用户名、附件和评论都会公开，请勿上传内部题库、面试官信息、联系方式或 NDA 内容。</p>
+      </article>
+      <article>
+        <span class="status-badge status-private">私有仓库</span>
+        <h3>只有获授权的仓库成员能参与</h3>
+        <p>静态网页不会索要 Token，也无法匿名读取私有 Issue。私人面经继续留在浏览器本地或你自己的 Private 仓库。</p>
+      </article>
+    </div>
+  </section>
+
+  <aside class="community-review-note" role="note">
+    <strong>“参考答案待校对”不是“题目待发布”</strong>
+    <span>这类题目已经可以阅读和模拟，只是答案还没有逐题对照一手资料。你可以直接从题目页发起校对帖。</span>
+  </aside>
+
+  <section class="community-feed-section"
+           data-community-feed
+           data-repository-nwo="{{ site.github.repository_nwo | escape }}"
+           data-repository-url="{{ site.github.repository_url | escape }}"
+           aria-labelledby="community-feed-title">
+    <div class="community-feed-heading">
+      <div>
+        <span class="eyebrow">最近动态</span>
+        <h2 id="community-feed-title">社区正在讨论</h2>
+      </div>
+      {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues" target="_blank" rel="noopener noreferrer">全部帖子 ↗</a>{% endif %}
+    </div>
+    <p class="community-feed-status" data-community-status role="status" aria-live="polite">正在读取公开社区动态…</p>
+    <div class="community-feed-list" data-community-list hidden></div>
+    <p class="community-feed-fallback" data-community-fallback hidden>
+      {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues" target="_blank" rel="noopener noreferrer">直接前往 GitHub 查看和评论 ↗</a>{% else %}请在已发布的仓库页面查看 Issues。{% endif %}
+    </p>
+    <noscript><p class="community-feed-status">动态列表需要 JavaScript；投稿和评论按钮仍可正常使用。</p></noscript>
+  </section>
+</div>

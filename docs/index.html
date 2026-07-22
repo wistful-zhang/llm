@@ -24,6 +24,7 @@ title: 题库
     {% assign unanswered_count = unanswered_count | plus: 1 %}
   {% endif %}
 {% endfor %}
+{% assign review_count = answered_count | minus: verified_count %}
 {% assign published_categories = published_questions | map: 'category' | uniq | sort %}
 <section class="hero">
   <div class="container hero-grid">
@@ -45,6 +46,7 @@ title: 题库
       <div class="hero-support-links">
         <a href="{{ '/interviews/' | relative_url }}">刚面试完？记录公司和结果 →</a>
         <a href="{{ '/experiences/' | relative_url }}">查看匿名公开面经 →</a>
+        <a href="{{ '/community/' | relative_url }}">投稿题目、补答案或参与评论 →</a>
         <a href="{{ '/capture/' | relative_url }}">不用后台：直接在网页快速记题 →</a>
         <a href="{{ '/start/' | relative_url }}">第一次使用？创建自己的题库 →</a>
       </div>
@@ -53,7 +55,7 @@ title: 题库
       <strong>{{ published_questions | size }}</strong>
       <span>道已发布题目</span>
       <div class="stat-line"></div>
-      <small>{{ answered_count }} 道已有解答 · {{ verified_count }} 道资料核验{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
+      <small>{{ answered_count }} 道已有解答 · {{ verified_count }} 道资料核验{% if review_count > 0 %} · {{ review_count }} 道参考答案待校对{% endif %}{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
     </div>
   </div>
 </section>
@@ -87,7 +89,7 @@ title: 题库
       <select id="question-review-state" aria-label="按答案核验状态筛选题目">
         <option value="">全部状态</option>
         <option value="verified">资料已核验</option>
-        <option value="review">答案待复核</option>
+        <option value="review">参考答案待校对</option>
         <option value="pending">待解答</option>
       </select>
     </label>
@@ -128,7 +130,7 @@ title: 题库
             {% if question.difficulty != '待评估' %}<span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>{% endif %}
             {% unless answer_ready %}<span class="answer-state-badge">待解答</span>{% endunless %}
             {% if answer_ready and question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
-            {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="已有面试口述稿，技术细节仍待逐题资料复核">答案待复核</span>{% endif %}
+            {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="题目和参考答案均已发布，可参与社区校对；尚未逐题对照一手资料核验">参考答案 · 待校对</span>{% endif %}
           </div>
           <h2>{{ question.title | escape }}</h2>
           <div class="tag-list">

@@ -15,7 +15,9 @@
 - `docs/_experiences/`
 - `docs/_data/settings.yml`
 
-从 1.1.x 升级到 1.2.0 时，千题扩展会新增大量 `docs/_questions/exp1000-*.md`。如果你的副本已经有同名文件或不希望带入整套扩展题，请只合并首页筛选、脚本和样式改动；不要覆盖自己的 `docs/_questions/`。新增题标记为“答案待复核”，不会改变你原有题目的核验状态。
+从 1.1.x 升级到 1.2.0 时，千题扩展会新增大量 `docs/_questions/exp1000-*.md`。如果你的副本已经有同名文件或不希望带入整套扩展题，请只合并首页筛选、脚本和样式改动；不要覆盖自己的 `docs/_questions/`。新增题标记为“参考答案待校对”，不会改变你原有题目的核验状态。
+
+从 1.2.x 升级到 1.3.0 时，需要一起复制 `docs/community.html`、`docs/assets/js/community*.{js,mjs}`、两个新的 Issue Form、布局和样式改动。社区入口会自动读取副本自己的 `site.github.repository_nwo`，不需要填写原仓库用户名。请确认副本已启用 Issues；Public 仓库可在站内展示动态，Private 仓库成员需要直接在 GitHub 中查看和评论。
 
 ## 推荐升级方法
 

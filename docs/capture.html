@@ -1,6 +1,6 @@
 ---
 title: 快速记题
-description: 直接在网站表单中记录、编辑和练习面试题；默认只保存到当前浏览器，需要时再写入 GitHub 并审核发布。
+description: 直接在网站表单中记录、编辑和练习面试题；默认只保存到当前浏览器，需要时再写入 GitHub 并确认发布。
 permalink: /capture/
 ---
 {% assign published_categories = site.questions | where: 'published', true | map: 'category' | uniq | sort %}
@@ -18,7 +18,7 @@ permalink: /capture/
 
   <div class="capture-boundary" role="note">
     <strong>分清三个状态</strong>
-    <span><b>本机草稿</b>只在当前浏览器；<b>仓库草稿</b>需要 GitHub 身份和写入权限，Public 仓库里的源文件会公开；只有审核后把 <code>published</code> 改为 <code>true</code>，题目才会<b>显示在阅读网站</b>。本站不会要求你填写 Token，也不会自动上传。</span>
+    <span><b>本机草稿</b>只在当前浏览器；<b>仓库草稿</b>需要 GitHub 身份和写入权限，Public 仓库里的源文件会公开；只有确认内容并把 <code>published</code> 改为 <code>true</code>，题目才会<b>显示在阅读网站</b>。本站不会要求你填写 Token，也不会自动上传。</span>
   </div>
 
   <section class="capture-workspace" aria-labelledby="capture-form-title">
@@ -100,7 +100,7 @@ permalink: /capture/
         <li><strong>现场速记</strong><span>只填题目也能保存，不会自动进入公开题库。</span></li>
         <li><strong>本页整理</strong><span>补答案、搜索、练习口述，并随时导出备份。</span></li>
         <li><strong>写入仓库草稿</strong><span>下载 Markdown 或复制给 Codex；默认不在阅读网站展示。</span></li>
-        <li><strong>审核后上线</strong><span>确认答案、分类、隐私和仓库可见性，再决定是否公开展示或投稿。</span></li>
+        <li><strong>确认后上线</strong><span>检查答案、分类、隐私和仓库可见性，再决定是否公开展示或投稿。</span></li>
       </ol>
       <a class="text-link" href="{{ '/privacy/' | relative_url }}">查看本机存储的完整隐私边界 →</a>
       <a class="text-link" href="{{ '/start/' | relative_url }}#mode-choice">不确定 Public / Private？先看区别 →</a>
