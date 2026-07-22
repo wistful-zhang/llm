@@ -1,10 +1,11 @@
 ---
 title: '多模态请求里，图片 Token 和文本 Token 的预算应该怎样分配？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '多模态'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - '视觉 Token'
   - '上下文窗口'

@@ -19,6 +19,7 @@ const rows = files.map((filename) => {
     filename,
     category: String(value('category') || ''),
     difficulty: String(value('difficulty') || ''),
+    studyTier: String(value('study_tier') || 'unclassified'),
     publicationState: getPublicationState({
       published: value('published') === true,
       verified: value('verified') === true,
@@ -33,6 +34,7 @@ console.log(JSON.stringify({
   total: rows.length,
   category: countBy(rows, 'category'),
   difficulty: countBy(rows, 'difficulty'),
+  studyTier: countBy(rows, 'studyTier'),
   publicationState: countBy(rows, 'publicationState'),
   origin: countBy(rows, 'generated'),
 }, null, 2));

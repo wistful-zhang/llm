@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  QUESTION_STUDY_TIERS,
+  STUDY_TIERS,
   isQuestionDocumentPath,
+  isQuestionStudyTier,
   parseQuestionDocument,
 } from '../scripts/question-publication.mjs';
 
@@ -38,6 +41,30 @@ test('网页后台新建题目时 verified 可以省略并按未核验处理', (
   const result = parseQuestionDocument(source, 'cms-created.md');
   assert.deepEqual(result.errors, []);
   assert.equal(result.values.has('verified'), false);
+});
+
+test('备考层级支持四个稳定值，旧题缺失时仍可解析', () => {
+  const legacy = parseQuestionDocument(document(), 'legacy.md');
+  assert.deepEqual(legacy.errors, []);
+  assert.equal(legacy.values.has('study_tier'), false);
+
+  assert.deepEqual(QUESTION_STUDY_TIERS, ['core', 'role', 'extended', 'archive']);
+  assert.deepEqual(STUDY_TIERS, {
+    core: '核心必会',
+    role: '岗位专项',
+    extended: '扩展知识点',
+    archive: '待重整',
+  });
+  QUESTION_STUDY_TIERS.forEach((tier) => {
+    const source = document().replace('difficulty: "中等"', `difficulty: "中等"\nstudy_tier: ${tier}`);
+    const parsed = parseQuestionDocument(source, `${tier}.md`);
+    assert.deepEqual(parsed.errors, []);
+    assert.equal(parsed.values.get('study_tier'), tier);
+    assert.equal(isQuestionStudyTier(tier), true);
+  });
+  assert.equal(isQuestionStudyTier('toString'), false);
+  assert.equal(isQuestionStudyTier('important'), false);
+  assert.equal(isQuestionStudyTier(''), false);
 });
 
 test('重复字段和可覆盖布局或网址的未知字段会被拒绝', () => {

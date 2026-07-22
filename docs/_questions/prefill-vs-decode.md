@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "工程实践"
 difficulty: "中等"
+study_tier: "core"
 tags:
   - S级必答
   - Prefill

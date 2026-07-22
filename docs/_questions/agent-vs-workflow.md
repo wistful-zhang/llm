@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "Agent"
 difficulty: "简单"
+study_tier: "core"
 tags:
   - Agent
   - Workflow

@@ -4,6 +4,7 @@ source: "Datawhale 公开真实面试题整理；答案依据安全论文和 OWA
 review_status: "待复习"
 category: "Agent"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - Prompt Injection
   - Least Privilege

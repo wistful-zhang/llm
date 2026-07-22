@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - 训练显存
   - AdamW

@@ -1,10 +1,11 @@
 ---
 title: '代码执行 Sandbox 应怎样做 Escape 与资源耗尽测试？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '评测与安全'
 difficulty: '困难'
+study_tier: 'archive'
 tags:
   - 'Sandbox'
   - '安全测试'

@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "困难"
+study_tier: "role"
 tags: [GraphRAG, 知识图谱, 社区摘要]
 published: true
 answer_status: complete

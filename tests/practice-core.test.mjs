@@ -5,20 +5,40 @@ import {
   buildQueue,
   filterQuestions,
   isRating,
+  normalizeStudyTier,
   restoreSession,
   shuffleQuestions,
   summarizeSession,
 } from '../docs/assets/js/practice-core.mjs';
 
 const questions = [
-  { id: '/q/1/', title: '题目 1', category: 'RAG', difficulty: '困难', verified: true, url: '/q/1/' },
-  { id: '/q/2/', title: '题目 2', category: 'Agent', difficulty: '困难', verified: false, url: '/q/2/' },
-  { id: '/q/3/', title: '题目 3', category: 'RAG', difficulty: '简单', verified: false, url: '/q/3/' },
+  { id: '/q/1/', title: '题目 1', category: 'RAG', difficulty: '困难', studyTier: 'core', verified: true, url: '/q/1/' },
+  { id: '/q/2/', title: '题目 2', category: 'Agent', difficulty: '困难', studyTier: 'role', verified: false, url: '/q/2/' },
+  { id: '/q/3/', title: '题目 3', category: 'RAG', difficulty: '简单', studyTier: 'archive', verified: false, url: '/q/3/' },
 ];
 
-test('按分类和难度取交集，并按 ID 去重', () => {
-  const result = filterQuestions([...questions, questions[0]], { category: 'RAG', difficulty: '困难' });
+test('按分类、难度和备考层级取交集，并按 ID 去重', () => {
+  const result = filterQuestions([...questions, questions[0]], {
+    category: 'RAG',
+    difficulty: '困难',
+    studyTier: 'core',
+  });
   assert.deepEqual(result.map((question) => question.id), ['/q/1/']);
+});
+
+test('备考层级只接受四个正式值，缺失值安全归为 unclassified', () => {
+  assert.equal(normalizeStudyTier('core'), 'core');
+  assert.equal(normalizeStudyTier('role'), 'role');
+  assert.equal(normalizeStudyTier('extended'), 'extended');
+  assert.equal(normalizeStudyTier('archive'), 'archive');
+  assert.equal(normalizeStudyTier(undefined), 'unclassified');
+  assert.equal(normalizeStudyTier('toString'), 'unclassified');
+
+  assert.deepEqual(filterQuestions(questions, { studyTier: 'core' }).map(({ id }) => id), ['/q/1/']);
+  assert.deepEqual(filterQuestions(questions, { studyTier: 'role' }).map(({ id }) => id), ['/q/2/']);
+  assert.deepEqual(filterQuestions(questions, { studyTier: 'archive' }).map(({ id }) => id), ['/q/3/']);
+  assert.deepEqual(filterQuestions(questions, { studyTier: 'extended' }), []);
+  assert.equal(filterQuestions(questions, { studyTier: 'toString' }).length, questions.length);
 });
 
 test('可以只抽资料已核验或参考答案待校对的题目', () => {
@@ -126,12 +146,13 @@ test('恢复会话时用当前题库回填核验状态和题目元数据', () =>
     version: 1,
     repositoryId: 'owner/repo',
     phase: 'asking',
-    queue: [{ ...questions[0], title: '旧标题', verified: false }],
+    queue: [{ ...questions[0], title: '旧标题', studyTier: 'archive', verified: false }],
     cursor: 0,
     records: [],
   }, questions, 'owner/repo');
 
   assert.equal(restored.queue[0].title, '题目 1');
+  assert.equal(restored.queue[0].studyTier, 'core');
   assert.equal(restored.queue[0].verified, true);
 });
 

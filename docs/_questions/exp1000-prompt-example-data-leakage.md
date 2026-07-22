@@ -1,10 +1,11 @@
 ---
 title: 'Few-shot 示例里使用真实业务数据会有什么风险？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'Prompt 与上下文工程'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - 'Few-shot'
   - '数据泄露'

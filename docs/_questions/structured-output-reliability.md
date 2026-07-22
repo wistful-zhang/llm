@@ -4,6 +4,7 @@ source: "公开 AI 工程面试题库；依据 JSON Schema 与模型官方文档
 review_status: "待复习"
 category: "工程实践"
 difficulty: "中等"
+study_tier: "core"
 tags:
   - Structured Outputs
   - JSON Schema

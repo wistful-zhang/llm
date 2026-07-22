@@ -5,6 +5,7 @@ verified: false
 review_status: "待整理"
 category: "待整理"
 difficulty: "待评估"
+study_tier: archive
 tags: []
 published: false
 answer_status: pending

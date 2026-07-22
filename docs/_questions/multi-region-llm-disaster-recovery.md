@@ -4,6 +4,7 @@ source: "公开 LLM 系统设计面试题；依据云架构与 NIST 容灾文档
 review_status: "待复习"
 category: "系统设计"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - 多地域
   - RTO RPO

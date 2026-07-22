@@ -4,6 +4,7 @@ source: "大厂公开真实面试案例中的 ZeRO/FSDP 分布式训练题；答
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - ZeRO
   - FSDP

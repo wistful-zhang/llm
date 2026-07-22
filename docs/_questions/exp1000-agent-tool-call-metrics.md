@@ -1,10 +1,11 @@
 ---
 title: '评估 Agent 工具调用质量，除了最终成功率还看哪些指标？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'Agent'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - '工具指标'
   - 'Agent 评测'

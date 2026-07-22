@@ -4,6 +4,7 @@ source: "大厂公开真实面试案例中的 SFT 数据构建题；答案依据
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "简单"
+study_tier: "core"
 tags:
   - 数据清洗
   - SFT

@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "评测与安全"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - Visual Prompt Injection
   - Image Hijack

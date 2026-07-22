@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "工程实践"
 difficulty: "中等"
+study_tier: "role"
 tags:
   - vLLM
   - 长上下文

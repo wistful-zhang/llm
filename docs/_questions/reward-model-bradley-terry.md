@@ -4,6 +4,7 @@ source: "公开真实面试问题汇总中的 Reward Model 与 Bradley-Terry 高
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "中等"
+study_tier: "role"
 tags:
   - Reward Model
   - Bradley-Terry

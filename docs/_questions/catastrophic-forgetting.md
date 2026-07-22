@@ -4,6 +4,7 @@ source: "公开 AI 工程师面试复盘中的灾难性遗忘题；答案依据 
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "中等"
+study_tier: "role"
 tags:
   - 灾难性遗忘
   - 领域微调

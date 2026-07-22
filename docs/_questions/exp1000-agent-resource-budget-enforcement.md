@@ -1,10 +1,11 @@
 ---
 title: '怎样给 Agent 设置 Token、工具次数、费用和总时长预算？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'Agent'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - '预算'
   - '成本控制'

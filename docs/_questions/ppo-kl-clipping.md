@@ -4,6 +4,7 @@ source: "公开真实面试案例中的 PPO 流程与损失函数高频题；答
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - PPO
   - RLHF

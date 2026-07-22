@@ -1,10 +1,11 @@
 ---
 title: '不同 Attention Head 的输出会不会在 W_O 中互相抵消？这意味着什么？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'LLM 基础'
 difficulty: '困难'
+study_tier: 'extended'
 tags:
   - 'Attention Head'
   - 'W_O'

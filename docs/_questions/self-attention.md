@@ -4,6 +4,7 @@ source: "经典高频题；技术依据：Attention Is All You Need"
 verified: true
 category: "LLM 基础"
 difficulty: "中等"
+study_tier: "core"
 tags: [Transformer, Attention]
 review_status: 已掌握
 published: true

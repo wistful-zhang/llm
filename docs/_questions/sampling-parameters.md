@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "工程实践"
 difficulty: "简单"
+study_tier: "core"
 tags:
   - Sampling
   - 解码

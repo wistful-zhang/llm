@@ -1,10 +1,11 @@
 ---
 title: '聊天产品怎样让推理 API 保持无状态，同时支持有状态多轮会话？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: '系统设计'
 difficulty: '中等'
+study_tier: 'extended'
 tags:
   - '无状态服务'
   - '会话'

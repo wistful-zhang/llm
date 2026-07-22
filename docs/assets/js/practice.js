@@ -4,6 +4,7 @@ import {
   buildQueue,
   filterQuestions,
   isRating,
+  normalizeStudyTier,
   restoreSession,
   shuffleQuestions,
   summarizeSession,
@@ -23,6 +24,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     title: element.dataset.title,
     category: element.dataset.category,
     difficulty: element.dataset.difficulty,
+    studyTier: normalizeStudyTier(element.dataset.studyTier),
     verified: element.dataset.verified === 'true',
     url: element.dataset.url,
   }));
@@ -32,6 +34,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   const resultStorageKey = `llm-interview-practice:${repositoryId}:result:v${PRACTICE_VERSION}`;
 
   const form = document.querySelector('#practice-form');
+  const studyTierSelect = document.querySelector('#practice-study-tier');
   const categorySelect = document.querySelector('#practice-category');
   const difficultySelect = document.querySelector('#practice-difficulty');
   const verificationSelect = document.querySelector('#practice-verification');
@@ -53,6 +56,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   const timer = document.querySelector('#practice-timer');
   const categoryBadge = document.querySelector('#practice-question-category');
   const difficultyBadge = document.querySelector('#practice-question-difficulty');
+  const studyTierBadge = document.querySelector('#practice-question-study-tier');
   const verifiedBadge = document.querySelector('#practice-question-verified');
   const reviewBadge = document.querySelector('#practice-question-review');
   const questionTitle = document.querySelector('#practice-question-title');
@@ -321,6 +325,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   };
 
   const getFilters = () => ({
+    studyTier: studyTierSelect?.value || '',
     category: categorySelect.value,
     difficulty: difficultySelect.value,
     verification: verificationSelect.value,
@@ -355,7 +360,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     setup.hidden = false;
     practicePage.classList.remove('is-active', 'is-summary');
     updateSetup();
-    categorySelect.focus();
+    (studyTierSelect || categorySelect).focus();
   };
 
   const showAnswer = async (moveFocus = true) => {
@@ -436,6 +441,18 @@ import { clearMath, renderMath } from './math-render.mjs';
     progress.setAttribute('aria-valuetext', `第 ${state.cursor + 1} 题，共 ${state.queue.length} 题`);
     categoryBadge.textContent = question.category;
     difficultyBadge.textContent = question.difficulty;
+    if (studyTierBadge) {
+      const studyTierLabels = {
+        core: '核心必会',
+        role: '岗位专项',
+        extended: '扩展知识点',
+        archive: '待重整',
+      };
+      const tier = normalizeStudyTier(question.studyTier);
+      studyTierBadge.textContent = studyTierLabels[tier] || '';
+      studyTierBadge.className = `study-tier-badge study-tier-${tier}`;
+      studyTierBadge.hidden = tier === 'unclassified';
+    }
     if (verifiedBadge) verifiedBadge.hidden = question.verified !== true;
     if (reviewBadge) reviewBadge.hidden = question.verified === true;
     questionTitle.textContent = question.title;
@@ -465,8 +482,8 @@ import { clearMath, renderMath } from './math-render.mjs';
   };
 
   const startWithQuestions = (selectedQuestions, filters = {}) => {
-    const queue = selectedQuestions.map(({ id, title, category, difficulty, verified, url }) => ({
-      id, title, category, difficulty, verified: verified === true, url,
+    const queue = selectedQuestions.map(({ id, title, category, difficulty, studyTier, verified, url }) => ({
+      id, title, category, difficulty, studyTier: normalizeStudyTier(studyTier), verified: verified === true, url,
     }));
     if (queue.length === 0) return;
 
@@ -654,7 +671,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     startWithQuestions(queue, { ...filters, count: Number.parseInt(countSelect.value, 10) || 5 });
   });
 
-  [categorySelect, difficultySelect, verificationSelect, countSelect].forEach((control) => {
+  [studyTierSelect, categorySelect, difficultySelect, verificationSelect, countSelect].filter(Boolean).forEach((control) => {
     control.addEventListener('change', updateSetup);
   });
 

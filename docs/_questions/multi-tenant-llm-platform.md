@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "系统设计"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - 多租户
   - 权限

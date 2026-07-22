@@ -1,10 +1,11 @@
 ---
 title: '同一个 Agent 会话在两个浏览器同时操作，怎样避免状态互相覆盖？'
-source: '公开岗位面试主题整理；答案为面试口述稿，待逐题资料复核'
+source: '扩展知识点整理；尚无逐题真实面经频率证明，答案待逐题资料复核'
 verified: false
 review_status: '待复习'
 category: 'Agent'
 difficulty: '困难'
+study_tier: 'extended'
 tags:
   - '并发控制'
   - '版本号'

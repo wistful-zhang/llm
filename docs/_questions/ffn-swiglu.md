@@ -4,6 +4,7 @@ source: "公开大模型高频面试题整理中的 FFN 题；答案依据 Trans
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "中等"
+study_tier: "core"
 tags:
   - FFN
   - SwiGLU

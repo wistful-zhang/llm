@@ -8,6 +8,12 @@ export const RATINGS = Object.freeze({
 });
 
 const WEAK_RATING_ORDER = Object.freeze({ unknown: 0, prompted: 1, skipped: 2 });
+const STUDY_TIERS = new Set(['core', 'role', 'extended', 'archive']);
+
+export function normalizeStudyTier(value) {
+  const tier = String(value || '');
+  return STUDY_TIERS.has(tier) ? tier : 'unclassified';
+}
 
 export function isRating(value) {
   return Object.hasOwn(RATINGS, value);
@@ -25,11 +31,14 @@ export function uniqueQuestions(questions) {
 export function filterQuestions(questions, filters = {}) {
   const category = String(filters.category || '');
   const difficulty = String(filters.difficulty || '');
+  const requestedStudyTier = String(filters.studyTier || '');
+  const studyTier = STUDY_TIERS.has(requestedStudyTier) ? requestedStudyTier : '';
   const requestedVerification = String(filters.verification || '');
   const verification = ['verified', 'review'].includes(requestedVerification) ? requestedVerification : '';
 
   return uniqueQuestions(questions).filter((question) => (
     (!category || question.category === category) &&
+    (!studyTier || normalizeStudyTier(question.studyTier) === studyTier) &&
     (!difficulty || question.difficulty === difficulty) &&
     (!verification || (verification === 'verified') === (question.verified === true))
   ));
@@ -102,6 +111,7 @@ export function restoreSession(value, questions, repositoryId) {
       title: String(source?.title || ''),
       category: String(source?.category || ''),
       difficulty: String(source?.difficulty || ''),
+      studyTier: normalizeStudyTier(source?.studyTier),
       verified: source?.verified === true,
       url: String(source?.url || ''),
     };

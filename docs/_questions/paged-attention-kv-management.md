@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "工程实践"
 difficulty: "困难"
+study_tier: "core"
 tags:
   - S级必答
   - PagedAttention

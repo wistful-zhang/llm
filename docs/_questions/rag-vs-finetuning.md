@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "简单"
+study_tier: "core"
 tags:
   - RAG
   - 微调

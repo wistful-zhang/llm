@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "评测与安全"
 difficulty: "简单"
+study_tier: "role"
 tags:
   - Code Evaluation
   - pass@k

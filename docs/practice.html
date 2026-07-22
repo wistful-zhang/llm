@@ -16,11 +16,15 @@ permalink: /practice/
   {% if answer_ready %}{% assign published_questions = published_questions | push: question %}{% endif %}
 {% endfor %}
 {% assign published_questions = published_questions | sort: 'date' | reverse %}
+{% assign core_questions = published_questions | where: 'study_tier', 'core' %}
+{% assign role_questions = published_questions | where: 'study_tier', 'role' %}
+{% assign extended_questions = published_questions | where: 'study_tier', 'extended' %}
+{% assign archive_questions = published_questions | where: 'study_tier', 'archive' %}
 <div class="container practice-page">
   <header class="practice-intro">
     <span class="status-badge">随机抽题 · 自我复盘</span>
     <h1>随机模拟面试</h1>
-    <p>系统会从已发布且答案已完成的题目中随机出题。先用自己的话回答，再看参考说法和完整题解，判断自己是否真的讲清楚。</p>
+    <p>默认只从“核心必会”中随机出题，不会让批量扩展题稀释重点。先用自己的话回答，再看参考说法和完整题解，判断自己是否真的讲清楚。</p>
   </header>
 
   <noscript>
@@ -63,6 +67,16 @@ permalink: /practice/
       <div class="practice-setup-card">
         <h2 id="practice-setup-title">选择本轮出题范围</h2>
         <form id="practice-form" class="practice-form">
+          <label class="practice-field">
+            <span>备考层级</span>
+            <select id="practice-study-tier" name="study-tier" aria-describedby="practice-pool-status">
+              {% if core_questions.size > 0 %}<option value="core" selected>核心必会（{{ core_questions.size }} 题，推荐）</option>{% endif %}
+              <option value="role">岗位专项（{{ role_questions.size }} 题）</option>
+              <option value="extended">扩展知识点（{{ extended_questions.size }} 题）</option>
+              <option value="archive">待重整（{{ archive_questions.size }} 题，不推荐）</option>
+              <option value=""{% if core_questions.size == 0 %} selected{% endif %}>全部可练题（{{ published_questions.size }} 题）</option>
+            </select>
+          </label>
           <label class="practice-field">
             <span>出题范围</span>
             <select id="practice-category" name="category" aria-describedby="practice-pool-status">
@@ -126,7 +140,7 @@ permalink: /practice/
         <button id="practice-last-weak" class="secondary-button" type="button" hidden>继续练薄弱题</button>
       </aside>
 
-      <p class="practice-local-note">练习进度只保存在当前浏览器，不会写回 GitHub。待解答题和整理中的半成品不会被抽到。</p>
+      <p class="practice-local-note">练习进度只保存在当前浏览器，不会写回 GitHub。待解答题不会被抽到；“待重整”题只有你主动选择该层级或全部题目时才会进入本轮。</p>
     </section>
 
     <section id="practice-session" class="practice-session" aria-labelledby="practice-session-title" hidden>
@@ -146,6 +160,7 @@ permalink: /practice/
         <div class="card-meta">
           <span id="practice-question-category"></span>
           <span id="practice-question-difficulty" class="difficulty"></span>
+          <span id="practice-question-study-tier" class="study-tier-badge"></span>
           <span id="practice-question-verified" class="verification-badge" hidden>✓ 资料核验</span>
           <span id="practice-question-review" class="review-pending-badge" hidden>参考答案 · 待校对</span>
         </div>
@@ -218,6 +233,7 @@ permalink: /practice/
           data-title="{{ question.title | escape }}"
           data-category="{{ question.category | escape }}"
           data-difficulty="{{ question.difficulty | escape }}"
+          data-study-tier="{{ question.study_tier | default: 'unclassified' | escape }}"
           data-verified="{{ question.verified | default: false }}"
           data-url="{{ question.url | relative_url | escape }}"></span>
       {% endfor %}

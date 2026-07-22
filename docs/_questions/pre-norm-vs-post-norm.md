@@ -5,6 +5,7 @@ verified: true
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "困难"
+study_tier: "role"
 tags:
   - Transformer
   - LayerNorm
