@@ -1,5 +1,5 @@
 title: 大模型面经
-description: 按模型原理、训练与对齐、RAG、Agent、推理部署、评测安全和系统设计等方向整理。每题包含参考说法、知识点和常见追问。
+description: 覆盖模型原理、训练对齐、RAG、Agent、推理部署、评测安全、数学编程与项目行为面。每题包含答题提示、参考说法和常见追问。
 eyebrow: LLM INTERVIEW QUESTION BANK
 hero_title: 大模型面试题，
 hero_highlight: 一道一道讲明白。

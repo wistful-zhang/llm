@@ -15,6 +15,7 @@ layout: default
   {% assign show_verified = false %}
   {% if answer_ready and page.verified == true %}{% assign show_verified = true %}{% endif %}
   {% assign show_provenance = show_verified %}
+  {% if answer_ready and page.verified != true %}{% assign show_provenance = true %}{% endif %}
   {% if source_note != empty %}{% assign show_provenance = true %}{% endif %}
   <a class="back-link" href="{{ '/' | relative_url }}">← 返回题库</a>
   <header class="question-header">
@@ -23,6 +24,7 @@ layout: default
     {% if show_provenance %}
       <div class="question-provenance">
         {% if show_verified %}<span class="verification-badge">✓ 资料核验</span>{% endif %}
+        {% if answer_ready and page.verified != true %}<span class="review-pending-badge">答案待复核</span>{% endif %}
         {% if source_note != empty %}<span>来源说明：{{ source_note | escape }}</span>{% endif %}
       </div>
     {% endif %}

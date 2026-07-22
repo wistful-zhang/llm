@@ -76,7 +76,7 @@ permalink: /practice/
           </label>
 
           <details class="practice-options">
-            <summary>更多设置 <span>难度、题数</span></summary>
+            <summary>更多设置 <span>难度、答案状态、题数</span></summary>
             <div class="practice-options-grid">
               <label class="practice-field">
                 <span>难度</span>
@@ -85,6 +85,14 @@ permalink: /practice/
                   <option value="简单">简单</option>
                   <option value="中等">中等</option>
                   <option value="困难">困难</option>
+                </select>
+              </label>
+              <label class="practice-field">
+                <span>答案状态</span>
+                <select id="practice-verification" name="verification" aria-describedby="practice-pool-status">
+                  <option value="">全部状态</option>
+                  <option value="verified">只练资料已核验</option>
+                  <option value="review">只练答案待复核</option>
                 </select>
               </label>
               <label class="practice-field">
@@ -139,6 +147,7 @@ permalink: /practice/
           <span id="practice-question-category"></span>
           <span id="practice-question-difficulty" class="difficulty"></span>
           <span id="practice-question-verified" class="verification-badge" hidden>✓ 资料核验</span>
+          <span id="practice-question-review" class="review-pending-badge" hidden>答案待复核</span>
         </div>
         <h2 id="practice-question-title" tabindex="-1">模拟面试题目</h2>
         <p class="practice-question-hint">直接回答题目：原理题讲因果，设计题讲约束，项目题讲真实证据。参考说法不是标准台词，说清楚即可。</p>

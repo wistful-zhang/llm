@@ -58,11 +58,15 @@
   resolveTemplateLinks();
 
   const search = document.querySelector('#question-search');
+  const difficulty = document.querySelector('#question-difficulty');
+  const reviewState = document.querySelector('#question-review-state');
   const questionList = document.querySelector('#question-list');
   const cards = [...document.querySelectorAll('.question-card')];
   const filters = [...document.querySelectorAll('.filter')];
   const empty = document.querySelector('#empty-state');
   const status = document.querySelector('#result-status');
+  const summary = document.querySelector('#library-result-summary');
+  const loadMore = document.querySelector('#question-load-more');
 
   if (!search || !empty) return;
 
@@ -70,7 +74,9 @@
   let answerIndexState = 'idle';
   let answerIndexPromise = null;
   let lastIndexFailureAt = 0;
+  let visibleLimit = 60;
   const answerSearchById = new Map();
+  const pageSize = 60;
 
   const normalize = (value) => String(value || '').trim().toLocaleLowerCase();
 
@@ -84,14 +90,24 @@
 
   const update = () => {
     const keyword = normalize(search.value);
+    const activeDifficulty = difficulty?.value || '';
+    const activeReviewState = reviewState?.value || '';
+    let matchingCount = 0;
     let visibleCount = 0;
 
     cards.forEach((card) => {
       const matchesCategory = activeCategory === null || card.dataset.category === activeCategory;
+      const matchesDifficulty = !activeDifficulty || card.dataset.difficulty === activeDifficulty;
+      const cardReviewState = card.dataset.answerStatus === 'pending'
+        ? 'pending'
+        : (card.dataset.verified === 'true' ? 'verified' : 'review');
+      const matchesReviewState = !activeReviewState || cardReviewState === activeReviewState;
       const metadata = normalize(card.dataset.search || '');
       const answer = answerSearchById.get(card.dataset.searchId) || '';
       const matchesKeyword = !keyword || metadata.includes(keyword) || answer.includes(keyword);
-      const visible = matchesCategory && matchesKeyword;
+      const matches = matchesCategory && matchesDifficulty && matchesReviewState && matchesKeyword;
+      if (matches) matchingCount += 1;
+      const visible = matches && matchingCount <= visibleLimit;
       card.hidden = !visible;
       if (visible) visibleCount += 1;
     });
@@ -106,11 +122,23 @@
 
     const loadingAnswers = Boolean(keyword) && answerIndexState === 'loading';
     empty.hidden = visibleCount !== 0 || loadingAnswers;
+    const remaining = Math.max(0, matchingCount - visibleCount);
+    if (summary) {
+      summary.textContent = loadingAnswers
+        ? `已显示 ${visibleCount} 道，正在继续搜索答案全文…`
+        : (matchingCount === visibleCount
+          ? `共 ${matchingCount} 道符合条件`
+          : `已显示 ${visibleCount} / ${matchingCount} 道符合条件`);
+    }
+    if (loadMore) {
+      loadMore.hidden = loadingAnswers || remaining === 0;
+      loadMore.textContent = `再显示 ${Math.min(pageSize, remaining)} 道`;
+    }
     if (status) {
       const scopeStatus = loadingAnswers
         ? '，正在继续搜索答案全文'
         : (keyword && answerIndexState === 'failed' ? '；答案全文暂时无法搜索' : '');
-      status.textContent = `当前显示 ${visibleCount} 道题目${scopeStatus}`;
+      status.textContent = `当前显示 ${visibleCount} / ${matchingCount} 道题目${scopeStatus}`;
     }
   };
 
@@ -122,10 +150,13 @@
 
     answerIndexState = 'loading';
     update();
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
     answerIndexPromise = fetch(indexUrl, {
       headers: { Accept: 'application/json' },
       credentials: 'same-origin',
       cache: 'force-cache',
+      signal: controller.signal,
     })
       .then((response) => {
         if (!response.ok) throw new Error(`答案搜索索引加载失败（${response.status}）`);
@@ -142,6 +173,7 @@
         lastIndexFailureAt = Date.now();
       })
       .finally(() => {
+        window.clearTimeout(timeoutId);
         answerIndexPromise = null;
         update();
       });
@@ -149,12 +181,14 @@
   };
 
   search.addEventListener('input', () => {
+    visibleLimit = pageSize;
     update();
     if (normalize(search.value)) void loadAnswerIndex();
   });
   search.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && search.value) {
       search.value = '';
+      visibleLimit = pageSize;
       update();
     }
   });
@@ -162,6 +196,7 @@
   filters.forEach((button) => {
     button.addEventListener('click', () => {
       activeCategory = button.hasAttribute('data-filter-all') ? null : button.dataset.category;
+      visibleLimit = pageSize;
       filters.forEach((item) => {
         const active = item === button;
         item.classList.toggle('active', active);
@@ -169,6 +204,24 @@
       });
       update();
     });
+  });
+
+  difficulty?.addEventListener('change', () => {
+    visibleLimit = pageSize;
+    update();
+  });
+
+  reviewState?.addEventListener('change', () => {
+    visibleLimit = pageSize;
+    update();
+  });
+
+  loadMore?.addEventListener('click', () => {
+    const previouslyVisible = visibleLimit;
+    visibleLimit += pageSize;
+    update();
+    const firstNewCard = cards.filter((card) => !card.hidden)[previouslyVisible];
+    firstNewCard?.focus();
   });
 
   update();
