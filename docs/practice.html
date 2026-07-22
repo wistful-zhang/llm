@@ -43,7 +43,7 @@ permalink: /practice/
         <a class="primary-button" href="{{ '/' | relative_url }}">返回题库</a>
         <a class="secondary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
       </div>
-      <p class="practice-empty-note">“＋记题”保存的是当前浏览器草稿，可在记题页单题练习；写入仓库并审核发布后，才会进入这里的随机模拟。</p>
+      <p class="practice-empty-note">“＋记题”保存的是当前浏览器草稿，可在记题页单题练习；写入仓库并确认发布后，才会进入这里的随机模拟。</p>
     </section>
   {% else %}
     <p id="practice-storage-status" class="practice-storage-status" role="status" hidden></p>
@@ -92,7 +92,7 @@ permalink: /practice/
                 <select id="practice-verification" name="verification" aria-describedby="practice-pool-status">
                   <option value="">全部状态</option>
                   <option value="verified">只练资料已核验</option>
-                  <option value="review">只练答案待复核</option>
+                  <option value="review">只练参考答案待校对</option>
                 </select>
               </label>
               <label class="practice-field">
@@ -147,7 +147,7 @@ permalink: /practice/
           <span id="practice-question-category"></span>
           <span id="practice-question-difficulty" class="difficulty"></span>
           <span id="practice-question-verified" class="verification-badge" hidden>✓ 资料核验</span>
-          <span id="practice-question-review" class="review-pending-badge" hidden>答案待复核</span>
+          <span id="practice-question-review" class="review-pending-badge" hidden>参考答案 · 待校对</span>
         </div>
         <h2 id="practice-question-title" tabindex="-1">模拟面试题目</h2>
         <p class="practice-question-hint">直接回答题目：原理题讲因果，设计题讲约束，项目题讲真实证据。参考说法不是标准台词，说清楚即可。</p>

@@ -46,7 +46,7 @@ test('题卡使用浏览器延迟渲染提示降低长列表绘制开销', async
   assert.match(cardRule, /contain-intrinsic-size: auto 112px/);
 });
 
-test('已核验答案与批量扩展后的待复核答案不会混为一谈', async () => {
+test('已核验答案与批量扩展后的待校对答案不会混为一谈', async () => {
   const [page, questionLayout, css, practicePage, practiceScript] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/_layouts/question.html'),
@@ -56,12 +56,12 @@ test('已核验答案与批量扩展后的待复核答案不会混为一谈', as
   ]);
 
   assert.match(page, /{{ verified_count }} 道资料核验/);
-  assert.match(page, /question\.verified != true[\s\S]*?答案待复核/);
+  assert.match(page, /question\.verified != true[\s\S]*?参考答案 · 待校对/);
   assert.match(questionLayout, /if answer_ready and page\.verified != true[\s\S]*?show_provenance = true/);
-  assert.match(questionLayout, /if answer_ready and page\.verified != true[\s\S]*?答案待复核/);
+  assert.match(questionLayout, /if answer_ready and page\.verified != true[\s\S]*?参考答案 · 待校对/);
   assert.match(css, /\.review-pending-badge/);
-  assert.match(practicePage, /id="practice-question-review"[\s\S]*?答案待复核/);
-  assert.match(practicePage, /id="practice-verification"[\s\S]*?只练资料已核验[\s\S]*?只练答案待复核/);
+  assert.match(practicePage, /id="practice-question-review"[\s\S]*?参考答案 · 待校对/);
+  assert.match(practicePage, /id="practice-verification"[\s\S]*?只练资料已核验[\s\S]*?只练参考答案待校对/);
   assert.match(practicePage, /更多设置 <span>难度、答案状态、题数<\/span>/);
   assert.match(practiceScript, /reviewBadge\.hidden = question\.verified === true/);
   assert.match(practiceScript, /verification: verificationSelect\.value/);
