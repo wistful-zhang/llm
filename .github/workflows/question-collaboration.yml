@@ -1,6 +1,8 @@
 name: 准备题目协作标签
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
   issues:
     types: [opened]
@@ -17,7 +19,7 @@ concurrency:
 jobs:
   labels:
     name: 创建并应用题目标签
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[新增题目] ') || startsWith(github.event.issue.title, '[题目评论] question:')
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[新增题目] ') || startsWith(github.event.issue.title, '[题目评论] question:')
     runs-on: ubuntu-latest
     steps:
       - name: 确保标签存在
