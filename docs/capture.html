@@ -1,6 +1,6 @@
 ---
-title: 快速记题
-description: 直接在网站表单中记录、编辑和练习面试题；默认只保存到当前浏览器，需要时再写入 GitHub 并确认发布。
+title: 增加题目
+description: 直接在网站表单中增加、编辑和练习面试题；可以只留给自己，也可以在确认后公开给大家。
 permalink: /capture/
 ---
 {% assign published_categories = site.questions | where: 'published', true | map: 'category' | uniq | sort %}
@@ -11,18 +11,18 @@ permalink: /capture/
   data-repository-url="{{ site.github.repository_url | escape }}"
   data-codex-path="docs/_questions/">
   <header class="capture-intro">
-    <span class="status-badge">不进后台 · 先记到当前浏览器</span>
-    <h1>想到一道题，现在就记下来</h1>
-    <p>直接填写正常文字，不需要 Markdown，也不用先打开 Pages CMS。保存后可以在本页编辑、搜索和口述练习；只有你主动执行写入仓库，内容才会进入 GitHub。</p>
+    <span class="status-badge">不进后台 · 不需要 Markdown</span>
+    <h1>增加一道题，由你决定谁能看</h1>
+    <p>直接填写正常文字，答案可以留空。默认只保存在当前浏览器；选择“公开给大家”后，会先保存本机副本并打开 GitHub 查重。确认没有相同题目，再回到题目卡新建并最终确认。</p>
   </header>
 
   <div class="capture-boundary" role="note">
-    <strong>分清三个状态</strong>
-    <span><b>本机草稿</b>只在当前浏览器；<b>仓库草稿</b>需要 GitHub 身份和写入权限，Public 仓库里的源文件会公开；只有确认内容并把 <code>published</code> 改为 <code>true</code>，题目才会<b>显示在阅读网站</b>。本站不会要求你填写 Token，也不会自动上传。</span>
+    <strong>公开仓库没有“单题私密”</strong>
+    <span><b>只留给自己</b>表示内容留在当前浏览器；需要跨设备私密保存时，请使用自己的 Private 仓库。<b>公开给大家</b>会进入当前仓库的公开题目；打开预填页时内容会作为网址参数发送给 GitHub，提交后 GitHub 用户名、题目和答案都会公开。本站不会要求你填写 Token 或密码。</span>
   </div>
 
   <section class="capture-workspace" aria-labelledby="capture-form-title">
-    <form id="question-draft-form" class="question-draft-form">
+    <form id="question-draft-form" class="question-draft-form" method="post">
       <input id="question-draft-id" type="hidden">
       <div class="capture-section-heading">
         <div>
@@ -35,13 +35,31 @@ permalink: /capture/
       <div class="question-draft-grid">
         <label class="question-draft-field question-draft-field-wide" for="question-draft-title">
           <span>面试题目 <b>必填</b></span>
-          <textarea id="question-draft-title" name="title" rows="3" minlength="2" maxlength="160" placeholder="例如：为什么 KV Cache 能加速推理？" required></textarea>
+          <textarea id="question-draft-title" rows="3" minlength="2" maxlength="160" placeholder="例如：为什么 KV Cache 能加速推理？" required></textarea>
           <small>尽量保留面试官原本的问法，不确定答案也可以先保存。</small>
         </label>
 
+        <fieldset class="question-visibility-field question-draft-field-wide">
+          <legend>谁可以看？</legend>
+          <div class="question-visibility-options">
+            <label class="question-visibility-option">
+              <input type="radio" name="visibility" value="private" checked>
+              <span><strong>只留给自己</strong><small>推荐。只保存在这个浏览器，不上传，也不会出现在公开题库。</small></span>
+            </label>
+            <label class="question-visibility-option">
+              <input type="radio" name="visibility" value="public">
+              <span><strong>公开给大家</strong><small>保存后先去 GitHub 查重；确认没有后，回到题目卡新建。提交成功后别人可以看到并评论。</small></span>
+            </label>
+          </div>
+          <label id="question-public-confirmation" class="question-public-confirmation" hidden>
+            <input id="question-public-confirmed" type="checkbox">
+            <span>我确认已经移除姓名、联系方式、公司机密、内部题库和 NDA 内容，并有权公开这道题。</span>
+          </label>
+        </fieldset>
+
         <label class="question-draft-field" for="question-draft-category">
           <span>分类</span>
-          <input id="question-draft-category" name="category" type="text" maxlength="30" list="question-draft-categories" value="待整理" autocomplete="off">
+          <input id="question-draft-category" type="text" maxlength="30" list="question-draft-categories" value="待整理" autocomplete="off">
           <datalist id="question-draft-categories">
             <option value="待整理"></option>
             {% for category in published_categories %}<option value="{{ category | escape }}"></option>{% endfor %}
@@ -50,7 +68,7 @@ permalink: /capture/
 
         <label class="question-draft-field" for="question-draft-difficulty">
           <span>难度</span>
-          <select id="question-draft-difficulty" name="difficulty">
+          <select id="question-draft-difficulty">
             <option value="待评估" selected>待评估</option>
             <option value="简单">简单</option>
             <option value="中等">中等</option>
@@ -60,7 +78,7 @@ permalink: /capture/
 
         <label class="question-draft-field" for="question-draft-answer-status">
           <span>答案状态</span>
-          <select id="question-draft-answer-status" name="answerStatus">
+          <select id="question-draft-answer-status">
             <option value="pending" selected>待解答（可以先记思路）</option>
             <option value="complete">已完成（可用于正式题解）</option>
           </select>
@@ -69,38 +87,37 @@ permalink: /capture/
 
         <label class="question-draft-field" for="question-draft-tags">
           <span>标签</span>
-          <input id="question-draft-tags" name="tags" type="text" maxlength="240" placeholder="例如：Transformer，推理，二面">
+          <input id="question-draft-tags" type="text" maxlength="240" placeholder="例如：Transformer，推理，二面">
           <small>使用逗号分隔，最多 12 个。</small>
         </label>
 
         <label class="question-draft-field" for="question-draft-source">
           <span>匿名来源 / 轮次</span>
-          <input id="question-draft-source" name="source" type="text" maxlength="80" placeholder="例如：应用岗 · 二面">
+          <input id="question-draft-source" type="text" maxlength="80" placeholder="例如：应用岗 · 二面">
           <small>不要写公司、面试官、联系方式或会议链接。</small>
         </label>
 
         <label class="question-draft-field question-draft-field-wide" for="question-draft-answer">
           <span>我的答案或思路 <i>可留空</i></span>
-          <textarea id="question-draft-answer" name="answer" rows="10" maxlength="12000" placeholder="直接写你会怎样回答，普通段落即可，不要求 Markdown。也可以只记关键词，以后交给 Codex 补全。"></textarea>
+          <textarea id="question-draft-answer" rows="10" maxlength="12000" placeholder="直接写你会怎样回答，普通段落即可，不要求 Markdown。也可以只记关键词，以后交给 Codex 补全。"></textarea>
           <small>这里仍是浏览器明文本地存储，不适合保存密码、个人隐私、公司机密、未授权题库或受 NDA 约束的材料。</small>
         </label>
       </div>
 
       <div class="question-draft-form-actions">
-        <button id="question-draft-save" class="primary-button" type="submit">保存到当前浏览器</button>
+        <button id="question-draft-save" class="primary-button" type="button">保存为我的题目</button>
         <button id="question-draft-reset" class="secondary-button" type="button">清空表单</button>
       </div>
       <p id="question-draft-form-status" class="question-draft-status" role="status" aria-live="polite"></p>
     </form>
 
     <aside class="capture-next-steps" aria-label="保存后的操作">
-      <span class="section-kicker">保存以后</span>
-      <h2>先积累，再决定是否公开</h2>
+      <span class="section-kicker">两种去向</span>
+      <h2>私人积累和公开补题分开处理</h2>
       <ol>
-        <li><strong>现场速记</strong><span>只填题目也能保存，不会自动进入公开题库。</span></li>
-        <li><strong>本页整理</strong><span>补答案、搜索、练习口述，并随时导出备份。</span></li>
-        <li><strong>写入仓库草稿</strong><span>下载 Markdown 或复制给 Codex；默认不在阅读网站展示。</span></li>
-        <li><strong>确认后上线</strong><span>检查答案、分类、隐私和仓库可见性，再决定是否公开展示或投稿。</span></li>
+        <li><strong>只留给自己</strong><span>点保存后立即回到“我的题目”，可以编辑、搜索、练习和导出。</span></li>
+        <li><strong>公开给大家</strong><span>先通过隐私检查并去 GitHub 查重；确认没有相同题目后，回到题目卡新建并在 GitHub 点击提交。改回“只留给自己”不会撤回已提交的内容。</span></li>
+        <li><strong>其他人参与</strong><span>公开题目可以被看到和评论；正式题库里的每一道题下方也有自己的评论区。</span></li>
       </ol>
       <a class="text-link" href="{{ '/privacy/' | relative_url }}">查看本机存储的完整隐私边界 →</a>
       <a class="text-link" href="{{ '/start/' | relative_url }}#mode-choice">不确定 Public / Private？先看区别 →</a>
@@ -170,7 +187,7 @@ permalink: /capture/
     </div>
   </section>
 
-  <noscript><p class="capture-storage-alert">快速记题需要启用 JavaScript。你仍然可以浏览公开题库。</p></noscript>
+  <noscript><p class="capture-storage-alert">网页增加题目需要启用 JavaScript。你仍然可以浏览公开题库。</p></noscript>
 </div>
 
 <script type="module" src="{{ '/assets/js/question-capture.js' | relative_url }}"></script>

@@ -16,7 +16,7 @@ permalink: /start/
 </div>
 
 <nav class="journey-grid" aria-label="选择当前目标">
-  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>我想马上记题</strong><span>普通文字填写，只保存到当前浏览器，答案可以留空。</span><b>打开快速记题 →</b></a>
+  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>我想马上增加题目</strong><span>普通文字填写，可只留给自己或公开给大家，答案可以留空。</span><b>打开增加题目 →</b></a>
   <a class="journey-card" href="{{ '/practice/' | relative_url }}"><strong>我只想先练习</strong><span>直接按分类随机抽题，不需要 GitHub 账号。</span><b>开始模拟面试 →</b></a>
   <a class="journey-card" href="{{ '/interviews/' | relative_url }}"><strong>我想记录真实面试</strong><span>不需要 GitHub 登录，记录只保存在自己的浏览器。</span><b>记录公司与进度 →</b></a>
   <a class="journey-card" href="#mode-choice"><strong>我是第一次创建</strong><span>继续下面 5 步，先决定公开还是私有。</span><b>开始首次配置 ↓</b></a>
@@ -24,7 +24,7 @@ permalink: /start/
 
 <div class="guide-alert" role="note" markdown="1">
 
-**先记录、以后再创建自己的站点？** 快速记题和面试记录都按网站、仓库标识和浏览器分别保存。切换到自己的公开站点前，先分别导出两份 JSON，再到新站点恢复。Private 仓库不会部署这些浏览器页面；可以继续使用当前公开站点，或在自己的电脑上本地预览，但本机数据不会自动写入 Private 仓库。
+**先记录、以后再创建自己的站点？** “只留给自己”的题目和面试记录都按网站、仓库标识和浏览器分别保存。切换到自己的公开站点前，先分别导出两份 JSON，再到新站点恢复。Private 仓库不会部署这些浏览器页面；可以继续使用当前公开站点，或在自己的电脑上本地预览，但本机数据不会自动写入 Private 仓库。
 
 </div>
 
@@ -94,6 +94,7 @@ permalink: /start/
   <summary><span class="status-badge status-public">Public</span><strong>公开题库：启用阅读网页</strong><span class="summary-hint">展开步骤</span></summary>
   <div class="mode-details-body">
     <ol>
+      <li>先在 <strong>Settings → General → Features</strong> 确认 <strong>Issues</strong> 已开启；它用于每题评论和公开增加题目。</li>
       <li>打开新仓库的 <strong>Settings → Pages</strong>。</li>
       <li>在 <strong>Build and deployment → Source</strong> 选择 <strong>GitHub Actions</strong>。项目已经包含工作流，不要再点击 Jekyll 或 Static HTML 的 Configure。</li>
       <li>进入 <strong>Actions → 内容检查与网站发布 → Run workflow</strong>，Branch 选择仓库默认分支（通常是 <code>main</code>），手动运行第一次部署。</li>
@@ -172,7 +173,7 @@ permalink: /start/
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
   <h2>以后按需要走五条日常路径</h2>
-  <p><strong>现场记题：</strong>在“＋记题”只填问题，先保存到当前浏览器。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>只发布问题：</strong>发布开关打开、答案保持待解答。<strong>个人仓库速记：</strong>使用 Private 仓库并关闭发布开关。<strong>准备复习：</strong>Public 题库可从答案已完成的题目中随机抽题。</p>
+  <p><strong>现场记题：</strong>在“＋题目”只填问题，默认选择“只留给自己”。<strong>公开补题：</strong>改选“公开给大家”，先查重，再回题目卡打开预填表单并到 GitHub 最终确认。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>个人仓库速记：</strong>使用 Private 仓库。<strong>准备复习：</strong>Public 题库可从答案已完成的题目中随机抽题。</p>
   <a class="primary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
   <a class="secondary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
   <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看匿名面经发布步骤</a>
@@ -227,7 +228,7 @@ permalink: /start/
 </div>
 
 - **Pages CMS 看不到仓库**：点击账号旁的齿轮或 **Manage GitHub App**，补选仓库并保存。
-- **在“＋记题”保存后，为什么首页题数没有增加**：这里保存的是当前浏览器草稿，不是公开题库文件。整理好后，在题目卡片中下载 Markdown、复制给 Codex 发布，或复制投稿内容并打开 GitHub 表单。
+- **在“＋题目”保存后，为什么首页题数没有增加**：选择“只留给自己”时只保存浏览器副本；选择“公开给大家”后，要先查重，再在 GitHub 表单中点击提交。正式题库计数只包含已经整理进 `docs/_questions/` 的题目；使用者公开补充的问题显示在正式题库列表上方，但不会冒充已整理题目。
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。

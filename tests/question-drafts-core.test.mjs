@@ -104,6 +104,7 @@ test('新增题目会清理空白、去重标签，且不修改原对象', () =>
     title: 'ＫＶ Cache 为什么有用？',
     answer: '第一行\n第二行',
     answerStatus: 'pending',
+    visibility: 'private',
     category: 'LLM 基础',
     difficulty: '中等',
     tags: ['KV Cache', '推理'],
@@ -115,6 +116,40 @@ test('新增题目会清理空白、去重标签，且不修改原对象', () =>
   assert.equal(
     add(empty, { title: 'L₂、x²、ℝ 与 𝔼 分别表示什么？' }).questions[0].title,
     'L₂、x²、ℝ 与 𝔼 分别表示什么？',
+  );
+});
+
+test('题目可见性只接受 private 或 public，旧记录缺省时安全迁移为 private', () => {
+  const privateState = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME));
+  assert.equal(privateState.questions[0].visibility, 'private');
+
+  const publicState = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '公开分享时怎样避免泄露面试隐私？',
+    visibility: 'public',
+  });
+  assert.equal(publicState.questions[0].visibility, 'public');
+  assert.equal(
+    parseQuestionDraftsJson(serializeQuestionDrafts(publicState), { repositoryId: 'owner/repo' })
+      .questions[0].visibility,
+    'public',
+  );
+
+  const legacyState = structuredClone(privateState);
+  delete legacyState.questions[0].visibility;
+  assert.equal(
+    sanitizeQuestionDrafts(legacyState, { repositoryId: 'owner/repo' }).questions[0].visibility,
+    'private',
+    '升级前没有 visibility 的本机题目必须保持仅自己可见，不能意外公开',
+  );
+
+  assert.throws(
+    () => add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+      title: '非法可见性不应被保存？',
+      visibility: 'friends-only',
+    }),
+    (error) => error instanceof QuestionDraftDataError
+      && error.code === 'invalid_visibility'
+      && error.field === 'visibility',
   );
 });
 

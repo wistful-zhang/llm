@@ -10,7 +10,7 @@ permalink: /setup-check/
 
 # 检查题库为什么没有更新
 
-输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages 和最近一次发布。它不会登录 GitHub，也不会读取 Private 仓库、题目草稿或浏览器面试记录。
+输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages、Issues 和最近一次发布。它不会登录 GitHub，也不会读取 Private 仓库、题目草稿或浏览器面试记录。
 
 <form class="setup-check-form" data-setup-check-form>
   <label for="setup-repository"><strong>GitHub 仓库</strong><span>例如：your-name/llm-notes</span></label>

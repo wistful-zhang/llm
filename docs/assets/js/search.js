@@ -113,7 +113,7 @@
     });
 
     if (cards.length === 0) {
-      empty.textContent = '题库还没有公开内容；“＋记题”可以先保存本机草稿，但写入仓库并确认发布后才会出现在这里。';
+      empty.textContent = '题库还没有公开内容；“＋题目”可以只留在本机，也可以在 GitHub 确认后公开给大家。';
     } else if (answerIndexState === 'failed' && keyword) {
       empty.textContent = '题目、分类和标签中没有匹配项；答案全文暂时无法搜索，请稍后重试。';
     } else {

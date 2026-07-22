@@ -1,0 +1,65 @@
+name: 准备题目协作标签
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: question-collaboration-${{ github.repository }}
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  labels:
+    name: 创建并应用题目标签
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[新增题目] ') || startsWith(github.event.issue.title, '[题目评论] question:')
+    runs-on: ubuntu-latest
+    steps:
+      - name: 确保标签存在
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create public-question --color 0e8a16 --description "使用者主动公开增加的面试题" --force
+          gh label create question-comments --color 1d76db --description "正式题目的公开评论线程" --force
+          gh label create duplicate --color cfd3d7 --description "已有对应题目或评论线程的重复 Issue" --force
+
+      - name: 为新题目或评论线程应用标签
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          case "$ISSUE_TITLE" in
+            "[新增题目] "*) LABEL="public-question" ;;
+            "[题目评论] question:"*) LABEL="question-comments" ;;
+            *) exit 0 ;;
+          esac
+          gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL"
+
+      - name: 避免一题出现多个评论线程
+        if: github.event_name == 'issues' && startsWith(github.event.issue.title, '[题目评论] question:')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          CANONICAL_NUMBER="$(
+            gh api --paginate --slurp "repos/$GH_REPO/issues?state=open&per_page=100" |
+              jq -r --arg title "$ISSUE_TITLE" \
+                '[.[][] | select((has("pull_request") | not) and .title == $title and .locked == false)] | sort_by(.number) | .[0].number // empty'
+          )"
+          if [ -z "$CANONICAL_NUMBER" ] || [ "$CANONICAL_NUMBER" = "$ISSUE_NUMBER" ]; then
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body "这道题已有评论线程：#$CANONICAL_NUMBER。为避免回答分散，本 Issue 已自动标记为重复并关闭；请到原线程继续评论。"
+          gh issue edit "$ISSUE_NUMBER" --add-label duplicate
+          gh issue close "$ISSUE_NUMBER" --reason "not planned"
