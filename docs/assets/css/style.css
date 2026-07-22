@@ -272,7 +272,12 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 
 .library { padding-block: 48px 96px; }
 
-.toolbar { margin-bottom: 28px; }
+.toolbar {
+  display: grid;
+  margin-bottom: 22px;
+  grid-template-columns: minmax(0, 1fr) 150px 170px;
+  gap: 12px;
+}
 
 .search-box {
   display: flex;
@@ -300,7 +305,21 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 
 .search-box:focus-within { border-color: var(--accent-border); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .08); }
 
-.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.library-select {
+  display: grid;
+  min-width: 0;
+  padding: 7px 12px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--white);
+  gap: 1px;
+}
+
+.library-select span { color: var(--muted); font-size: .72rem; font-weight: 700; }
+.library-select select { min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font: inherit; }
+.library-select:focus-within { border-color: var(--accent-border); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .08); }
+
+.filters { display: flex; flex-wrap: wrap; grid-column: 1 / -1; gap: 8px; margin-top: 4px; }
 
 .filter {
   min-height: 44px;
@@ -333,6 +352,8 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   background: transparent;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 112px;
   text-decoration: none;
   transition: background-color .18s ease;
 }
@@ -382,6 +403,38 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .tag::before { content: "#"; color: #98a2b3; }
 .card-arrow { color: #98a2b3; font-size: 1.25rem; transition: color .18s ease, transform .18s ease; }
 .question-card:hover .card-arrow { color: var(--accent-strong); transform: none; }
+
+.library-results-bar {
+  display: flex;
+  min-height: 54px;
+  margin-top: 18px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.library-noscript {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--orange);
+  color: var(--muted);
+  background: #fffaeb;
+  line-height: 1.6;
+}
+
+.review-pending-badge {
+  display: inline-flex;
+  width: max-content;
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #475467;
+  background: #f2f4f7;
+  font-size: .75rem;
+  font-weight: 750;
+}
+
+.library-results-bar p { margin: 0; color: var(--muted); font-size: .88rem; }
+.library-results-bar .secondary-button { margin: 0; }
 
 .empty-state {
   padding: 64px 20px;
@@ -1537,7 +1590,7 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .practice-options { margin-top: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .practice-options summary { padding: 12px 2px; color: var(--accent-strong); cursor: pointer; font-weight: 700; }
 .practice-options summary span { color: var(--muted); font-size: .84rem; font-weight: 500; }
-.practice-options-grid { display: grid; padding: 4px 0 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.practice-options-grid { display: grid; padding: 4px 0 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .practice-pool-status { min-height: 27px; margin: 13px 0 0; color: var(--muted); font-size: .9rem; }
 .practice-start { width: 100%; margin-top: 12px; }
 
@@ -1819,8 +1872,12 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
   .admin-label-long { display: none; }
   .admin-label-short { display: inline; }
   .nav-wrap .admin-link { padding-inline: 8px; font-size: .82rem; }
+  .toolbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .toolbar .search-box { grid-column: 1 / -1; }
   .filters { flex-wrap: nowrap; padding-bottom: 4px; overflow-x: auto; scrollbar-width: thin; }
   .filter { flex: 0 0 auto; }
+  .library-results-bar { align-items: stretch; flex-direction: column; gap: 10px; }
+  .library-results-bar .secondary-button { width: 100%; text-align: center; }
   .choice-grid { grid-template-columns: 1fr; }
   .hero-actions { align-items: center; flex-direction: row; }
   .hero-actions a { width: auto; text-align: center; }

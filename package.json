@@ -1,6 +1,6 @@
 {
   "name": "llm-interview-notes",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "可复用的大模型面试题库、模拟面试与复盘网站",
   "type": "module",
@@ -10,6 +10,9 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "validate": "node scripts/validate-content.mjs",
+    "questions:expand": "node scripts/build-question-expansion.mjs --write",
+    "questions:expand:check": "node scripts/build-question-expansion.mjs",
+    "questions:audit": "node scripts/audit-question-similarity.mjs",
     "check": "npm run validate && npm test"
   }
 }

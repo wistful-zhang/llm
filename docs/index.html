@@ -8,6 +8,7 @@ title: 题库
 {% assign published_questions = site.questions | where: 'published', true %}
 {% assign answered_count = 0 %}
 {% assign unanswered_count = 0 %}
+{% assign verified_count = 0 %}
 {% for question in published_questions %}
   {% assign answer_text = question.content | strip_html | strip_newlines | strip %}
   {% assign answer_ready = false %}
@@ -18,6 +19,7 @@ title: 题库
   {% endif %}
   {% if answer_ready %}
     {% assign answered_count = answered_count | plus: 1 %}
+    {% if question.verified == true %}{% assign verified_count = verified_count | plus: 1 %}{% endif %}
   {% else %}
     {% assign unanswered_count = unanswered_count | plus: 1 %}
   {% endif %}
@@ -51,7 +53,7 @@ title: 题库
       <strong>{{ published_questions | size }}</strong>
       <span>道已发布题目</span>
       <div class="stat-line"></div>
-      <small>{{ answered_count }} 道已有解答{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
+      <small>{{ answered_count }} 道已有解答 · {{ verified_count }} 道资料核验{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
     </div>
   </div>
 </section>
@@ -71,6 +73,24 @@ title: 题库
       <span aria-hidden="true">⌕</span>
       <input id="question-search" type="search" aria-label="搜索题目、答案、分类或标签" placeholder="搜索题目、答案、分类或标签…" autocomplete="off">
     </label>
+    <label class="library-select">
+      <span>难度</span>
+      <select id="question-difficulty" aria-label="按难度筛选题目">
+        <option value="">全部难度</option>
+        <option value="简单">简单</option>
+        <option value="中等">中等</option>
+        <option value="困难">困难</option>
+      </select>
+    </label>
+    <label class="library-select">
+      <span>答案状态</span>
+      <select id="question-review-state" aria-label="按答案核验状态筛选题目">
+        <option value="">全部状态</option>
+        <option value="verified">资料已核验</option>
+        <option value="review">答案待复核</option>
+        <option value="pending">待解答</option>
+      </select>
+    </label>
     <div class="filters" role="group" aria-label="按分类筛选">
       <button class="filter active" type="button" data-filter-all aria-pressed="true">全部</button>
       {% for category in published_categories %}
@@ -78,6 +98,9 @@ title: 题库
       {% endfor %}
     </div>
   </div>
+  <noscript>
+    <p class="library-noscript">当前浏览器未启用 JavaScript，下面仍会显示全部 {{ published_questions.size }} 道题；搜索、筛选和分批显示暂不可用。</p>
+  </noscript>
 
   <div id="question-list" class="question-list" data-search-index-url="{{ '/search-index.json' | relative_url }}">
     {% assign questions = published_questions | sort: 'date' | reverse %}
@@ -93,6 +116,8 @@ title: 题库
       <a class="question-card"
          href="{{ question.url | relative_url }}"
          data-category="{{ question.category | escape }}"
+         data-difficulty="{{ question.difficulty | escape }}"
+         data-verified="{{ question.verified | default: false }}"
          data-answer-status="{% if answer_ready %}complete{% else %}pending{% endif %}"
          data-search-id="{{ question.url | escape }}"
          data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: search_tags | downcase | escape }}">
@@ -103,6 +128,7 @@ title: 题库
             {% if question.difficulty != '待评估' %}<span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>{% endif %}
             {% unless answer_ready %}<span class="answer-state-badge">待解答</span>{% endunless %}
             {% if answer_ready and question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
+            {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="已有面试口述稿，技术细节仍待逐题资料复核">答案待复核</span>{% endif %}
           </div>
           <h2>{{ question.title | escape }}</h2>
           <div class="tag-list">
@@ -112,6 +138,10 @@ title: 题库
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
     {% endfor %}
+  </div>
+  <div class="library-results-bar">
+    <p id="library-result-summary">共 {{ published_questions.size }} 道符合条件</p>
+    <button id="question-load-more" class="secondary-button" type="button" hidden>再显示 60 道</button>
   </div>
   <div id="result-status" class="sr-only" role="status" aria-live="polite"></div>
   <div id="empty-state" class="empty-state" role="status" hidden>没有找到匹配的题目，换个关键词试试。</div>

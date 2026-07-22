@@ -34,6 +34,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   const form = document.querySelector('#practice-form');
   const categorySelect = document.querySelector('#practice-category');
   const difficultySelect = document.querySelector('#practice-difficulty');
+  const verificationSelect = document.querySelector('#practice-verification');
   const countSelect = document.querySelector('#practice-count');
   const startButton = document.querySelector('#practice-start');
   const poolStatus = document.querySelector('#practice-pool-status');
@@ -53,6 +54,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   const categoryBadge = document.querySelector('#practice-question-category');
   const difficultyBadge = document.querySelector('#practice-question-difficulty');
   const verifiedBadge = document.querySelector('#practice-question-verified');
+  const reviewBadge = document.querySelector('#practice-question-review');
   const questionTitle = document.querySelector('#practice-question-title');
   const revealButton = document.querySelector('#practice-reveal');
   const skipButton = document.querySelector('#practice-skip');
@@ -321,6 +323,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   const getFilters = () => ({
     category: categorySelect.value,
     difficulty: difficultySelect.value,
+    verification: verificationSelect.value,
   });
 
   const updateSetup = () => {
@@ -335,7 +338,7 @@ import { clearMath, renderMath } from './math-render.mjs';
       : `开始 ${actual} 题${label} · 约 ${actual * 2} 分钟`;
 
     if (pool.length === 0) {
-      poolStatus.textContent = '这个分类和难度组合暂时没有题目，请调整范围。';
+      poolStatus.textContent = '这个筛选组合暂时没有题目，请调整范围。';
     } else if (pool.length < requested) {
       poolStatus.textContent = `该范围只有 ${pool.length} 道题，本轮将使用全部题目，且不会重复。`;
     } else {
@@ -434,6 +437,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     categoryBadge.textContent = question.category;
     difficultyBadge.textContent = question.difficulty;
     if (verifiedBadge) verifiedBadge.hidden = question.verified !== true;
+    if (reviewBadge) reviewBadge.hidden = question.verified === true;
     questionTitle.textContent = question.title;
     timer.textContent = formatClock(state.currentElapsedMs);
     answerSection.hidden = true;
@@ -461,8 +465,8 @@ import { clearMath, renderMath } from './math-render.mjs';
   };
 
   const startWithQuestions = (selectedQuestions, filters = {}) => {
-    const queue = selectedQuestions.map(({ id, title, category, difficulty, url }) => ({
-      id, title, category, difficulty, url,
+    const queue = selectedQuestions.map(({ id, title, category, difficulty, verified, url }) => ({
+      id, title, category, difficulty, verified: verified === true, url,
     }));
     if (queue.length === 0) return;
 
@@ -650,7 +654,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     startWithQuestions(queue, { ...filters, count: Number.parseInt(countSelect.value, 10) || 5 });
   });
 
-  [categorySelect, difficultySelect, countSelect].forEach((control) => {
+  [categorySelect, difficultySelect, verificationSelect, countSelect].forEach((control) => {
     control.addEventListener('change', updateSetup);
   });
 

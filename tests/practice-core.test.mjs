@@ -11,14 +11,20 @@ import {
 } from '../docs/assets/js/practice-core.mjs';
 
 const questions = [
-  { id: '/q/1/', title: '题目 1', category: 'RAG', difficulty: '困难', url: '/q/1/' },
-  { id: '/q/2/', title: '题目 2', category: 'Agent', difficulty: '困难', url: '/q/2/' },
-  { id: '/q/3/', title: '题目 3', category: 'RAG', difficulty: '简单', url: '/q/3/' },
+  { id: '/q/1/', title: '题目 1', category: 'RAG', difficulty: '困难', verified: true, url: '/q/1/' },
+  { id: '/q/2/', title: '题目 2', category: 'Agent', difficulty: '困难', verified: false, url: '/q/2/' },
+  { id: '/q/3/', title: '题目 3', category: 'RAG', difficulty: '简单', verified: false, url: '/q/3/' },
 ];
 
 test('按分类和难度取交集，并按 ID 去重', () => {
   const result = filterQuestions([...questions, questions[0]], { category: 'RAG', difficulty: '困难' });
   assert.deepEqual(result.map((question) => question.id), ['/q/1/']);
+});
+
+test('可以只抽资料已核验或答案待复核的题目', () => {
+  assert.deepEqual(filterQuestions(questions, { verification: 'verified' }).map((question) => question.id), ['/q/1/']);
+  assert.deepEqual(filterQuestions(questions, { verification: 'review' }).map((question) => question.id), ['/q/2/', '/q/3/']);
+  assert.equal(filterQuestions(questions, { verification: 'toString' }).length, 3);
 });
 
 test('Fisher–Yates 返回新数组且结果不重复', () => {
@@ -113,6 +119,20 @@ test('答案已展开时恢复评分选择和有限计时', () => {
   assert.equal(restored.phase, 'revealed');
   assert.equal(restored.pendingRating, 'prompted');
   assert.equal(restored.currentElapsedMs, 4321);
+});
+
+test('恢复会话时用当前题库回填核验状态和题目元数据', () => {
+  const restored = restoreSession({
+    version: 1,
+    repositoryId: 'owner/repo',
+    phase: 'asking',
+    queue: [{ ...questions[0], title: '旧标题', verified: false }],
+    cursor: 0,
+    records: [],
+  }, questions, 'owner/repo');
+
+  assert.equal(restored.queue[0].title, '题目 1');
+  assert.equal(restored.queue[0].verified, true);
 });
 
 test('仓库标识或版本不一致时拒绝恢复', () => {

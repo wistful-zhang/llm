@@ -25,10 +25,13 @@ export function uniqueQuestions(questions) {
 export function filterQuestions(questions, filters = {}) {
   const category = String(filters.category || '');
   const difficulty = String(filters.difficulty || '');
+  const requestedVerification = String(filters.verification || '');
+  const verification = ['verified', 'review'].includes(requestedVerification) ? requestedVerification : '';
 
   return uniqueQuestions(questions).filter((question) => (
     (!category || question.category === category) &&
-    (!difficulty || question.difficulty === difficulty)
+    (!difficulty || question.difficulty === difficulty) &&
+    (!verification || (verification === 'verified') === (question.verified === true))
   ));
 }
 
@@ -89,15 +92,22 @@ export function restoreSession(value, questions, repositoryId) {
   if (!value || value.version !== PRACTICE_VERSION || value.repositoryId !== repositoryId) return null;
   if (!['asking', 'revealed'].includes(value.phase) || !Array.isArray(value.queue)) return null;
 
-  const queue = uniqueQuestions(value.queue.map((question) => ({
-    id: String(question?.id || ''),
-    title: String(question?.title || ''),
-    category: String(question?.category || ''),
-    difficulty: String(question?.difficulty || ''),
-    url: String(question?.url || ''),
-  })));
+  const currentById = new Map(questions.map((question) => [question.id, question]));
+  const queue = uniqueQuestions(value.queue.map((question) => {
+    const id = String(question?.id || '');
+    const current = currentById.get(id);
+    const source = current || question;
+    return {
+      id,
+      title: String(source?.title || ''),
+      category: String(source?.category || ''),
+      difficulty: String(source?.difficulty || ''),
+      verified: source?.verified === true,
+      url: String(source?.url || ''),
+    };
+  }));
   const cursor = Math.min(Math.max(Number.parseInt(value.cursor, 10) || 0, 0), queue.length);
-  const availableIds = new Set(questions.map((question) => question.id));
+  const availableIds = new Set(currentById.keys());
   const completedQueue = queue.slice(0, cursor);
   const originalCurrentId = queue[cursor]?.id;
   const remainingQueue = queue.slice(cursor).filter((question) => availableIds.has(question.id));
