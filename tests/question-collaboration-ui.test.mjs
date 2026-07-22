@@ -321,6 +321,8 @@ test('公开题和题目评论使用独立可视化表单，且绝不索要 GitH
   }
 
   assert.match(workflow, /issues:\s*\n\s+types:\s*\[opened\]/);
+  assert.match(workflow, /push:\s*\n\s+branches:\s*\[main\]/);
+  assert.match(workflow, /github\.event_name == 'push'/);
   assert.match(workflow, /issues:\s*write/);
   assert.match(workflow, /gh label create public-question/);
   assert.match(workflow, /gh label create question-comments/);
