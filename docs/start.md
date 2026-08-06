@@ -94,11 +94,12 @@ permalink: /start/
   <summary><span class="status-badge status-public">Public</span><strong>公开题库：启用阅读网页</strong><span class="summary-hint">展开步骤</span></summary>
   <div class="mode-details-body">
     <ol>
-      <li>先在 <strong>Settings → General → Features</strong> 确认 <strong>Issues</strong> 已开启；它用于每题评论和公开增加题目。</li>
+      <li>先在 <strong>Settings → General → Features</strong> 确认 <strong>Issues</strong> 已开启；它只用于“公开增加题目”和对应讨论，不是正式题目下方评论的存储。</li>
       <li>打开新仓库的 <strong>Settings → Pages</strong>。</li>
       <li>在 <strong>Build and deployment → Source</strong> 选择 <strong>GitHub Actions</strong>。项目已经包含工作流，不要再点击 Jekyll 或 Static HTML 的 Configure。</li>
       <li>进入 <strong>Actions → 内容检查与网站发布 → Run workflow</strong>，Branch 选择仓库默认分支（通常是 <code>main</code>），手动运行第一次部署。</li>
       <li>工作流变为绿色后，回到 <strong>Settings → Pages</strong> 点击 <strong>Visit site</strong>。</li>
+      <li>需要像论坛一样的题下评论时，再按<a href="{{ '/comments/setup/' | relative_url }}">站内评论开通步骤</a>部署自己的 Cloudflare Worker、D1 和 Turnstile；这是可选功能，不影响先发布题库。</li>
     </ol>
     <figure class="guide-figure guide-wide">
       <a href="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 GitHub Pages 设置示意图（在新窗口打开）"><img src="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" loading="lazy" alt="GitHub Settings Pages 中选择 GitHub Actions 的操作示意图"></a>
@@ -116,7 +117,7 @@ permalink: /start/
       <li>需要共同编辑时，在 GitHub 仓库中邀请协作者，并在 Pages CMS 中补充仓库授权。</li>
       <li>每次保存会先更新私有仓库，再执行内容校验，不会部署公开网页。</li>
     </ol>
-    <p class="mode-outcome"><strong>Private repository 不等于 private Pages。</strong> 真正带访问控制的私有 Pages 主要面向 GitHub Enterprise Cloud；机密内容不要发布到 Pages。</p>
+    <p class="mode-outcome"><strong>Private repository 不等于 private Pages。</strong> 真正带访问控制的私有 Pages 主要面向 GitHub Enterprise Cloud；机密内容不要发布到 Pages。Private / Internal 题库应主动关闭匿名站内评论，不要把公开昵称评论当作成员访问控制。</p>
   </div>
 </details>
 
@@ -173,7 +174,7 @@ permalink: /start/
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
   <h2>以后按需要走五条日常路径</h2>
-  <p><strong>现场记题：</strong>在“＋题目”只填问题，默认选择“只留给自己”。<strong>公开补题：</strong>改选“公开给大家”，先查重，再回题目卡打开预填表单并到 GitHub 最终确认。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>个人仓库速记：</strong>使用 Private 仓库。<strong>准备复习：</strong>先看<a href="{{ '/study-tiers/' | relative_url }}">学习分级说明</a>，从“核心必会”开始，再按目标岗位和分类随机抽题。</p>
+  <p><strong>现场记题：</strong>在“＋题目”只填问题，默认选择“只留给自己”。<strong>公开补题：</strong>改选“公开给大家”，先查重，再回题目卡打开预填表单并到 GitHub 最终确认。<strong>题下交流：</strong>站主开通评论后，访客填写昵称即可在正式题目下留言，不需要 GitHub 账号。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>个人仓库速记：</strong>使用 Private 仓库。<strong>准备复习：</strong>先看<a href="{{ '/study-tiers/' | relative_url }}">学习分级说明</a>，从“核心必会”开始，再按目标岗位和分类随机抽题。</p>
   <a class="primary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
   <a class="secondary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
   <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看匿名面经发布步骤</a>
@@ -196,12 +197,14 @@ permalink: /start/
       <li>在 <strong>Settings → General → Danger Zone</strong> 修改 Visibility。</li>
       <li>按上面的公开流程启用 Pages。</li>
       <li>手动运行一次部署工作流。</li>
+      <li>需要站内评论时，单独部署自己的评论服务；不会继承原仓库的数据。</li>
     </ol>
   </div>
   <div class="result-card result-private">
     <h3>Public → Private</h3>
     <ol>
       <li>先在 <strong>Settings → Pages</strong> 停止发布并确认网站下线。</li>
+      <li>在 Pages CMS 的“站点设置”关闭站内评论，并移除不再使用的评论服务配置。</li>
       <li>再到 Danger Zone 修改 Visibility。</li>
       <li>已经公开过的内容可能仍有缓存，不能当作从未公开。</li>
     </ol>
@@ -232,6 +235,8 @@ permalink: /start/
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。
+- **题目下方提示“站内评论尚未开通”**：题库主人需要按[站内评论开通步骤]({{ '/comments/setup/' | relative_url }})部署自己的 Worker、D1 和 Turnstile，再设置仓库变量 `COMMENTS_API_URL` 并重新发布。访客不用注册或登录；未配置时页面不会连接原作者的评论服务。
+- **评论为什么没有“待审核”**：正常评论会立即显示，和论坛帖子一样；每条评论可回复或举报，站主可在评论后台隐藏、恢复或删除不当内容。发布者在原浏览器中还能编辑或删除自己的评论。
 - **私有题库没有阅读网址或随机模拟**：这是当前模式的明确限制；请收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。在线浏览和模拟只能使用可公开的 Public 题库内容。
 - **组织账号没有某个按钮**：可能被组织策略限制，需要组织管理员批准。
 - **模板副本会自动收到更新吗**：不会。模板创建的是独立仓库；升级前请先阅读仓库中的 `UPGRADING.md`，保护自己的题目、公开面经和站点设置。

@@ -32,13 +32,17 @@ import { clearMath, renderMath } from './math-render.mjs';
   const repositoryId = source.dataset.repositoryId || `${window.location.host}${window.location.pathname}`;
   const activeSessionKey = `llm-interview-practice:${repositoryId}:session:v${PRACTICE_VERSION}`;
   const resultStorageKey = `llm-interview-practice:${repositoryId}:result:v${PRACTICE_VERSION}`;
+  const preferenceStorageKey = `llm-interview-practice:${repositoryId}:preferences:v1`;
 
   const form = document.querySelector('#practice-form');
+  const trackSelect = document.querySelector('#practice-track');
+  const trackHint = document.querySelector('#practice-track-hint');
   const studyTierSelect = document.querySelector('#practice-study-tier');
   const categorySelect = document.querySelector('#practice-category');
   const difficultySelect = document.querySelector('#practice-difficulty');
   const verificationSelect = document.querySelector('#practice-verification');
   const countSelect = document.querySelector('#practice-count');
+  const defaultStudyTier = studyTierSelect?.dataset.defaultTier || '';
   const startButton = document.querySelector('#practice-start');
   const poolStatus = document.querySelector('#practice-pool-status');
   const liveStatus = document.querySelector('#practice-live-status');
@@ -324,7 +328,28 @@ import { clearMath, renderMath } from './math-render.mjs';
     return snapshot ? (questionById.get(snapshot.id) || snapshot) : null;
   };
 
+  const selectedTrackOption = () => (
+    trackSelect ? trackSelect.options[trackSelect.selectedIndex] : null
+  );
+
+  const selectedTrackCategories = () => (
+    (selectedTrackOption()?.dataset.categories || '')
+      .split('|')
+      .map((category) => category.trim())
+      .filter(Boolean)
+  );
+
+  const updateTrackHint = () => {
+    if (!trackHint) return;
+    const option = selectedTrackOption();
+    trackHint.textContent = option?.value
+      ? `${option.dataset.description} 本路线会练全部通用核心，并加入这些分类中的岗位专项题。`
+      : '第一次准备先练通用核心；选定方向后，会自动合并通用核心与该方向的岗位专项题。';
+  };
+
   const getFilters = () => ({
+    trackId: trackSelect?.value || '',
+    trackCategories: selectedTrackCategories(),
     studyTier: studyTierSelect?.value || '',
     category: categorySelect.value,
     difficulty: difficultySelect.value,
@@ -332,10 +357,14 @@ import { clearMath, renderMath } from './math-render.mjs';
   });
 
   const updateSetup = () => {
-    const pool = filterQuestions(questions, getFilters());
+    const filters = getFilters();
+    const pool = filterQuestions(questions, filters);
     const requested = Number.parseInt(countSelect.value, 10) || 5;
     const actual = Math.min(pool.length, requested);
     const label = actual <= 2 ? '练习' : '模拟';
+    const routeLabel = filters.studyTier === 'recommended' && filters.trackId
+      ? `${selectedTrackOption()?.textContent.split('·')[0].trim()}路线：`
+      : '';
 
     startButton.disabled = actual === 0;
     startButton.textContent = actual === 0
@@ -345,10 +374,55 @@ import { clearMath, renderMath } from './math-render.mjs';
     if (pool.length === 0) {
       poolStatus.textContent = '这个筛选组合暂时没有题目，请调整范围。';
     } else if (pool.length < requested) {
-      poolStatus.textContent = `该范围只有 ${pool.length} 道题，本轮将使用全部题目，且不会重复。`;
+      poolStatus.textContent = `${routeLabel}该范围只有 ${pool.length} 道题，本轮将使用全部题目，且不会重复。`;
     } else {
-      poolStatus.textContent = `将从 ${pool.length} 道题中随机抽取 ${actual} 道，同一轮不会重复。`;
+      poolStatus.textContent = `${routeLabel}将从 ${pool.length} 道题中抽取 ${actual} 道，并优先覆盖不同分类，同一轮不会重复。`;
     }
+  };
+
+  const findOption = (select, value) => (
+    select ? [...select.options].find((option) => option.value === value) : null
+  );
+
+  const syncRouteUrl = () => {
+    const url = new URL(window.location.href);
+    if (trackSelect?.value) url.searchParams.set('track', trackSelect.value);
+    else url.searchParams.delete('track');
+    if (studyTierSelect?.value && (studyTierSelect.value !== defaultStudyTier || trackSelect?.value)) {
+      url.searchParams.set('tier', studyTierSelect.value);
+    } else {
+      url.searchParams.delete('tier');
+    }
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  };
+
+  const applyInitialRoute = () => {
+    const params = new URLSearchParams(window.location.search);
+    let storedTrack = '';
+    try {
+      storedTrack = JSON.parse(readStorage('localStorage', preferenceStorageKey) || '{}').trackId || '';
+    } catch {
+      removeStorage('localStorage', preferenceStorageKey);
+    }
+
+    const requestedTrack = params.has('track') ? params.get('track') : storedTrack;
+    const trackOption = findOption(trackSelect, requestedTrack);
+    if (trackOption) {
+      trackSelect.value = trackOption.value;
+      if (params.has('track')) {
+        writeStorage('localStorage', preferenceStorageKey, JSON.stringify({ trackId: trackOption.value }));
+      }
+    }
+
+    const requestedTier = params.get('tier');
+    const tierOption = findOption(studyTierSelect, requestedTier);
+    if (tierOption) {
+      studyTierSelect.value = tierOption.value;
+    } else if (trackSelect?.value) {
+      studyTierSelect.value = 'recommended';
+    }
+
+    updateTrackHint();
   };
 
   const showSetup = () => {
@@ -671,8 +745,20 @@ import { clearMath, renderMath } from './math-render.mjs';
     startWithQuestions(queue, { ...filters, count: Number.parseInt(countSelect.value, 10) || 5 });
   });
 
+  trackSelect?.addEventListener('change', () => {
+    categorySelect.value = '';
+    studyTierSelect.value = trackSelect.value ? 'recommended' : defaultStudyTier;
+    writeStorage('localStorage', preferenceStorageKey, JSON.stringify({ trackId: trackSelect.value }));
+    updateTrackHint();
+    syncRouteUrl();
+    updateSetup();
+  });
+
   [studyTierSelect, categorySelect, difficultySelect, verificationSelect, countSelect].filter(Boolean).forEach((control) => {
-    control.addEventListener('change', updateSetup);
+    control.addEventListener('change', () => {
+      if (control === studyTierSelect) syncRouteUrl();
+      updateSetup();
+    });
   });
 
   revealButton.addEventListener('click', () => {
@@ -791,6 +877,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     announce(storageStatus.textContent);
   });
 
+  applyInitialRoute();
   loadResumableSession();
   loadStoredResult();
   updateSetup();

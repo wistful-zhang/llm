@@ -26,6 +26,47 @@ test('按分类、难度和备考层级取交集，并按 ID 去重', () => {
   assert.deepEqual(result.map((question) => question.id), ['/q/1/']);
 });
 
+test('岗位推荐路线会合并全部核心题与所选方向的岗位专项题', () => {
+  const result = filterQuestions([
+    ...questions,
+    { id: '/q/4/', title: '题目 4', category: '训练与对齐', difficulty: '困难', studyTier: 'role', verified: true },
+    { id: '/q/5/', title: '题目 5', category: 'Agent', difficulty: '困难', studyTier: 'extended', verified: true },
+  ], {
+    studyTier: 'recommended',
+    trackCategories: ['Agent', 'RAG'],
+  });
+
+  assert.deepEqual(result.map((question) => question.id), ['/q/1/', '/q/2/']);
+});
+
+test('没有选择岗位方向时，推荐路线安全回退到核心题', () => {
+  assert.deepEqual(
+    filterQuestions(questions, { studyTier: 'recommended' }).map(({ id }) => id),
+    ['/q/1/'],
+  );
+});
+
+test('精确层级可以按岗位方向多分类筛选，核心层级仍保持通用', () => {
+  const withAnotherRole = [
+    ...questions,
+    { id: '/q/4/', title: '题目 4', category: '训练与对齐', difficulty: '困难', studyTier: 'role', verified: true },
+  ];
+  assert.deepEqual(
+    filterQuestions(withAnotherRole, {
+      studyTier: 'role',
+      trackCategories: ['Agent', 'RAG'],
+    }).map(({ id }) => id),
+    ['/q/2/'],
+  );
+  assert.deepEqual(
+    filterQuestions(withAnotherRole, {
+      studyTier: 'core',
+      trackCategories: ['Agent'],
+    }).map(({ id }) => id),
+    ['/q/1/'],
+  );
+});
+
 test('备考层级只接受四个正式值，缺失值安全归为 unclassified', () => {
   assert.equal(normalizeStudyTier('core'), 'core');
   assert.equal(normalizeStudyTier('role'), 'role');
@@ -59,6 +100,23 @@ test('请求数量超过题库时只返回现有题目', () => {
   const queue = buildQueue(questions, { category: 'RAG' }, 10, () => 0);
   assert.equal(queue.length, 2);
   assert.ok(queue.every((question) => question.category === 'RAG'));
+});
+
+test('随机队列优先覆盖不同能力分类，避免同轮被单一题簇占满', () => {
+  const pool = [
+    ...Array.from({ length: 5 }, (_, index) => ({
+      id: `/rag/${index}/`,
+      title: `RAG ${index}`,
+      category: 'RAG',
+      studyTier: 'core',
+    })),
+    { id: '/agent/1/', title: 'Agent', category: 'Agent', studyTier: 'core' },
+    { id: '/eval/1/', title: '评测', category: '评测与安全', studyTier: 'core' },
+  ];
+  const queue = buildQueue(pool, {}, 3, () => 0);
+
+  assert.equal(queue.length, 3);
+  assert.equal(new Set(queue.map(({ category }) => category)).size, 3);
 });
 
 test('空题库和单题题库不会重复或越界', () => {

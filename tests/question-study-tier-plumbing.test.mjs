@@ -6,6 +6,7 @@ import test from 'node:test';
 import { parseQuestionDocument } from '../scripts/question-publication.mjs';
 import {
   CORE_QUESTION_SLUGS,
+  ROLE_FROM_CORE_QUESTION_SLUGS,
   STUDY_TIERS,
   isStudyTier,
 } from '../scripts/question-study-tier.mjs';
@@ -68,18 +69,26 @@ test('题库报告包含四级迁移计数，并把缺失值兼容为 unclassifi
   assert.deepEqual(studyTierCount, {
     extended: 509,
     archive: 244,
-    role: 147,
-    core: 100,
+    role: 187,
+    core: 60,
   });
 });
 
-test('100 个核心必会 slug 存在、唯一，并与题目 frontmatter 精确对应', async () => {
+test('60 个通用核心与 40 个岗位迁移 slug 存在、唯一，并与 frontmatter 精确对应', async () => {
   const rows = await loadQuestionRows();
   const availableSlugs = new Set(rows.map(({ slug }) => slug));
   const uniqueCoreSlugs = new Set(CORE_QUESTION_SLUGS);
+  const uniqueMovedSlugs = new Set(ROLE_FROM_CORE_QUESTION_SLUGS);
 
-  assert.equal(CORE_QUESTION_SLUGS.length, 100);
-  assert.equal(uniqueCoreSlugs.size, 100);
+  assert.equal(CORE_QUESTION_SLUGS.length, 60);
+  assert.equal(uniqueCoreSlugs.size, 60);
+  assert.equal(ROLE_FROM_CORE_QUESTION_SLUGS.length, 40);
+  assert.equal(uniqueMovedSlugs.size, 40);
+  assert.deepEqual(
+    CORE_QUESTION_SLUGS.filter((slug) => uniqueMovedSlugs.has(slug)),
+    [],
+    '通用核心和迁移到岗位专项的清单不能重叠',
+  );
   assert.deepEqual(
     CORE_QUESTION_SLUGS.filter((slug) => !availableSlugs.has(slug)),
     [],
@@ -89,6 +98,14 @@ test('100 个核心必会 slug 存在、唯一，并与题目 frontmatter 精确
     rows.filter(({ tier }) => tier === 'core').map(({ slug }) => slug).sort(),
     [...uniqueCoreSlugs].sort(),
     'frontmatter 标为 core 的题目必须与核心清单完全一致',
+  );
+  assert.deepEqual(
+    rows
+      .filter(({ slug }) => uniqueMovedSlugs.has(slug) && slug)
+      .filter(({ tier }) => tier !== 'role')
+      .map(({ slug, tier }) => `${slug}: ${tier}`),
+    [],
+    '迁移清单中的题目必须标为岗位专项',
   );
 });
 
@@ -109,8 +126,8 @@ test('全部 1000 道题都使用合法层级并满足最终分布', async () =>
   assert.deepEqual(parseFailures, []);
   assert.deepEqual(invalid, []);
   assert.deepEqual(counts, {
-    core: 100,
-    role: 147,
+    core: 60,
+    role: 187,
     extended: 509,
     archive: 244,
   });

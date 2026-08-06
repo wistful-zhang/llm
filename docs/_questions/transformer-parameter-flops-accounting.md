@@ -4,7 +4,7 @@ source: "公开面经题库主题；公司归属未独立核验，技术答案�
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - 参数量
   - FLOPs

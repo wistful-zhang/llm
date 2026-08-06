@@ -1,0 +1,44 @@
+{
+  "name": "llm-interview-native-comments-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "scripts": {
+    "dev": "wrangler dev --config wrangler.jsonc",
+    "db:create": "wrangler d1 create llm-comments",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.jsonc",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
+    "deploy": "npm run db:migrate:remote && wrangler deploy --config wrangler.jsonc"
+  },
+  "cloudflare": {
+    "bindings": {
+      "SITE_URL": {
+        "description": "正式题库的完整网址，例如 `https://name.github.io/repository`；用于严格 CORS、Turnstile hostname 和已发布题目清单校验。"
+      },
+      "SITE_ID": {
+        "description": "这套评论数据的稳定标识（8–80 位字母、数字、下划线或连字符）；上线后不要随意修改。"
+      },
+      "TURNSTILE_SITE_KEY": {
+        "description": "在 [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/get-started/) 创建 Managed 小组件后取得的公开 site key。"
+      },
+      "TURNSTILE_SECRET_KEY": {
+        "description": "与 Turnstile site key 配对的 secret key；必须作为加密 Secret 配置，不能提交到仓库。"
+      },
+      "HASH_SECRET": {
+        "description": "至少 32 个随机字符，用于 HMAC 限流键和评论编辑凭证摘要；可用 `openssl rand -hex 32` 生成并长期备份。"
+      },
+      "ADMIN_TOKEN": {
+        "description": "至少 32 个随机字符的管理令牌，用于登录 `/admin`；可用 `openssl rand -hex 32` 生成。"
+      }
+    }
+  },
+  "devDependencies": {
+    "wrangler": "^4.28.0"
+  },
+  "overrides": {
+    "undici": "7.29.0"
+  }
+}

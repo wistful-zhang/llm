@@ -5,7 +5,7 @@ verified: false
 review_status: '待复习'
 category: '评测与安全'
 difficulty: '中等'
-study_tier: 'core'
+study_tier: 'role'
 tags:
   - 'Rubric'
   - '评测设计'

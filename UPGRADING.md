@@ -23,6 +23,18 @@
 
 从 1.4.x 升级到 1.5.0 时，新增的 `study_tier` 只表示备考顺序。如果要保留自己的题目，不要整目录覆盖 `docs/_questions/`；可以为每道题补上 `core`、`role`、`extended` 或 `archive`，也可先留空，旧题会兼容为“未分级”。请一起合并首页、模拟面试、题目布局、样式、`.pages.yml`、校验器和 `scripts/question-study-tier.mjs`；新题会默认进入 `archive`，避免未整理内容直接进入核心路径。
 
+从 1.5.x 升级到 1.6.0 时，请一起合并 `docs/_data/study_tracks.yml`、首页、学习分级页、模拟面试脚本、样式和 `scripts/question-study-tier.mjs`。基础题库把 40 道深题从 `core` 调整为 `role`；如果你已经维护自己的分级，可以只采用路线与筛选代码，不覆盖 `docs/_questions/`。网页新题导出会补上 `study_tier: archive`，旧的浏览器 JSON 无需迁移。
+
+1.6.0 当时把题目评论改为正文下方的内嵌输入框，并使用 [utterances](https://github.com/apps/utterances) 显示 GitHub Issue 回复。这段只用于识别旧副本：该方案已经退役，不要再为新副本安装评论应用。旧 Issue 和回复仍保留在 GitHub，但不会自动出现在新的站内评论数据库中。
+
+## 升级到下一版本的站内评论（尚未发布）
+
+下一版本把正式题目的评论从 GitHub Issues 迁移为题库主人自行部署的 Cloudflare Worker + D1 + Turnstile。升级时需要一起合并 `comments-worker/`、`docs/comment-setup.md`、`docs/assets/js/question-comments.js`、`docs/assets/js/native-comments-core.mjs`、`docs/_layouts/question.html`、`docs/_layouts/default.html`、`docs/_data/comment_runtime.yml`、`scripts/build-comments-config.mjs`、发布工作流、CSP、样式和相关测试，再按“站内评论开通”页面完成部署。
+
+每个模板副本或 Fork 都必须在自己的 Cloudflare 账号中创建 Worker 和 D1，并在自己的仓库 Actions Variables 中设置 `COMMENTS_API_URL`。不要复制上游仓库构建出的运行时地址；变量留空时页面不会连接任何后端，也不会回退到原作者的评论库。Private / Internal 题库应保持评论关闭。
+
+旧 GitHub Issue 评论不会自动迁移到 D1。需要保留时，应由题库主人先导出、确认作者授权和隐私边界，再制定单独迁移方案；不要把 GitHub 用户名直接冒充为新站内昵称。公开增加题目仍使用 GitHub Issue Form，因此 Public 题库若保留公开补题功能，Issues 仍需开启；这与正式题目下方的站内评论是两条独立路径。
+
 ## 推荐升级方法
 
 先在自己仓库标题下方寻找 **generated from**，它指向创建副本时使用的基础模板。若看不到该标记，请从自己保存的创建记录、README 或可信维护者说明确认来源；不要把名称相似的陌生仓库直接当成上游。

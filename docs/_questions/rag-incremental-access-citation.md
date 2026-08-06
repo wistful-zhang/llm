@@ -5,7 +5,7 @@ verified: true
 review_status: "待复习"
 category: "RAG"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - 增量索引
   - 权限过滤

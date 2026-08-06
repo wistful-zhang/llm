@@ -11,6 +11,8 @@ if (root) {
   const actions = root.querySelector('[data-setup-actions]');
   const message = root.querySelector('[data-setup-message]');
   const repositoryPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+  const commentsEnabled = root.dataset.commentsEnabled === 'true';
+  const commentsApiUrl = (root.dataset.commentsApi || '').trim();
 
   const makeElement = (tag, className, text) => {
     const element = document.createElement(tag);
@@ -53,6 +55,59 @@ if (root) {
     }
   };
 
+  const inspectComments = async () => {
+    if (!commentsEnabled) return {
+      value: '已经关闭',
+      state: 'success',
+      hint: '站点设置没有显示公开评论，因此不需要连接评论服务。',
+      healthy: true,
+    };
+    if (!commentsApiUrl) return {
+      value: '尚未开通',
+      state: 'warning',
+      hint: '网站不会连接 GitHub 评论。按“开通站内评论”部署自己的 Worker 后，访客即可免登录留言。',
+      healthy: false,
+    };
+
+    let api;
+    try {
+      api = new URL(commentsApiUrl);
+      if (api.protocol !== 'https:' || api.username || api.password || api.search || api.hash) throw new Error();
+    } catch {
+      return { value: '网址无效', state: 'error', hint: 'COMMENTS_API_URL 必须是 Worker 的 HTTPS 根网址。', healthy: false };
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch(`${api.href.replace(/\/+$/, '')}/v1/config`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const config = await response.json();
+      if (!config?.siteId || (config.writeEnabled !== false && !config?.turnstileSiteKey)) {
+        throw new Error('配置字段不完整');
+      }
+      return {
+        value: config.writeEnabled === false ? '只读可用' : '读取和留言可用',
+        state: 'success',
+        hint: config.writeEnabled === false ? '可以查看已有评论；Worker 当前关闭了新留言。' : '访客可以在题目下方直接查看和发表公开评论。',
+        healthy: true,
+        adminUrl: `${api.href.replace(/\/+$/, '')}/admin`,
+      };
+    } catch (error) {
+      return {
+        value: '连接失败',
+        state: 'error',
+        hint: error?.name === 'AbortError' ? '评论服务响应超时，请检查 Worker 状态和 SITE_URL。' : `请检查 Worker 变量、部署状态与 CORS（${error?.message || '未知错误'}）。`,
+        healthy: false,
+      };
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  };
+
   const inspect = async (repository) => {
     results.hidden = false;
     grid.replaceChildren();
@@ -73,6 +128,7 @@ if (root) {
       if (!repoResponse.ok) throw new Error(`GitHub 暂时无法返回仓库状态（${repoResponse.status}）。`);
 
       const repo = await repoResponse.json();
+      const commentsStatus = await inspectComments();
       const workflowUrl = `https://api.github.com/repos/${encoded}/actions/workflows/pages.yml/runs?per_page=10&branch=${encodeURIComponent(repo.default_branch)}`;
       const workflowResponse = await fetch(workflowUrl, { headers: { Accept: 'application/vnd.github+json' } });
       let workflowLookupError = '';
@@ -95,7 +151,8 @@ if (root) {
       addCard('仓库可见性', repo.visibility === 'public' ? 'Public' : repo.visibility, repo.visibility === 'public' ? 'success' : 'warning', repo.visibility === 'public' ? '公开题库可以启用 GitHub Pages。' : 'Private 仓库不要启用公开 Pages。');
       addCard('默认分支', repo.default_branch || '未知', 'success', '保存和首次手动发布时应选择这个分支。');
       addCard('GitHub Pages', repo.has_pages ? '已经启用' : '尚未启用', repo.has_pages ? 'success' : 'error', repo.has_pages ? 'Pages 已有配置；继续检查最近一次运行。' : '到 Settings → Pages，把 Source 设为 GitHub Actions。');
-      addCard('题目评论与公开补题', repo.has_issues ? 'Issues 已开启' : 'Issues 已关闭', repo.has_issues ? 'success' : 'error', repo.has_issues ? '每道题可以建立评论线程，使用者也能公开增加题目。' : '到 Settings → General → Features 开启 Issues，否则评论和公开增加题目不可用。');
+      addCard('公开增加题目', repo.has_issues ? 'Issues 已开启' : 'Issues 已关闭', repo.has_issues ? 'success' : 'error', repo.has_issues ? '公开补题入口可用；题目下方的站内评论不再依赖 Issues。' : '到 Settings → General → Features 开启 Issues，否则访客无法使用“＋题目”公开投稿。');
+      addCard('题目下方站内评论', commentsStatus.value, commentsStatus.state, commentsStatus.hint);
       if (workflowLookupError) {
         addCard('最近一次发布', '状态读取失败', 'error', workflowLookupError);
       } else {
@@ -106,6 +163,7 @@ if (root) {
       const healthy = repo.visibility === 'public'
         && repo.has_pages
         && repo.has_issues
+        && commentsStatus.healthy
         && !workflowLookupError
         && latestRun?.conclusion === 'success';
       overall.textContent = healthy ? '配置正常' : '需要处理';
@@ -114,6 +172,8 @@ if (root) {
 
       addAction('打开仓库', repo.html_url, true);
       addAction('Pages 设置', `${repo.html_url}/settings/pages`);
+      if (commentsStatus.adminUrl) addAction('管理站内评论', commentsStatus.adminUrl);
+      else if (commentsEnabled) addAction('开通站内评论', new URL('../comments/setup/', window.location.href).href);
       addAction('Actions 运行记录', `${repo.html_url}/actions/workflows/pages.yml`);
       addAction('题目协作标签', `${repo.html_url}/actions/workflows/question-collaboration.yml`);
       if (latestRun?.html_url) addAction('打开最近一次运行', latestRun.html_url);

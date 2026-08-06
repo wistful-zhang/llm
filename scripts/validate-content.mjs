@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { basename, extname, join } from 'node:path';
 import {
   hasDirectorLanguage,
   hasValidSpokenAnswerLength,
@@ -77,6 +77,30 @@ const normalizeTitle = (value) => value
   .normalize('NFKC')
   .toLocaleLowerCase('zh-CN')
   .replace(/[\s\p{P}]+/gu, '');
+
+export const findDuplicateQuestionSlugErrors = (filenames) => {
+  const seenSlugs = new Map();
+  const duplicateErrors = [];
+
+  for (const filename of filenames) {
+    const documentName = basename(String(filename));
+    const extension = extname(documentName);
+    const slug = extension ? documentName.slice(0, -extension.length) : documentName;
+    if (!slug) continue;
+
+    if (seenSlugs.has(slug)) {
+      duplicateErrors.push(
+        `${filename}: 题目文件名 slug “${slug}”与 ${seenSlugs.get(slug)} 重复；题目 permalink 使用 :name，文件名必须在所有子目录中全局唯一`,
+      );
+    } else {
+      seenSlugs.set(slug, filename);
+    }
+  }
+
+  return duplicateErrors;
+};
+
+errors.push(...findDuplicateQuestionSlugErrors(files));
 
 for (const filename of files) {
   const source = readFileSync(join(questionsDir, filename), 'utf8').replace(/^\uFEFF/, '');

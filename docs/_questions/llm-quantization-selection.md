@@ -4,7 +4,7 @@ source: "公开 AI 工程面试题库；原论文与官方文档核验后原创�
 review_status: "待复习"
 category: "工程实践"
 difficulty: "简单"
-study_tier: "core"
+study_tier: "role"
 tags:
   - 模型量化
   - INT8

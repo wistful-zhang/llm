@@ -4,7 +4,7 @@ source: "公开大模型高频面试题整理中的归一化对比题；答案�
 review_status: "待复习"
 category: "LLM 基础"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - LayerNorm
   - RMSNorm

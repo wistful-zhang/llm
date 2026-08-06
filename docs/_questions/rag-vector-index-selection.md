@@ -4,7 +4,7 @@ source: "公开 RAG 面试题整理；答案依据原论文和官方实现文档
 review_status: "待复习"
 category: "RAG"
 difficulty: "困难"
-study_tier: "core"
+study_tier: "role"
 tags:
   - ANN
   - HNSW

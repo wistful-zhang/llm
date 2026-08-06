@@ -7,6 +7,7 @@ import batchC from '../scripts/question-batches/batch-c-evaluation-career.mjs';
 import { parseQuestionDocument } from '../scripts/question-publication.mjs';
 import {
   CORE_QUESTION_SLUGS,
+  ROLE_FROM_CORE_QUESTION_SLUGS,
   studyTierForExpansionBatch,
 } from '../scripts/question-study-tier.mjs';
 
@@ -71,16 +72,17 @@ test('三个扩充批次合计 768 道且 slug 唯一、分类合规', () => {
   assert.deepEqual(invalidCategories, []);
 });
 
-test('扩题生成器按 slug 将 15 道批次题提升为核心必会', async () => {
+test('扩题生成器按 slug 将 13 道批次题提升为核心、2 道归入岗位专项', async () => {
   const generator = await readFile(new URL('../scripts/build-question-expansion.mjs', import.meta.url), 'utf8');
   const batchByGeneratedSlug = new Map(batchEntries.flatMap(({ filename, records }) => (
     records.map((record) => [`${generatedPrefix}${record.slug}`, { filename, record }])
   )));
   const promotedSlugs = CORE_QUESTION_SLUGS.filter((slug) => slug.startsWith(generatedPrefix));
+  const roleSlugs = ROLE_FROM_CORE_QUESTION_SLUGS.filter((slug) => slug.startsWith(generatedPrefix));
   const counts = { core: 0, role: 0, extended: 0, archive: 0 };
 
-  assert.equal(promotedSlugs.length, 15);
-  assert.equal(new Set(promotedSlugs).size, 15);
+  assert.equal(promotedSlugs.length, 13);
+  assert.equal(new Set(promotedSlugs).size, 13);
   promotedSlugs.forEach((slug) => {
     const entry = batchByGeneratedSlug.get(slug);
     assert.ok(entry, `${slug} 必须存在于扩题批次`);
@@ -90,13 +92,22 @@ test('扩题生成器按 slug 将 15 道批次题提升为核心必会', async (
       `${slug} 必须由 slug 提升为核心必会`,
     );
   });
+  assert.deepEqual(roleSlugs.sort(), [
+    'exp1000-eval-atomic-rubric',
+    'exp1000-eval-golden-set-maintenance',
+  ]);
+  roleSlugs.forEach((slug) => {
+    const entry = batchByGeneratedSlug.get(slug);
+    assert.ok(entry, `${slug} 必须存在于扩题批次`);
+    assert.equal(studyTierForExpansionBatch(entry.filename, entry.record.slug), 'role');
+  });
 
   batchEntries.forEach(({ filename, records }) => {
     records.forEach((record) => {
       counts[studyTierForExpansionBatch(filename, record.slug)] += 1;
     });
   });
-  assert.deepEqual(counts, { core: 15, role: 0, extended: 509, archive: 244 });
+  assert.deepEqual(counts, { core: 13, role: 2, extended: 509, archive: 244 });
 
   const slugAwareCalls = generator.match(/studyTierForExpansionBatch\(record\.batch,\s*record\.slug\)/g) || [];
   assert.ok(slugAwareCalls.length >= 2, '生成与校验都必须把 record.slug 传入层级判定函数');

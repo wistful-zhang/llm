@@ -46,13 +46,19 @@ content:
               label: 已完成（显示答案并进入模拟）
 
       - name: body
-        label: 解答草稿区（可以留空）
+        label: 答案正文（待解答时可以留空）
         type: rich-text
         description: 答案状态为“待解答”时，半成品不会在阅读网站展示或进入模拟；但 Public 仓库中的源文件始终可见。可在题目页复制补答指令交给 Codex；手动写完后请把答案状态改为“已完成”。
         options:
           format: markdown
           switcher: false
           media: false
+
+      - name: verified
+        label: 修改过答案？请重新确认资料核验状态
+        type: boolean
+        default: false
+        description: 只有逐条对照论文、官方文档或标准后才能打开。修改答案正文时请先关闭；完成新一轮事实和来源核对后再重新打开。
 
       - name: source
         label: 匿名来源 / 轮次（可留空）
@@ -293,6 +299,12 @@ content:
               label: 珊瑚红
             - name: amber
               label: 琥珀橙
+
+      - name: comments_enabled
+        label: 在正式题目下方显示站内评论
+        type: boolean
+        default: true
+        description: 访客填写昵称即可原地留言，不需要 GitHub 账号。首次使用前，题库主人仍需按“站内评论开通”页面部署自己的评论服务；Private / Internal 题库或不需要公开评论时请关闭。
 
       - name: footer
         label: 页脚文字

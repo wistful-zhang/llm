@@ -706,6 +706,7 @@ verified: false
 review_status: ${quoteYamlString(reviewStatus)}
 category: ${quoteYamlString(question.category)}
 difficulty: ${quoteYamlString(question.difficulty)}
+study_tier: archive
 ${tags}
 published: false
 answer_status: ${answerStatus}

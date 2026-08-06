@@ -71,7 +71,6 @@ test('公开 Issue 表单明确提醒内容会公开，隐私问题走私密报�
     read('../.github/ISSUE_TEMPLATE/bug.yml'),
     read('../.github/ISSUE_TEMPLATE/feature.yml'),
     read('../.github/ISSUE_TEMPLATE/public-question.yml'),
-    read('../.github/ISSUE_TEMPLATE/question-comment.yml'),
   ]);
 
   forms.forEach((form) => {
@@ -103,7 +102,7 @@ test('公开页面源码不绑定维护者用户名或生产域名', async () =>
   ]);
   const source = files.join('\n').toLowerCase();
 
-  assert.doesNotMatch(source, /https?:\/\/github\.com\/[a-z0-9_.-]+\/[a-z0-9_.-]+/i);
+  assert.doesNotMatch(source, /https?:\/\/github\.com\/(?!apps(?:\/|$))[a-z0-9_.-]+\/[a-z0-9_.-]+/i);
   assert.doesNotMatch(source, /https?:\/\/[a-z0-9_.-]+\.github\.io\/[a-z0-9_.-]+/i);
 });
 

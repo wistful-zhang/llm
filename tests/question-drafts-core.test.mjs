@@ -426,6 +426,7 @@ test('生成的 Markdown 正确转义 YAML，并严格遵循用户选择的 answ
   assert.equal(pendingParsed.values.get('source'), pendingQuestion.source);
   assert.deepEqual(pendingParsed.values.get('tags'), pendingQuestion.tags);
   assert.equal(pendingParsed.values.get('answer_status'), 'pending');
+  assert.equal(pendingParsed.values.get('study_tier'), 'archive');
   assert.equal(pendingParsed.values.get('published'), false);
   assert.match(pending, /O''Reilly/);
 
@@ -460,6 +461,7 @@ test('生成的 Markdown 正确转义 YAML，并严格遵循用户选择的 answ
   const completeParsed = parseQuestionDocument(complete, 'generated-complete.md');
   assert.equal(completeParsed.errors.length, 0);
   assert.equal(completeParsed.values.get('answer_status'), 'complete');
+  assert.equal(completeParsed.values.get('study_tier'), 'archive');
   assert.equal(completeParsed.values.get('review_status'), '待复习');
   assert.match(completeParsed.body, /^\n?## 面试时怎么答/m);
 });

@@ -4,7 +4,7 @@ source: "大厂公开真实面试案例中的 SFT Loss Mask 高频题；答案�
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "简单"
-study_tier: "core"
+study_tier: "role"
 tags:
   - SFT
   - Loss Mask

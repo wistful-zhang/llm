@@ -24,7 +24,7 @@ permalink: /practice/
   <header class="practice-intro">
     <span class="status-badge">随机抽题 · 自我复盘</span>
     <h1>随机模拟面试</h1>
-    <p>默认只从“核心必会”中随机出题，不会让批量扩展题稀释重点。先用自己的话回答，再看参考说法和完整题解，判断自己是否真的讲清楚。</p>
+    <p>默认只从资料已核验的“核心必会”中出题；选择目标方向后，再合并该方向的岗位专项，不会让扩展题稀释重点。先用自己的话回答，再看参考说法和完整题解。</p>
   </header>
 
   <noscript>
@@ -68,30 +68,46 @@ permalink: /practice/
         <h2 id="practice-setup-title">选择本轮出题范围</h2>
         <form id="practice-form" class="practice-form">
           <label class="practice-field">
-            <span>备考层级</span>
-            <select id="practice-study-tier" name="study-tier" aria-describedby="practice-pool-status">
-              {% if core_questions.size > 0 %}<option value="core" selected>核心必会（{{ core_questions.size }} 题，推荐）</option>{% endif %}
-              <option value="role">岗位专项（{{ role_questions.size }} 题）</option>
-              <option value="extended">扩展知识点（{{ extended_questions.size }} 题）</option>
-              <option value="archive">待重整（{{ archive_questions.size }} 题，不推荐）</option>
-              <option value=""{% if core_questions.size == 0 %} selected{% endif %}>全部可练题（{{ published_questions.size }} 题）</option>
-            </select>
-          </label>
-          <label class="practice-field">
-            <span>出题范围</span>
-            <select id="practice-category" name="category" aria-describedby="practice-pool-status">
-              <option value="">全部分类（{{ published_questions.size }} 题）</option>
-              {% assign categories = published_questions | map: 'category' | uniq | sort %}
-              {% for category in categories %}
-                {% assign category_questions = published_questions | where: 'category', category %}
-                <option value="{{ category | escape }}">{{ category | escape }}（{{ category_questions.size }} 题）</option>
+            <span>目标方向</span>
+            <select id="practice-track" name="track" aria-describedby="practice-track-hint practice-pool-status">
+              <option value="" selected>通用核心 · 暂不区分岗位</option>
+              {% for track in site.data.study_tracks %}
+                <option value="{{ track.id | escape }}"
+                        data-categories="{{ track.categories | join: '|' | escape }}"
+                        data-description="{{ track.description | escape }}">{{ track.label | escape }} · 核心＋专项</option>
               {% endfor %}
             </select>
           </label>
+          <p id="practice-track-hint" class="practice-track-hint">第一次准备先练通用核心；选定方向后，会自动合并通用核心与该方向的岗位专项题。</p>
 
           <details class="practice-options">
-            <summary>更多设置 <span>难度、答案状态、题数</span></summary>
+            <summary>自定义范围 <span>层级、单一分类、难度、答案、题数</span></summary>
             <div class="practice-options-grid">
+              <label class="practice-field">
+                <span>备考层级</span>
+                <select id="practice-study-tier"
+                        name="study-tier"
+                        data-default-tier="{% if core_questions.size > 0 %}core{% endif %}"
+                        aria-describedby="practice-pool-status">
+                  <option value="recommended">核心＋所选方向专项</option>
+                  {% if core_questions.size > 0 %}<option value="core" selected>仅核心必会（{{ core_questions.size }} 题）</option>{% endif %}
+                  <option value="role">仅岗位专项（{{ role_questions.size }} 题）</option>
+                  <option value="extended">扩展知识点（{{ extended_questions.size }} 题）</option>
+                  <option value="archive">待重整（{{ archive_questions.size }} 题，不推荐）</option>
+                  <option value=""{% if core_questions.size == 0 %} selected{% endif %}>全部可练题（{{ published_questions.size }} 题）</option>
+                </select>
+              </label>
+              <label class="practice-field">
+                <span>单一分类 <i>可不选</i></span>
+                <select id="practice-category" name="category" aria-describedby="practice-pool-status">
+                  <option value="">不限制单一分类</option>
+                  {% assign categories = published_questions | map: 'category' | uniq | sort %}
+                  {% for category in categories %}
+                    {% assign category_questions = published_questions | where: 'category', category %}
+                    <option value="{{ category | escape }}">{{ category | escape }}（{{ category_questions.size }} 题）</option>
+                  {% endfor %}
+                </select>
+              </label>
               <label class="practice-field">
                 <span>难度</span>
                 <select id="practice-difficulty" name="difficulty" aria-describedby="practice-pool-status">
@@ -102,10 +118,10 @@ permalink: /practice/
                 </select>
               </label>
               <label class="practice-field">
-                <span>答案状态</span>
+                <span>答案可靠性</span>
                 <select id="practice-verification" name="verification" aria-describedby="practice-pool-status">
-                  <option value="">全部状态</option>
-                  <option value="verified">只练资料已核验</option>
+                  <option value="verified" selected>资料已核验（推荐）</option>
+                  <option value="">包含全部可用答案</option>
                   <option value="review">只练参考答案待校对</option>
                 </select>
               </label>
@@ -140,7 +156,7 @@ permalink: /practice/
         <button id="practice-last-weak" class="secondary-button" type="button" hidden>继续练薄弱题</button>
       </aside>
 
-      <p class="practice-local-note">练习进度只保存在当前浏览器，不会写回 GitHub。待解答题不会被抽到；“待重整”题只有你主动选择该层级或全部题目时才会进入本轮。</p>
+      <p class="practice-local-note">练习进度与上次选择的目标方向只保存在当前浏览器，不会写回 GitHub。默认只抽资料已核验的题；待解答题不会被抽到，“待重整”题也只有主动选择时才会进入本轮。</p>
     </section>
 
     <section id="practice-session" class="practice-session" aria-labelledby="practice-session-title" hidden>

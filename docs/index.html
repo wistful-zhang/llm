@@ -46,7 +46,7 @@ title: 题库
         {% if published_questions.size > 0 %}
           <a class="primary-button" href="{{ '/practice/' | relative_url }}">开始随机模拟面试</a>
           <a class="secondary-button" href="{{ '/capture/' | relative_url }}">增加题目</a>
-          <a class="secondary-button" href="#question-list-section">浏览全部题目</a>
+          <a class="secondary-button" href="#question-list-section">浏览 {{ core_count }} 道核心题</a>
         {% else %}
           <a class="primary-button" href="{{ '/capture/' | relative_url }}">直接添加第一题</a>
           <a class="secondary-button" href="{{ '/start/' | relative_url }}">查看首次配置</a>
@@ -70,28 +70,6 @@ title: 题库
 </section>
 
 <section id="question-list-section" class="container library">
-  <section class="public-questions-section"
-           data-public-questions
-           data-repository-nwo="{{ site.github.repository_nwo | escape }}"
-           aria-labelledby="public-questions-title">
-    <div class="public-questions-heading">
-      <div>
-        <span class="eyebrow">题库公开补充</span>
-        <h2 id="public-questions-title">使用者新增的题目</h2>
-        <p>主动选择公开的问题会先列在正式题库上方；点开后，题目、回答和评论都在同一个 GitHub 页面。</p>
-      </div>
-      <div class="public-questions-heading-actions">
-        <a class="secondary-button" href="{{ '/capture/' | relative_url }}">＋ 增加一道题</a>
-        {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+label%3Apublic-question" target="_blank" rel="noopener noreferrer">查看全部公开补充 ↗</a>{% endif %}
-      </div>
-    </div>
-    <p class="public-questions-status" data-public-questions-status role="status" aria-live="polite">正在读取公开补充…</p>
-    <div class="public-questions-list" data-public-questions-list hidden></div>
-    <p data-public-questions-fallback hidden>
-      {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+label%3Apublic-question" target="_blank" rel="noopener noreferrer">前往 GitHub 查看全部公开补充 ↗</a>{% endif %}
-    </p>
-    <noscript><p>公开补充列表需要 JavaScript；你仍可浏览下方正式题库，或使用“查看全部公开补充”。</p></noscript>
-  </section>
   {% if published_questions.size == 0 %}
   <section class="experience-empty" role="status">
     <span class="empty-number" aria-hidden="true">01</span>
@@ -104,8 +82,8 @@ title: 题库
   <section class="study-tier-intro" aria-labelledby="study-tier-intro-title">
     <div>
       <span class="eyebrow">先学真正重要的</span>
-      <h2 id="study-tier-intro-title">1000 道是覆盖面，不是 1000 道都要背</h2>
-      <p>默认只显示 {{ core_count }} 道“核心必会”。准备专项岗位时再看 {{ role_count }} 道“岗位专项”；{{ extended_count }} 道扩展知识点用于查漏补缺，{{ archive_count }} 道批量题正在重整，不进入默认学习路径。</p>
+      <h2 id="study-tier-intro-title">{{ published_questions.size }} 道是覆盖面，不是每道都要背</h2>
+      <p>默认只显示 {{ core_count }} 道“核心必会”。准备专项岗位时再看 {{ role_count }} 道“岗位专项”；{{ extended_count }} 道扩展知识点用于查漏补缺，{{ archive_count }} 道题仍待重整，不进入默认学习路径。</p>
     </div>
     <a class="text-link" href="{{ '/study-tiers/' | relative_url }}">分级依据与使用方法 →</a>
   </section>
@@ -115,8 +93,21 @@ title: 题库
       <input id="question-search" type="search" aria-label="搜索题目、答案、分类或标签" placeholder="搜索题目、答案、分类或标签…" autocomplete="off">
     </label>
     <label class="library-select">
+      <span>目标方向</span>
+      <select id="question-track" aria-label="按目标岗位方向筛选题目">
+        <option value="" selected>通用 / 不限方向</option>
+        {% for track in site.data.study_tracks %}
+          <option value="{{ track.id | escape }}"
+                  data-categories="{{ track.categories | join: '|' | escape }}">{{ track.label | escape }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="library-select">
       <span>备考层级</span>
-      <select id="question-study-tier" aria-label="按备考层级筛选题目">
+      <select id="question-study-tier"
+              data-default-tier="{% if core_count > 0 %}core{% endif %}"
+              aria-label="按备考层级筛选题目">
+        <option value="recommended">核心＋所选方向专项</option>
         <option value="core"{% if core_count > 0 %} selected{% endif %}>核心必会（{{ core_count }}）</option>
         <option value="role">岗位专项（{{ role_count }}）</option>
         <option value="extended">扩展知识点（{{ extended_count }}）</option>
@@ -143,17 +134,22 @@ title: 题库
       </select>
     </label>
     <div class="filters" role="group" aria-label="按分类筛选">
-      <button class="filter active" type="button" data-filter-all aria-pressed="true">全部</button>
+      <button class="filter active" type="button" data-filter-all data-label="全部分类" aria-pressed="true">全部分类</button>
       {% for category in published_categories %}
-        <button class="filter" type="button" data-category="{{ category | escape }}" aria-pressed="false">{% if category == '待整理' %}未分类{% else %}{{ category | escape }}{% endif %}</button>
+        {% if category == '待整理' %}{% assign category_label = '未分类' %}{% else %}{% assign category_label = category %}{% endif %}
+        <button class="filter" type="button" data-category="{{ category | escape }}" data-label="{{ category_label | escape }}" aria-pressed="false">{{ category_label | escape }}</button>
       {% endfor %}
+      <button id="question-clear-filters" class="filter filter-reset" type="button">恢复默认</button>
     </div>
   </div>
   <noscript>
     <p class="library-noscript">当前浏览器未启用 JavaScript，下面仍会显示全部 {{ published_questions.size }} 道题；搜索、筛选和分批显示暂不可用。</p>
   </noscript>
 
-  <div id="question-list" class="question-list" data-search-index-url="{{ '/search-index.json' | relative_url }}">
+  <div id="question-list"
+       class="question-list"
+       data-search-index-url="{{ '/search-index.json' | relative_url }}"
+       data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}">
     {% assign questions = published_questions | sort: 'date' | reverse %}
     {% for question in questions %}
       {% assign search_tags = question.tags | join: ' ' %}
@@ -207,4 +203,26 @@ title: 题库
   <div id="result-status" class="sr-only" role="status" aria-live="polite"></div>
   <div id="empty-state" class="empty-state" role="status" hidden>没有找到匹配的题目，换个关键词试试。</div>
   {% endif %}
+  <section class="public-questions-section"
+           data-public-questions
+           data-repository-nwo="{{ site.github.repository_nwo | escape }}"
+           aria-labelledby="public-questions-title">
+    <div class="public-questions-heading">
+      <div>
+        <span class="eyebrow">未经整理的公开补充</span>
+        <h2 id="public-questions-title">大家最近增加的题目</h2>
+        <p>这里是使用者主动公开的补充，尚未进入上方正式题库与学习分级。点开后，问题、回答和评论都在同一个 GitHub 页面。</p>
+      </div>
+      <div class="public-questions-heading-actions">
+        <a class="secondary-button" href="{{ '/capture/' | relative_url }}">＋ 增加一道题</a>
+        {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+label%3Apublic-question" target="_blank" rel="noopener noreferrer">查看全部公开补充 ↗</a>{% endif %}
+      </div>
+    </div>
+    <p class="public-questions-status" data-public-questions-status role="status" aria-live="polite">正在读取公开补充…</p>
+    <div class="public-questions-list" data-public-questions-list hidden></div>
+    <p data-public-questions-fallback hidden>
+      {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+label%3Apublic-question" target="_blank" rel="noopener noreferrer">前往 GitHub 查看全部公开补充 ↗</a>{% endif %}
+    </p>
+    <noscript><p>公开补充列表需要 JavaScript；你仍可浏览上方正式题库，或使用“查看全部公开补充”。</p></noscript>
+  </section>
 </section>

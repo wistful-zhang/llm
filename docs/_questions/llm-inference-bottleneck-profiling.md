@@ -4,7 +4,7 @@ source: "公开 LLM 推理面试题整理；依据 Roofline 与性能分析官�
 review_status: "待复习"
 category: "工程实践"
 difficulty: "困难"
-study_tier: "core"
+study_tier: "role"
 tags:
   - 性能分析
   - Roofline
