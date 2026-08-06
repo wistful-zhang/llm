@@ -103,7 +103,7 @@ test('只读评论服务无需 Turnstile site key，开放写入时必须提供�
   }), /尚未完成配置/);
 });
 
-test('题目页使用原生站内表单和安全 DOM，不再加载 GitHub 评论', async () => {
+test('评论实现保留安全 DOM，默认关闭时也不会开放外部连接', async () => {
   const [layout, script, defaultLayout, runtime, manifest] = await Promise.all([
     read('../docs/_layouts/question.html'),
     read('../docs/assets/js/question-comments.js'),
@@ -131,7 +131,8 @@ test('题目页使用原生站内表单和安全 DOM，不再加载 GitHub 评�
   assert.doesNotMatch(script, /\.innerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
   assert.doesNotMatch(script, /api\.github\.com|utteranc|\b(?:password|personal access token|PAT)\b/i);
   assert.doesNotMatch(defaultLayout, /utteranc\.es/);
-  assert.match(defaultLayout, /frame-src \{% if comments_api_url != empty %\}https:\/\/challenges\.cloudflare\.com/);
+  assert.match(layout, /comments_enabled == nil\s*%\}\{% assign comments_enabled = false/);
+  assert.match(defaultLayout, /frame-src \{% if comments_enabled and comments_api_url != empty %\}https:\/\/challenges\.cloudflare\.com/);
   assert.match(runtime, /^api_url:\s*""$/m);
   assert.match(manifest, /permalink:\s*\/comments-manifest\.json/);
   assert.match(manifest, /site\.questions\s*\|\s*where:\s*'published',\s*true/);

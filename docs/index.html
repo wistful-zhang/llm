@@ -185,7 +185,7 @@ title: 题库
             <span class="study-tier-badge study-tier-{{ study_tier | escape }}">{{ study_tier_label }}</span>
             {% unless answer_ready %}<span class="answer-state-badge">待解答</span>{% endunless %}
             {% if answer_ready and question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
-            {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="题目和参考答案均已发布，可在题目下方评论校对；尚未逐题对照一手资料核验">参考答案 · 待校对</span>{% endif %}
+            {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="题目和参考答案均已发布，尚未逐题对照一手资料核验">参考答案 · 待校对</span>{% endif %}
           </div>
           <h2>{{ question.title | escape }}</h2>
           <div class="tag-list">
@@ -211,7 +211,7 @@ title: 题库
       <div>
         <span class="eyebrow">未经整理的公开补充</span>
         <h2 id="public-questions-title">大家最近增加的题目</h2>
-        <p>这里是使用者主动公开的补充，尚未进入上方正式题库与学习分级。点开后，问题、回答和评论都在同一个 GitHub 页面。</p>
+        <p>这里是使用者主动公开的补充，尚未进入上方正式题库与学习分级。点开后，问题、回答和后续讨论都在同一个 GitHub 页面。</p>
       </div>
       <div class="public-questions-heading-actions">
         <a class="secondary-button" href="{{ '/capture/' | relative_url }}">＋ 增加一道题</a>

@@ -2,7 +2,7 @@
 layout: default
 ---
 {% assign comments_enabled = site.data.settings.comments_enabled %}
-{% if comments_enabled == nil %}{% assign comments_enabled = true %}{% endif %}
+{% if comments_enabled == nil %}{% assign comments_enabled = false %}{% endif %}
 {% assign comments_api_url = site.data.comment_runtime.api_url | default: '' | strip %}
 {% assign cms_branch = site.github.source.branch | default: 'main' %}
 {% capture cms_question_path %}docs/{{ page.path }}{% endcapture %}
