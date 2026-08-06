@@ -4,7 +4,7 @@ source: "公开 AI 工程面试题库；依据 MLflow 官方版本与数据追�
 review_status: "待复习"
 category: "系统设计"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - 版本治理
   - 数据血缘

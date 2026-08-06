@@ -1,0 +1,43 @@
+- id: application
+  label: RAG / Agent 应用
+  short_label: 应用工程
+  description: 面向 RAG、Agent、Prompt、评测、系统设计与应用落地。
+  categories:
+    - RAG
+    - Agent
+    - Prompt 与上下文工程
+    - 评测与安全
+    - 系统设计
+    - 工程实践
+
+- id: training
+  label: 训练 / 算法 / 后训练
+  short_label: 训练算法
+  description: 面向预训练、数据、对齐、分布式训练与相关数学基础。
+  categories:
+    - 预训练与数据
+    - 训练与对齐
+    - 训练工程
+    - 数学基础
+    - NLP 与机器学习
+
+- id: inference
+  label: 推理 / 基础设施
+  short_label: 推理 Infra
+  description: 面向服务化推理、并发调度、显存、量化与性能分析。
+  categories:
+    - 推理与部署
+    - 训练工程
+    - 系统设计
+    - 工程实践
+    - 编程与框架
+
+- id: multimodal
+  label: 多模态
+  short_label: 多模态
+  description: 面向视觉语言模型、多模态数据、训练对齐与评测。
+  categories:
+    - 多模态
+    - 预训练与数据
+    - 训练与对齐
+    - 评测与安全

@@ -103,7 +103,7 @@ test('公开页面源码不绑定维护者用户名或生产域名', async () =>
   ]);
   const source = files.join('\n').toLowerCase();
 
-  assert.doesNotMatch(source, /https?:\/\/github\.com\/[a-z0-9_.-]+\/[a-z0-9_.-]+/i);
+  assert.doesNotMatch(source, /https?:\/\/github\.com\/(?!apps(?:\/|$))[a-z0-9_.-]+\/[a-z0-9_.-]+/i);
   assert.doesNotMatch(source, /https?:\/\/[a-z0-9_.-]+\.github\.io\/[a-z0-9_.-]+/i);
 });
 

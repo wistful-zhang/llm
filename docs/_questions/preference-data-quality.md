@@ -4,7 +4,7 @@ source: "公开真实面试问题汇总中的偏好数据与奖励模型题；�
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "简单"
-study_tier: "core"
+study_tier: "role"
 tags:
   - 偏好数据
   - Reward Model

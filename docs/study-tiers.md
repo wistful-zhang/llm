@@ -4,13 +4,44 @@ description: 说明千题题库的学习优先级、证据边界和不同岗位�
 permalink: /study-tiers/
 ---
 
+{% assign published_question_count = site.questions | where: 'published', true | size %}
+{% assign practice_path = '/practice/' | relative_url %}
+{% assign library_path = '/' | relative_url %}
+
 <div class="container prose standalone-page" markdown="1">
 
-# 1000 道题，不等于 1000 道都要背
+# {{ published_question_count }} 道题，不等于每道都要背
 
-题库做到 1000 道，是为了覆盖基础原理、应用工程、训练、推理、评测、系统设计和项目表达等不同方向，不代表每道题同等重要，也不代表所有岗位都会问到。对大多数人，更有效的顺序是：**先掌握核心必会，再按目标岗位选择岗位专项，最后把其余题目当作查漏补缺的资料库。**
+题库做到 {{ published_question_count }} 道，是为了覆盖基础原理、应用工程、训练、推理、评测、系统设计和项目表达等不同方向，不代表每道题同等重要，也不代表所有岗位都会问到。对大多数人，更有效的顺序是：**先掌握核心必会，再按目标岗位选择岗位专项，最后把其余题目当作查漏补缺的资料库。**
 
 页面上的“备考层级”只表示建议学习顺序。它不等于题目难度、答案是否经过资料核验、题目是否公开，也不等于你个人的复习状态。这几项会分别显示，不能互相替代。
+
+## 直接选择一条岗位路线
+
+每条路线都会把通用核心题与该方向的岗位专项合并起来，并按不同分类抽题。第一次准备、还没有确定方向时，先用“通用核心”即可。
+
+<div class="study-route-grid">
+  <article class="study-route-card">
+    <span>不确定方向</span>
+    <h3>通用核心</h3>
+    <p>先建立共同基础，默认只使用资料已核验的题目。</p>
+    <div class="study-route-actions">
+      <a class="primary-button" href="{{ practice_path }}?track=&amp;tier=core">开始模拟</a>
+      <a class="text-link" href="{{ library_path }}?track=&amp;tier=core">浏览题目 →</a>
+    </div>
+  </article>
+  {% for track in site.data.study_tracks %}
+    <article class="study-route-card">
+      <span>目标岗位</span>
+      <h3>{{ track.label | escape }}</h3>
+      <p>{{ track.description | escape }}</p>
+      <div class="study-route-actions">
+        <a class="primary-button" href="{{ practice_path }}?track={{ track.id | url_encode }}&amp;tier=recommended">开始这条路线</a>
+        <a class="text-link" href="{{ library_path }}?track={{ track.id | url_encode }}&amp;tier=recommended">先看题目 →</a>
+      </div>
+    </article>
+  {% endfor %}
+</div>
 
 ## 四个层级分别表示什么
 
@@ -45,7 +76,7 @@ permalink: /study-tiers/
 
 ### 第一次准备大模型面试
 
-先只筛选“核心必会”。每题先闭卷口述：用一句话回答结论，再补原理、关键取舍和一个自己真正做过或明确标注为推演的例子。答不出来的题加入薄弱题，第二轮只练这些题，不要一开始顺序刷完 1000 道。
+先只筛选“核心必会”。每题先闭卷口述：用一句话回答结论，再补原理、关键取舍和一个自己真正做过或明确标注为推演的例子。答不出来的题加入薄弱题，第二轮只练这些题，不要一开始顺序刷完整个题库。
 
 ### 已经确定目标岗位
 

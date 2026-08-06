@@ -1,187 +1,147 @@
 import {
-  buildQuestionCommentFormUrl,
-  buildQuestionCommentsApiUrl,
   buildQuestionDiscussionSearchApiUrl,
-  normalizeQuestionComments,
   normalizeQuestionDiscussion,
 } from './question-collaboration-core.mjs';
 
-const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const UTTERANCES_ORIGIN = 'https://utteranc.es';
+const REPOSITORY_NWO_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]+$/;
+const QUESTION_SLUG_PATTERN = /^[\p{L}\p{N}](?:[\p{L}\p{N}._-]{0,199})$/u;
+const COMMENT_TERM_PATTERN = /^\[题目评论\] question:[\p{L}\p{N}](?:[\p{L}\p{N}._-]{0,199}) ·$/u;
+const SESSION_STORAGE_KEY = 'llm-interview-utterances-session';
 
-const formatDate = (value) => {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '时间未知' : dateFormatter.format(date);
+const readOAuthSession = () => {
+  const pageUrl = new URL(window.location.href);
+  const callbackSession = pageUrl.searchParams.get('utterances') || '';
+  let storedSession = '';
+
+  if (callbackSession) {
+    pageUrl.searchParams.delete('utterances');
+    window.history.replaceState(null, document.title, pageUrl.href);
+    if (callbackSession.length <= 8192) {
+      try {
+        window.sessionStorage.setItem(SESSION_STORAGE_KEY, callbackSession);
+      } catch {
+        // The current callback can still complete when browser storage is unavailable.
+      }
+      return callbackSession;
+    }
+  }
+
+  try {
+    storedSession = window.sessionStorage.getItem(SESSION_STORAGE_KEY) || '';
+  } catch {
+    storedSession = '';
+  }
+  return storedSession.length <= 8192 ? storedSession : '';
 };
 
-const createComment = (comment) => {
-  const article = document.createElement('article');
-  article.className = 'question-comment';
+const findLegacyIssueNumber = async (repositoryNwo, questionSlug) => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 6000);
+  try {
+    const response = await fetch(
+      buildQuestionDiscussionSearchApiUrl(repositoryNwo, questionSlug),
+      {
+        headers: { Accept: 'application/vnd.github+json' },
+        signal: controller.signal,
+      },
+    );
+    if (!response.ok) return null;
+    return normalizeQuestionDiscussion(
+      await response.json(),
+      repositoryNwo,
+      questionSlug,
+    )?.number || null;
+  } catch {
+    return null;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
 
-  const header = document.createElement('header');
-  const author = document.createElement('strong');
-  author.textContent = comment.author;
-  const time = document.createElement('time');
-  time.dateTime = comment.createdAt || '';
-  time.textContent = formatDate(comment.createdAt);
-  header.append(author, time);
+const createCommentFrame = ({ repositoryNwo, issueTerm, issueNumber, session }) => {
+  const canonicalUrl = document.querySelector('link[rel="canonical"]')?.href
+    || `${window.location.origin}${window.location.pathname}${window.location.search}`;
+  const description = document.querySelector('meta[name="description"]')?.content || '';
+  const encodedDescriptionLength = encodeURIComponent(description).length;
+  const safeDescription = encodedDescriptionLength > 1000
+    ? description.slice(0, Math.floor(description.length * 1000 / encodedDescriptionLength))
+    : description;
+  const openGraphTitle = document.querySelector('meta[property="og:title"],meta[name="og:title"]')?.content || '';
+  const frameUrl = new URL('/utterances.html', UTTERANCES_ORIGIN);
 
-  const body = document.createElement('p');
-  body.className = 'question-comment-body';
-  body.textContent = comment.body;
+  frameUrl.searchParams.set('repo', repositoryNwo);
+  if (issueNumber) frameUrl.searchParams.set('issue-number', String(issueNumber));
+  else frameUrl.searchParams.set('issue-term', issueTerm);
+  frameUrl.searchParams.set('label', 'question-comments');
+  frameUrl.searchParams.set('theme', 'github-light');
+  frameUrl.searchParams.set('url', canonicalUrl);
+  frameUrl.searchParams.set('origin', window.location.origin);
+  frameUrl.searchParams.set('pathname', window.location.pathname.replace(/^\//, '').replace(/\.\w+$/, '') || 'index');
+  frameUrl.searchParams.set('title', document.title);
+  frameUrl.searchParams.set('description', safeDescription);
+  frameUrl.searchParams.set('og:title', openGraphTitle);
+  if (session) frameUrl.searchParams.set('session', session);
 
-  const link = document.createElement('a');
-  link.className = 'text-link question-comment-source';
-  link.href = comment.url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.textContent = '在 GitHub 查看 ↗';
-
-  article.append(header, body, link);
-  return article;
+  const iframe = document.createElement('iframe');
+  iframe.className = 'question-comments-frame';
+  iframe.title = '题目评论';
+  iframe.src = frameUrl.href;
+  iframe.loading = 'lazy';
+  iframe.scrolling = 'no';
+  iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+  return iframe;
 };
 
 document.querySelectorAll('[data-question-comments]').forEach((root) => {
-  const repositoryNwo = root.dataset.repositoryNwo || '';
-  const questionSlug = root.dataset.questionSlug || '';
-  const questionTitle = root.dataset.questionTitle || '';
-  const questionUrl = root.dataset.questionUrl || window.location.href;
+  const repositoryNwo = (root.dataset.repositoryNwo || '').trim();
+  const questionSlug = (root.dataset.questionSlug || '').trim();
+  const issueTerm = (root.dataset.commentIssueTerm || '').trim();
+  const container = root.querySelector('[data-inline-comments]');
   const status = root.querySelector('[data-question-comments-status]');
-  const list = root.querySelector('[data-question-comments-list]');
-  const start = root.querySelector('[data-question-comments-start]');
-  const open = root.querySelector('[data-question-comments-open]');
   const fallback = root.querySelector('[data-question-comments-fallback]');
-  const confirmEmpty = root.querySelector('[data-question-comments-confirm-empty]');
-  const jump = document.querySelector('[data-question-comments-jump]');
 
-  const setStatus = (message) => {
+  const showFailure = (message) => {
     if (status) status.textContent = message;
+    if (fallback) fallback.hidden = false;
   };
 
-  const showStart = () => {
-    if (start) start.hidden = false;
-    if (open) open.hidden = true;
+  if (!container
+      || !REPOSITORY_NWO_PATTERN.test(repositoryNwo)
+      || !QUESTION_SLUG_PATTERN.test(questionSlug)
+      || !COMMENT_TERM_PATTERN.test(issueTerm)) {
+    showFailure('评论框配置不完整，请使用下面的 GitHub 备用入口。');
+    return;
+  }
+
+  const load = async () => {
+    const session = readOAuthSession();
+    const issueNumber = await findLegacyIssueNumber(repositoryNwo, questionSlug);
+    const iframe = createCommentFrame({
+      repositoryNwo,
+      issueTerm,
+      issueNumber,
+      session,
+    });
+
+    const handleResize = (event) => {
+      if (event.origin !== UTTERANCES_ORIGIN || event.source !== iframe.contentWindow) return;
+      const height = Number(event.data?.height);
+      if (event.data?.type !== 'resize' || !Number.isFinite(height) || height < 80 || height > 10000) return;
+      container.style.height = `${Math.ceil(height)}px`;
+      container.style.minHeight = '0';
+    };
+
+    window.addEventListener('message', handleResize);
+    iframe.addEventListener('load', () => {
+      if (status) status.hidden = true;
+    }, { once: true });
+    iframe.addEventListener('error', () => {
+      window.removeEventListener('message', handleResize);
+      showFailure('评论框加载失败，请使用下面的 GitHub 备用入口。');
+    }, { once: true });
+    container.replaceChildren(iframe);
   };
 
-  confirmEmpty?.addEventListener('click', () => {
-    const confirmed = window.confirm('GitHub API 暂时没有确认评论状态。请先打开上面的精确搜索；只有确认没有已有线程时，才新建第一条评论。你已经检查过了吗？');
-    if (!confirmed) return;
-    showStart();
-    confirmEmpty.hidden = true;
-    setStatus('已显示“写第一条评论”。请保留自动填写的标题，避免评论跑到其他题目。');
-  });
-
-  const loadComments = async () => {
-    if (!repositoryNwo || !questionSlug || !list) {
-      setStatus('当前预览没有连接可用的 GitHub 仓库；发布网站后即可启用题目评论。');
-      if (fallback) fallback.hidden = false;
-      return;
-    }
-
-    try {
-      if (start) {
-        start.href = buildQuestionCommentFormUrl(
-          repositoryNwo,
-          questionSlug,
-          questionTitle,
-          questionUrl,
-        );
-      }
-    } catch {
-      setStatus('这道题的评论标识无效，请联系题库维护者。');
-      if (fallback) fallback.hidden = false;
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
-    let resolvedDiscussion = null;
-
-    try {
-      const discussionResponse = await fetch(
-        buildQuestionDiscussionSearchApiUrl(repositoryNwo, questionSlug),
-        {
-          headers: { Accept: 'application/vnd.github+json' },
-          signal: controller.signal,
-        },
-      );
-      if (!discussionResponse.ok) throw new Error(`GitHub Search API ${discussionResponse.status}`);
-      const discussion = normalizeQuestionDiscussion(
-        await discussionResponse.json(),
-        repositoryNwo,
-        questionSlug,
-      );
-      resolvedDiscussion = discussion;
-
-      if (!discussion) {
-        list.replaceChildren();
-        list.hidden = true;
-        setStatus('还没有人评论这道题。你可以补充另一种答法、追问或纠错。');
-        if (jump) jump.textContent = '写第一条评论 ↓';
-        showStart();
-        return;
-      }
-
-      if (open) {
-        open.href = discussion.url;
-        open.textContent = discussion.locked ? '查看已锁定的讨论 ↗' : '发表评论 ↗';
-        open.hidden = false;
-      }
-      if (start) start.hidden = true;
-
-      const commentsResponse = await fetch(
-        buildQuestionCommentsApiUrl(repositoryNwo, discussion.number),
-        {
-          headers: { Accept: 'application/vnd.github+json' },
-          signal: controller.signal,
-        },
-      );
-      if (!commentsResponse.ok) throw new Error(`GitHub Comments API ${commentsResponse.status}`);
-      const replies = normalizeQuestionComments(
-        await commentsResponse.json(),
-        repositoryNwo,
-        discussion.number,
-      );
-      const comments = [discussion.openingComment, ...replies].filter(Boolean);
-      list.replaceChildren(...comments.map(createComment));
-      list.hidden = comments.length === 0;
-
-      if (comments.length === 0) {
-        setStatus('这道题的讨论已经建立，还没有可显示的评论。');
-      } else {
-        const truncated = discussion.comments > replies.length;
-        setStatus(truncated
-          ? `当前显示前 ${comments.length} 条公开评论；更多内容请到 GitHub 查看。`
-          : `${comments.length} 条公开评论；登录 GitHub 后可以继续留言。`);
-        if (jump) jump.textContent = `评论与补充（${comments.length}）↓`;
-      }
-    } catch {
-      list.replaceChildren();
-      list.hidden = true;
-      setStatus('暂时无法读取评论，可能是网络异常或 GitHub API 限流。');
-      if (jump) jump.textContent = '查看评论入口 ↓';
-      if (fallback) fallback.hidden = false;
-      if (resolvedDiscussion) {
-        if (confirmEmpty) confirmEmpty.hidden = true;
-        if (start) start.hidden = true;
-        if (open) {
-          open.href = resolvedDiscussion.url;
-          open.textContent = '前往 GitHub 查看或评论 ↗';
-          open.hidden = false;
-        }
-      } else {
-        if (start) start.hidden = true;
-        if (open) open.hidden = true;
-      }
-    } finally {
-      window.clearTimeout(timeoutId);
-    }
-  };
-
-  void loadComments();
+  void load();
 });

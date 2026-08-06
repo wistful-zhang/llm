@@ -38,13 +38,15 @@ test('更换搜索和筛选条件会从首批题目重新显示', async () => {
   assert.match(script, /reviewState\?\.addEventListener\('change',[\s\S]*?visibleLimit = pageSize/);
 });
 
-test('首页默认显示核心必会，并把备考层级与其他条件取交集', async () => {
+test('首页默认显示核心必会，并支持核心与岗位专项的方向路线', async () => {
   const [page, script] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/assets/js/search.js'),
   ]);
   const tierSelect = page.match(/<select id="question-study-tier"[\s\S]*?<\/select>/)?.[0] || '';
 
+  assert.match(page, /id="question-track"/);
+  assert.match(tierSelect, /<option value="recommended">核心＋所选方向专项/);
   assert.match(tierSelect, /<option value="core"\{% if core_count > 0 %\} selected\{% endif %\}>核心必会/);
   assert.match(tierSelect, /<option value="role">岗位专项/);
   assert.match(tierSelect, /<option value="extended">扩展知识点/);
@@ -53,25 +55,30 @@ test('首页默认显示核心必会，并把备考层级与其他条件取交�
   assert.match(page, /data-study-tier="{{ study_tier \| escape }}"/);
   assert.match(page, /id="library-result-summary">默认显示 {{ core_count }} 道核心必会题/);
   assert.match(script, /const activeStudyTier = studyTier\?\.value \|\| ''/);
-  assert.match(script, /const matchesStudyTier = !activeStudyTier \|\| card\.dataset\.studyTier === activeStudyTier/);
-  assert.match(script, /matchesCategory && matchesStudyTier && matchesDifficulty && matchesReviewState && matchesKeyword/);
+  assert.match(script, /const matchesRecommendedRoute = cardStudyTier === 'core'/);
+  assert.match(script, /cardStudyTier === 'role'[\s\S]*?trackCategories\.has\(card\.dataset\.category\)/);
+  assert.match(script, /const matchesStudyScope = activeStudyTier === 'recommended'/);
+  assert.match(script, /matchesBase && matchesCategory/);
   assert.match(script, /studyTier\?\.addEventListener\('change',[\s\S]*?visibleLimit = pageSize/);
 });
 
-test('模拟面试默认核心必会，并把层级传入随机题池过滤', async () => {
+test('模拟面试默认使用已核验核心题，并可切换岗位推荐路线', async () => {
   const [page, script] = await Promise.all([
     read('../docs/practice.html'),
     read('../docs/assets/js/practice.js'),
   ]);
   const tierSelect = page.match(/<select id="practice-study-tier"[\s\S]*?<\/select>/)?.[0] || '';
 
-  assert.match(tierSelect, /core_questions\.size > 0[\s\S]*?<option value="core" selected>核心必会/);
+  assert.match(page, /id="practice-track"/);
+  assert.match(tierSelect, /<option value="recommended">核心＋所选方向专项/);
+  assert.match(tierSelect, /core_questions\.size > 0[\s\S]*?<option value="core" selected>仅核心必会/);
   assert.match(tierSelect, /<option value="archive">待重整[^<]*不推荐/);
   assert.match(tierSelect, /<option value=""\{% if core_questions\.size == 0 %\} selected\{% endif %\}>全部可练题/);
   assert.match(page, /data-study-tier="{{ question\.study_tier \| default: 'unclassified' \| escape }}"/);
   assert.match(script, /studyTier: normalizeStudyTier\(element\.dataset\.studyTier\)/);
+  assert.match(script, /trackCategories: selectedTrackCategories\(\)/);
   assert.match(script, /studyTier: studyTierSelect\?\.value \|\| ''/);
-  assert.match(script, /const pool = filterQuestions\(questions, getFilters\(\)\)/);
+  assert.match(script, /const pool = filterQuestions\(questions, filters\)/);
   assert.match(script, /\[studyTierSelect, categorySelect, difficultySelect, verificationSelect, countSelect\]/);
 });
 
@@ -98,8 +105,8 @@ test('已核验答案与批量扩展后的待校对答案不会混为一谈', as
   assert.match(questionLayout, /if answer_ready and page\.verified != true[\s\S]*?参考答案 · 待校对/);
   assert.match(css, /\.review-pending-badge/);
   assert.match(practicePage, /id="practice-question-review"[\s\S]*?参考答案 · 待校对/);
-  assert.match(practicePage, /id="practice-verification"[\s\S]*?只练资料已核验[\s\S]*?只练参考答案待校对/);
-  assert.match(practicePage, /更多设置 <span>难度、答案状态、题数<\/span>/);
+  assert.match(practicePage, /id="practice-verification"[\s\S]*?资料已核验（推荐）[\s\S]*?只练参考答案待校对/);
+  assert.match(practicePage, /自定义范围 <span>层级、单一分类、难度、答案、题数<\/span>/);
   assert.match(practiceScript, /reviewBadge\.hidden = question\.verified === true/);
   assert.match(practiceScript, /verification: verificationSelect\.value/);
   assert.match(practiceScript, /verified: verified === true/);

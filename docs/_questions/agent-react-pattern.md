@@ -4,7 +4,7 @@ source: "Datawhale 公开真实面试题整理；答案依据原论文原创整�
 review_status: "待复习"
 category: "Agent"
 difficulty: "简单"
-study_tier: "core"
+study_tier: "role"
 tags:
   - ReAct
   - Reasoning

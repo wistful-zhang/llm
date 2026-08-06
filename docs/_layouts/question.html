@@ -1,11 +1,17 @@
 ---
 layout: default
 ---
+{% assign comments_enabled = site.data.settings.comments_enabled %}
+{% if comments_enabled == nil %}{% assign comments_enabled = true %}{% endif %}
 <article class="container question-page" data-public-question="true">
   {% assign source_note = page.source | default: '' | strip %}
   {% assign source_display = source_note %}
+  {% assign source_is_batch_expansion = false %}
   {% if source_note contains '尚无逐题真实面经频率证明' %}
     {% assign source_display = '扩展知识点整理；尚无逐题真实面经频率证明，参考答案也待核验' %}
+    {% if source_note contains '扩展知识点整理' %}
+      {% assign source_is_batch_expansion = true %}
+    {% endif %}
   {% endif %}
   {% assign answer_text = content | strip_html | strip_newlines | strip %}
   {% assign answer_ready = false %}
@@ -47,12 +53,16 @@ layout: default
     <div class="tag-list" role="list" aria-label="标签">
       {% for tag in page.tags %}<span class="tag" role="listitem">{{ tag | escape }}</span>{% endfor %}
     </div>
-    <a class="text-link question-comments-jump" data-question-comments-jump href="#question-comments">评论与补充 ↓</a>
+    {% if comments_enabled %}<a class="text-link question-comments-jump" data-question-comments-jump href="#question-comments">评论与补充 ↓</a>{% endif %}
   </header>
   {% if study_tier == 'archive' %}
     <aside class="study-tier-warning" role="note">
       <strong>这道题暂时不建议优先准备。</strong>
-      <span>它来自批量扩展，尚未完成独立面经证据核对和人工重写，因此不会进入默认题库浏览与模拟面试。</span>
+      {% if source_is_batch_expansion %}
+        <span>它来自批量扩展，尚未完成独立面经证据核对和人工重写，因此不会进入默认题库浏览与模拟面试。</span>
+      {% else %}
+        <span>它尚未完成学习优先级整理与人工复核，因此不会进入默认题库浏览与模拟面试；仍可通过“待重整”筛选查看和练习。</span>
+      {% endif %}
     </aside>
   {% elsif study_tier == 'extended' %}
     <aside class="study-tier-warning study-tier-warning-soft" role="note">
@@ -85,19 +95,20 @@ layout: default
         <button class="primary-button" type="button" data-copy-answer-prompt>复制给 Codex 的补答指令</button>
         <button class="secondary-button" type="button" data-copy-question>只复制题目</button>
         <a class="text-link" href="{{ '/manage/' | relative_url }}#question-only-workflow">题库主人：去网页编辑</a>
-        <a class="text-link" href="#question-comments">去评论区补充答案 ↓</a>
+        {% if comments_enabled %}<a class="text-link" href="#question-comments">去评论区补充答案 ↓</a>{% endif %}
       </div>
       <p class="copy-status" data-copy-status role="status" aria-live="polite">答案补好且状态改为“已完成”后，这个提示会自动消失。</p>
     </section>
   {% endif %}
-  {% capture comment_issue_title %}[题目评论] question:{{ page.slug }}{% endcapture %}
-  {% capture comment_search_query %}is:issue in:title "{{ comment_issue_title }}"{% endcapture %}
+  {% if comments_enabled %}
+  {% capture legacy_comment_issue_title %}[题目评论] question:{{ page.slug }}{% endcapture %}
+  {% capture comment_issue_title %}[题目评论] question:{{ page.slug }} ·{% endcapture %}
+  {% capture comment_search_query %}is:issue in:title "{{ legacy_comment_issue_title }}"{% endcapture %}
   <section id="question-comments"
            class="question-comments"
            data-question-comments
            data-question-slug="{{ page.slug | escape }}"
-           data-question-title="{{ page.title | escape }}"
-           data-question-url="{{ page.url | absolute_url | escape }}"
+           data-comment-issue-term="{{ comment_issue_title | strip | escape }}"
            data-repository-nwo="{{ site.github.repository_nwo | escape }}"
            aria-labelledby="question-comments-title">
     <div class="question-comments-heading">
@@ -105,50 +116,62 @@ layout: default
         <span class="eyebrow">围绕这道题</span>
         <h2 id="question-comments-title">评论与补充</h2>
       </div>
-      <div class="question-comments-actions">
-        <a class="primary-button" data-question-comments-start href="#" target="_blank" rel="noopener noreferrer" hidden>写第一条评论 ↗</a>
-        <a class="primary-button" data-question-comments-open href="#" target="_blank" rel="noopener noreferrer" hidden>发表评论 ↗</a>
-      </div>
     </div>
-    <p class="question-comments-intro">可以补充另一种答法、继续追问或指出错误。评论会公开显示；登录 GitHub 后即可留言，请勿填写个人隐私或公司机密。</p>
-    <p class="question-comments-status" data-question-comments-status role="status" aria-live="polite">正在读取这道题的评论…</p>
-    <div class="question-comments-list" data-question-comments-list hidden></div>
-    <p class="question-comments-fallback" data-question-comments-fallback hidden>
+    <p class="question-comments-intro">直接在下面写回答、追问或纠错。第一次使用只需在评论框内登录 GitHub；提交后仍停留在本页。评论会公开显示，请勿填写个人隐私或公司机密。</p>
+    {% if site.github.repository_nwo %}
+      <p class="question-comments-status" data-question-comments-status role="status" aria-live="polite">正在加载评论框…</p>
+      <div class="question-comments-embed" data-inline-comments></div>
       {% if site.github.repository_url %}
-        <a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">① 前往 GitHub 查找这道题的评论 ↗</a>
-        <button class="text-button" type="button" data-question-comments-confirm-empty>② 我已检查，没有已有评论</button>
-      {% else %}发布到 GitHub Pages 后即可启用评论。{% endif %}
-    </p>
+        <p class="question-comments-fallback" data-question-comments-fallback hidden>评论框没有显示？<a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">在 GitHub 打开这道题的评论 ↗</a></p>
+      {% endif %}
+    {% else %}
+      <p class="question-comments-unavailable">本地预览没有仓库信息；发布到公开 GitHub Pages 后会在这里显示评论框。</p>
+    {% endif %}
     <noscript>
       {% if site.github.repository_url %}
-        <p><a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">先在 GitHub 查找已有评论 ↗</a>；确认没有后，再<a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=question-comment.yml&amp;title={{ comment_issue_title | url_encode }}&amp;question_url={{ page.url | absolute_url | url_encode }}&amp;context={{ page.title | url_encode }}" target="_blank" rel="noopener noreferrer">写第一条评论 ↗</a>。</p>
+        <p><a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">在 GitHub 查看或参与这道题的评论 ↗</a></p>
       {% else %}
         <p>发布到 GitHub Pages 后即可启用评论。</p>
       {% endif %}
     </noscript>
   </section>
+  {% endif %}
   <aside class="content-utility" aria-label="分享与反馈">
     <div class="content-utility-copy">
       <strong>这道题对你有帮助？</strong>
-      <span>可以发给同伴练习；补充答法、追问和纠错请直接写在上面的题目评论区。</span>
+      <span>{% if comments_enabled %}可以发给同伴练习；补充答法、追问和纠错请直接写在上面的题目评论区。{% else %}可以发给同伴练习；内容错误可通过下方入口反馈。{% endif %}</span>
     </div>
     <div class="content-utility-actions" data-share-controls data-share-title="{{ page.title | escape }}" hidden>
       <button class="secondary-button" type="button" data-share-page>分享题目</button>
       <button class="text-button" type="button" data-copy-page-link>复制链接</button>
     </div>
     {% if site.github.repository_url %}
-      <a class="text-link" href="#question-comments">查看或参与评论 ↑</a>
+      {% if comments_enabled %}<a class="text-link" href="#question-comments">查看或参与评论 ↑</a>{% endif %}
       {% capture issue_title %}[内容] {{ page.title }}{% endcapture %}
       <a class="text-link" href="{{ site.github.repository_url }}/issues/new?template=bug.yml&amp;title={{ issue_title | url_encode }}" target="_blank" rel="noopener noreferrer">反馈内容问题 ↗</a>
     {% endif %}
     <p class="content-utility-status" data-share-status role="status" aria-live="polite"></p>
   </aside>
-  <nav class="question-nav" aria-label="题目翻页">
-    {% if page.previous %}
-      <a href="{{ page.previous.url | relative_url }}">← {{ page.previous.title | escape }}</a>
+  {% assign same_tier_questions = site.questions | where: 'published', true | where: 'study_tier', study_tier | sort: 'date' | reverse %}
+  {% assign previous_same_tier = nil %}
+  {% assign next_same_tier = nil %}
+  {% assign current_question_found = false %}
+  {% for candidate_question in same_tier_questions %}
+    {% if current_question_found %}
+      {% assign next_same_tier = candidate_question %}
+      {% break %}
+    {% elsif candidate_question.url == page.url %}
+      {% assign current_question_found = true %}
+    {% else %}
+      {% assign previous_same_tier = candidate_question %}
+    {% endif %}
+  {% endfor %}
+  <nav class="question-nav" aria-label="同一备考层级的题目翻页">
+    {% if previous_same_tier %}
+      <a href="{{ previous_same_tier.url | relative_url }}">← {{ previous_same_tier.title | escape }}</a>
     {% else %}<span></span>{% endif %}
-    {% if page.next %}
-      <a href="{{ page.next.url | relative_url }}">{{ page.next.title | escape }} →</a>
+    {% if next_same_tier %}
+      <a href="{{ next_same_tier.url | relative_url }}">{{ next_same_tier.title | escape }} →</a>
     {% endif %}
   </nav>
 </article>
@@ -159,4 +182,4 @@ layout: default
   <script type="module" src="{{ '/assets/js/unanswered-question.js' | relative_url }}"></script>
 {% endif %}
 <script type="module" src="{{ '/assets/js/share.js' | relative_url }}"></script>
-<script type="module" src="{{ '/assets/js/question-comments.js' | relative_url }}"></script>
+{% if comments_enabled %}<script type="module" src="{{ '/assets/js/question-comments.js' | relative_url }}"></script>{% endif %}

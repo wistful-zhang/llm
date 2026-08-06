@@ -4,7 +4,7 @@ source: "公开 Agent 面试题整理；答案依据原论文和官方工程文�
 review_status: "待复习"
 category: "Agent"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - Context Engineering
   - Compaction

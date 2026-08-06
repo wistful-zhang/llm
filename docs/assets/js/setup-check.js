@@ -95,7 +95,7 @@ if (root) {
       addCard('仓库可见性', repo.visibility === 'public' ? 'Public' : repo.visibility, repo.visibility === 'public' ? 'success' : 'warning', repo.visibility === 'public' ? '公开题库可以启用 GitHub Pages。' : 'Private 仓库不要启用公开 Pages。');
       addCard('默认分支', repo.default_branch || '未知', 'success', '保存和首次手动发布时应选择这个分支。');
       addCard('GitHub Pages', repo.has_pages ? '已经启用' : '尚未启用', repo.has_pages ? 'success' : 'error', repo.has_pages ? 'Pages 已有配置；继续检查最近一次运行。' : '到 Settings → Pages，把 Source 设为 GitHub Actions。');
-      addCard('题目评论与公开补题', repo.has_issues ? 'Issues 已开启' : 'Issues 已关闭', repo.has_issues ? 'success' : 'error', repo.has_issues ? '每道题可以建立评论线程，使用者也能公开增加题目。' : '到 Settings → General → Features 开启 Issues，否则评论和公开增加题目不可用。');
+      addCard('题目评论与公开补题', repo.has_issues ? 'Issues 已开启' : 'Issues 已关闭', repo.has_issues ? 'success' : 'error', repo.has_issues ? '基础配置正常；站内直接评论还需仓库主人只安装一次 utterances 应用。' : '到 Settings → General → Features 开启 Issues，否则评论和公开增加题目不可用。');
       if (workflowLookupError) {
         addCard('最近一次发布', '状态读取失败', 'error', workflowLookupError);
       } else {
@@ -114,6 +114,7 @@ if (root) {
 
       addAction('打开仓库', repo.html_url, true);
       addAction('Pages 设置', `${repo.html_url}/settings/pages`);
+      addAction('安装 / 检查评论应用', 'https://github.com/apps/utterances');
       addAction('Actions 运行记录', `${repo.html_url}/actions/workflows/pages.yml`);
       addAction('题目协作标签', `${repo.html_url}/actions/workflows/question-collaboration.yml`);
       if (latestRun?.html_url) addAction('打开最近一次运行', latestRun.html_url);

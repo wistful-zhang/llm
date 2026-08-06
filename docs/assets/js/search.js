@@ -58,12 +58,14 @@
   resolveTemplateLinks();
 
   const search = document.querySelector('#question-search');
+  const track = document.querySelector('#question-track');
   const studyTier = document.querySelector('#question-study-tier');
   const difficulty = document.querySelector('#question-difficulty');
   const reviewState = document.querySelector('#question-review-state');
   const questionList = document.querySelector('#question-list');
   const cards = [...document.querySelectorAll('.question-card')];
-  const filters = [...document.querySelectorAll('.filter')];
+  const filters = [...document.querySelectorAll('.filter[data-filter-all], .filter[data-category]')];
+  const clearFilters = document.querySelector('#question-clear-filters');
   const empty = document.querySelector('#empty-state');
   const status = document.querySelector('#result-status');
   const summary = document.querySelector('#library-result-summary');
@@ -78,6 +80,10 @@
   let visibleLimit = 60;
   const answerSearchById = new Map();
   const pageSize = 60;
+  const defaultStudyTier = studyTier?.dataset.defaultTier || '';
+  const repositoryId = questionList?.dataset.repositoryId
+    || `${window.location.host}${window.location.pathname}`;
+  const preferenceStorageKey = `llm-interview-practice:${repositoryId}:preferences:v1`;
 
   const normalize = (value) => String(value || '').trim().toLocaleLowerCase();
 
@@ -89,17 +95,42 @@
     });
   };
 
+  const selectedTrackCategories = () => new Set(
+    (track?.options[track.selectedIndex]?.dataset.categories || '')
+      .split('|')
+      .map((category) => category.trim())
+      .filter(Boolean),
+  );
+
   const update = () => {
     const keyword = normalize(search.value);
     const activeStudyTier = studyTier?.value || '';
     const activeDifficulty = difficulty?.value || '';
     const activeReviewState = reviewState?.value || '';
+    const trackCategories = selectedTrackCategories();
+    const categoryCounts = new Map(filters.map((button) => [button.dataset.category || '', 0]));
     let matchingCount = 0;
     let visibleCount = 0;
+    let allCategoryCount = 0;
 
     cards.forEach((card) => {
-      const matchesCategory = activeCategory === null || card.dataset.category === activeCategory;
-      const matchesStudyTier = !activeStudyTier || card.dataset.studyTier === activeStudyTier;
+      const cardStudyTier = card.dataset.studyTier || 'unclassified';
+      const matchesRecommendedRoute = cardStudyTier === 'core' || (
+        cardStudyTier === 'role'
+        && trackCategories.size > 0
+        && trackCategories.has(card.dataset.category)
+      );
+      const matchesExactScope = (
+        (!activeStudyTier || cardStudyTier === activeStudyTier)
+        && (
+          trackCategories.size === 0
+          || activeStudyTier === 'core'
+          || trackCategories.has(card.dataset.category)
+        )
+      );
+      const matchesStudyScope = activeStudyTier === 'recommended'
+        ? matchesRecommendedRoute
+        : matchesExactScope;
       const matchesDifficulty = !activeDifficulty || card.dataset.difficulty === activeDifficulty;
       const cardReviewState = card.dataset.answerStatus === 'pending'
         ? 'pending'
@@ -108,19 +139,40 @@
       const metadata = normalize(card.dataset.search || '');
       const answer = answerSearchById.get(card.dataset.searchId) || '';
       const matchesKeyword = !keyword || metadata.includes(keyword) || answer.includes(keyword);
-      const matches = matchesCategory && matchesStudyTier && matchesDifficulty && matchesReviewState && matchesKeyword;
+      const matchesBase = matchesStudyScope && matchesDifficulty && matchesReviewState && matchesKeyword;
+      const matchesCategory = activeCategory === null || card.dataset.category === activeCategory;
+      const matches = matchesBase && matchesCategory;
+
+      if (matchesBase) {
+        allCategoryCount += 1;
+        categoryCounts.set(
+          card.dataset.category,
+          (categoryCounts.get(card.dataset.category) || 0) + 1,
+        );
+      }
       if (matches) matchingCount += 1;
       const visible = matches && matchingCount <= visibleLimit;
       card.hidden = !visible;
       if (visible) visibleCount += 1;
     });
 
+    filters.forEach((button) => {
+      const count = button.hasAttribute('data-filter-all')
+        ? allCategoryCount
+        : (categoryCounts.get(button.dataset.category) || 0);
+      const label = button.dataset.label || button.textContent.replace(/\s*（\d+）$/, '');
+      button.textContent = `${label}（${count}）`;
+      button.disabled = count === 0 && button.dataset.category !== activeCategory;
+    });
+
     if (cards.length === 0) {
       empty.textContent = '题库还没有公开内容；“＋题目”可以只留在本机，也可以在 GitHub 确认后公开给大家。';
     } else if (answerIndexState === 'failed' && keyword) {
       empty.textContent = '题目、分类和标签中没有匹配项；答案全文暂时无法搜索，请稍后重试。';
+    } else if (activeStudyTier === 'recommended' && !track?.value) {
+      empty.textContent = '请先选择一个目标方向，或把备考层级切回“核心必会”。';
     } else {
-      empty.textContent = activeStudyTier
+      empty.textContent = activeStudyTier || track?.value
         ? '当前备考层级没有匹配题目；可以更换层级或关键词。'
         : '没有找到匹配的题目，换个关键词试试。';
     }
@@ -185,6 +237,65 @@
     return answerIndexPromise;
   };
 
+  const setActiveCategory = (category = null) => {
+    activeCategory = category;
+    filters.forEach((button) => {
+      const active = category === null
+        ? button.hasAttribute('data-filter-all')
+        : button.dataset.category === category;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  };
+
+  const findOption = (select, value) => (
+    select ? [...select.options].find((option) => option.value === value) : null
+  );
+
+  const writeTrackPreference = () => {
+    try {
+      window.localStorage.setItem(preferenceStorageKey, JSON.stringify({ trackId: track?.value || '' }));
+    } catch {
+      // 隐私模式或存储受限时仍可在当前页面使用筛选。
+    }
+  };
+
+  const syncRouteUrl = () => {
+    const url = new URL(window.location.href);
+    if (track?.value) url.searchParams.set('track', track.value);
+    else url.searchParams.delete('track');
+    if (studyTier?.value && (studyTier.value !== defaultStudyTier || track?.value)) {
+      url.searchParams.set('tier', studyTier.value);
+    } else {
+      url.searchParams.delete('tier');
+    }
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  };
+
+  const applyInitialRoute = () => {
+    const params = new URLSearchParams(window.location.search);
+    let storedTrack = '';
+    try {
+      storedTrack = JSON.parse(window.localStorage.getItem(preferenceStorageKey) || '{}').trackId || '';
+    } catch {
+      storedTrack = '';
+    }
+    const requestedTrack = params.has('track') ? params.get('track') : storedTrack;
+    const trackOption = findOption(track, requestedTrack);
+    if (trackOption) {
+      track.value = trackOption.value;
+      if (params.has('track')) writeTrackPreference();
+    }
+
+    const requestedTier = params.get('tier');
+    const tierOption = findOption(studyTier, requestedTier);
+    if (tierOption) {
+      studyTier.value = tierOption.value;
+    } else if (track?.value) {
+      studyTier.value = 'recommended';
+    }
+  };
+
   search.addEventListener('input', () => {
     visibleLimit = pageSize;
     update();
@@ -200,13 +311,8 @@
 
   filters.forEach((button) => {
     button.addEventListener('click', () => {
-      activeCategory = button.hasAttribute('data-filter-all') ? null : button.dataset.category;
+      setActiveCategory(button.hasAttribute('data-filter-all') ? null : button.dataset.category);
       visibleLimit = pageSize;
-      filters.forEach((item) => {
-        const active = item === button;
-        item.classList.toggle('active', active);
-        item.setAttribute('aria-pressed', String(active));
-      });
       update();
     });
   });
@@ -217,6 +323,17 @@
   });
 
   studyTier?.addEventListener('change', () => {
+    setActiveCategory();
+    syncRouteUrl();
+    visibleLimit = pageSize;
+    update();
+  });
+
+  track?.addEventListener('change', () => {
+    setActiveCategory();
+    if (studyTier) studyTier.value = track.value ? 'recommended' : defaultStudyTier;
+    writeTrackPreference();
+    syncRouteUrl();
     visibleLimit = pageSize;
     update();
   });
@@ -224,6 +341,20 @@
   reviewState?.addEventListener('change', () => {
     visibleLimit = pageSize;
     update();
+  });
+
+  clearFilters?.addEventListener('click', () => {
+    search.value = '';
+    if (track) track.value = '';
+    if (studyTier) studyTier.value = defaultStudyTier;
+    if (difficulty) difficulty.value = '';
+    if (reviewState) reviewState.value = '';
+    setActiveCategory();
+    writeTrackPreference();
+    syncRouteUrl();
+    visibleLimit = pageSize;
+    update();
+    search.focus();
   });
 
   loadMore?.addEventListener('click', () => {
@@ -234,6 +365,7 @@
     firstNewCard?.focus();
   });
 
+  applyInitialRoute();
   update();
   if (normalize(search.value)) void loadAnswerIndex();
 })();

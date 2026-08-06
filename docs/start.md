@@ -95,6 +95,7 @@ permalink: /start/
   <div class="mode-details-body">
     <ol>
       <li>先在 <strong>Settings → General → Features</strong> 确认 <strong>Issues</strong> 已开启；它用于每题评论和公开增加题目。</li>
+      <li>打开 <a href="https://github.com/apps/utterances" target="_blank" rel="noopener noreferrer">utterances 评论应用</a>，点击安装，选择 <strong>Only select repositories</strong>，只勾选刚创建的公开题库。这个步骤只需仓库主人做一次，之后所有题目都会在正文下方直接显示评论框；读者第一次留言时在框内登录 GitHub，评论内容和 GitHub 用户名都会公开。</li>
       <li>打开新仓库的 <strong>Settings → Pages</strong>。</li>
       <li>在 <strong>Build and deployment → Source</strong> 选择 <strong>GitHub Actions</strong>。项目已经包含工作流，不要再点击 Jekyll 或 Static HTML 的 Configure。</li>
       <li>进入 <strong>Actions → 内容检查与网站发布 → Run workflow</strong>，Branch 选择仓库默认分支（通常是 <code>main</code>），手动运行第一次部署。</li>
@@ -116,7 +117,7 @@ permalink: /start/
       <li>需要共同编辑时，在 GitHub 仓库中邀请协作者，并在 Pages CMS 中补充仓库授权。</li>
       <li>每次保存会先更新私有仓库，再执行内容校验，不会部署公开网页。</li>
     </ol>
-    <p class="mode-outcome"><strong>Private repository 不等于 private Pages。</strong> 真正带访问控制的私有 Pages 主要面向 GitHub Enterprise Cloud；机密内容不要发布到 Pages。</p>
+    <p class="mode-outcome"><strong>Private repository 不等于 private Pages。</strong> 真正带访问控制的私有 Pages 主要面向 GitHub Enterprise Cloud；机密内容不要发布到 Pages。内嵌评论依赖公开 GitHub Issues，在 Private / Internal 仓库模式下不可用。</p>
   </div>
 </details>
 
@@ -232,6 +233,7 @@ permalink: /start/
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。
+- **题目下方提示 utterances 尚未安装**：由仓库主人打开 [utterances 应用](https://github.com/apps/utterances)，把当前 Public 仓库加入授权范围，并确认 Issues 已开启；普通读者不需要安装应用。
 - **私有题库没有阅读网址或随机模拟**：这是当前模式的明确限制；请收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。在线浏览和模拟只能使用可公开的 Public 题库内容。
 - **组织账号没有某个按钮**：可能被组织策略限制，需要组织管理员批准。
 - **模板副本会自动收到更新吗**：不会。模板创建的是独立仓库；升级前请先阅读仓库中的 `UPGRADING.md`，保护自己的题目、公开面经和站点设置。

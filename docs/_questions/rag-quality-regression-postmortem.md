@@ -4,7 +4,7 @@ source: "公开面经题库主题；公司归属未独立核验，技术答案�
 review_status: "待复习"
 category: "系统设计"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - 项目复盘
   - RAG

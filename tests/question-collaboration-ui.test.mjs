@@ -19,19 +19,55 @@ const assertNoCredentialField = (source) => {
   assert.doesNotMatch(source, /type:\s*password\b/i);
 };
 
-test('每个正式题目页都在答案下方提供按稳定 slug 映射的评论区', async () => {
-  const layout = await read('../docs/_layouts/question.html');
+test('每个正式题目页都在答案下方直接嵌入按稳定 slug 映射的评论框', async () => {
+  const [layout, defaultLayout, script, settings, cms] = await Promise.all([
+    read('../docs/_layouts/question.html'),
+    read('../docs/_layouts/default.html'),
+    read('../docs/assets/js/question-comments.js'),
+    read('../docs/_data/settings.yml'),
+    read('../.pages.yml'),
+  ]);
 
   assert.match(layout, /data-question-comments/);
   assert.match(layout, /data-question-slug="{{\s*page\.slug\s*\|\s*escape\s*}}"/);
   assert.match(layout, /data-repository-nwo="{{\s*site\.github\.repository_nwo\s*\|\s*escape\s*}}"/);
+  assert.match(layout, /\[题目评论\] question:{{\s*page\.slug\s*}} ·/);
   assert.match(layout, /question-answer[\s\S]*data-question-comments/);
   assert.match(layout, /data-question-comments-jump[^>]+href="#question-comments"/);
-  assert.match(layout, /data-question-comments-confirm-empty/);
+  assert.match(layout, /data-inline-comments/);
+  assert.match(layout, /data-comment-issue-term="{{\s*comment_issue_title\s*\|\s*strip\s*\|\s*escape\s*}}"/);
+  assert.match(layout, /第一次使用只需在评论框内登录 GitHub/);
+  assert.doesNotMatch(layout, /data-question-comments-confirm-empty|我已检查，没有已有评论/);
   assert.match(layout, /assets\/js\/question-comments\.js/);
-  assert.doesNotMatch(layout, /data-question-slug="{{\s*page\.title/);
-  assert.doesNotMatch(layout, /discussion_query[\s\S]*page\.title/);
+  assert.doesNotMatch(layout, /<script[^>]+src="https:\/\/utteranc\.es\/client\.js"/);
+  assert.doesNotMatch(layout, /issues\/new\?template=question-comment/);
   assert.doesNotMatch(layout, /查看已有社区评论|在社区补充答案/);
+  assert.match(settings, /^comments_enabled:\s*true$/m);
+  assert.match(cms, /name:\s*comments_enabled[\s\S]*type:\s*boolean/);
+
+  assert.match(script, /new URL\('\/utterances\.html', UTTERANCES_ORIGIN\)/);
+  assert.match(script, /document\.createElement\('iframe'\)/);
+  assert.match(script, /buildQuestionDiscussionSearchApiUrl/);
+  assert.match(script, /normalizeQuestionDiscussion/);
+  assert.match(script, /searchParams\.set\('issue-number'/);
+  assert.match(script, /searchParams\.set\('issue-term'/);
+  assert.match(script, /searchParams\.set\('label', 'question-comments'\)/);
+  assert.match(script, /window\.sessionStorage/);
+  assert.match(script, /history\.replaceState/);
+  assert.match(script, /event\.origin !== UTTERANCES_ORIGIN/);
+  assert.match(script, /event\.source !== iframe\.contentWindow/);
+  assert.match(script, /replaceChildren\(iframe\)/);
+  assert.doesNotMatch(script, /\blocalStorage\b|\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
+
+  const csp = defaultLayout.match(/Content-Security-Policy" content="([^"]+)"/)?.[1] || '';
+  assert.match(csp, /frame-src https:\/\/utteranc\.es/);
+  const directives = Object.fromEntries(csp.split(';').map((directive) => {
+    const [name, ...sources] = directive.trim().split(/\s+/);
+    return [name, sources];
+  }));
+  assert.equal(directives['frame-src'].includes('https:'), false);
+  assert.equal(directives['script-src'].includes('https:'), false);
+  assert.equal(directives['script-src'].includes('https://utteranc.es'), false);
 });
 
 test('讨论搜索 API 只查询当前仓库和稳定题目 slug，不依赖自定义标签', async () => {
@@ -194,28 +230,7 @@ test('评论规范化过滤空内容和异常记录，并只生成当前仓库�
   assert.deepEqual(normalizeQuestionComments([], 'example-owner/example-repo', 18), []);
 });
 
-test('题目评论脚本分两步读取讨论和评论，并使用安全 DOM API 渲染', async () => {
-  const script = await read('../docs/assets/js/question-comments.js');
-
-  assert.match(script, /buildQuestionDiscussionSearchApiUrl/);
-  assert.match(script, /normalizeQuestionDiscussion/);
-  assert.match(script, /buildQuestionCommentsApiUrl/);
-  assert.match(script, /normalizeQuestionComments/);
-  assert.match(script, /dataset\.questionSlug/);
-  assert.match(script, /\bfetch\s*\(/);
-  assert.match(script, /(?:discussion|comments)Response\.ok/);
-  assert.match(script, /createElement\(/);
-  assert.match(script, /\.textContent\s*=/);
-  assert.match(script, /replaceChildren\(/);
-  assert.match(script, /data-question-comments-confirm-empty/);
-  assert.match(script, /GitHub API 暂时没有确认评论状态/);
-  assert.match(script, /discussion\.comments > replies\.length/);
-  assert.match(script, /catch\s*(?:\([^)]*\))?\s*\{/);
-  assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
-  assert.doesNotMatch(script, /\bAuthorization\b|localStorage|sessionStorage/i);
-});
-
-test('首页把公开投稿并入题库体验，不再提供独立社区导航', async () => {
+test('首页把未经整理的公开投稿放在正式题库之后，不再提供独立社区导航', async () => {
   const [home, layout, script] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/_layouts/default.html'),
@@ -223,9 +238,10 @@ test('首页把公开投稿并入题库体验，不再提供独立社区导航',
   ]);
   const navigation = `${home}\n${layout}`;
 
-  assert.match(home, /使用者新增的题目/);
+  assert.match(home, /大家最近增加的题目/);
+  assert.match(home, /尚未进入上方正式题库与学习分级/);
   assert.match(home, /data-public-questions/);
-  assert.ok(home.indexOf('data-public-questions') < home.indexOf('id="question-list"'), '公开补充应在正式长列表之前出现');
+  assert.ok(home.indexOf('data-public-questions') > home.indexOf('id="question-list"'), '未经整理的公开补充应在正式题库之后出现');
   assert.match(home, /查看全部公开补充/);
   assert.match(home, /data-repository-nwo="{{\s*site\.github\.repository_nwo\s*\|\s*escape\s*}}"/);
   assert.match(navigation, /assets\/js\/public-questions\.js/);

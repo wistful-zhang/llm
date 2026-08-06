@@ -23,6 +23,10 @@
 
 从 1.4.x 升级到 1.5.0 时，新增的 `study_tier` 只表示备考顺序。如果要保留自己的题目，不要整目录覆盖 `docs/_questions/`；可以为每道题补上 `core`、`role`、`extended` 或 `archive`，也可先留空，旧题会兼容为“未分级”。请一起合并首页、模拟面试、题目布局、样式、`.pages.yml`、校验器和 `scripts/question-study-tier.mjs`；新题会默认进入 `archive`，避免未整理内容直接进入核心路径。
 
+从 1.5.x 升级到 1.6.0 时，请一起合并 `docs/_data/study_tracks.yml`、首页、学习分级页、模拟面试脚本、样式和 `scripts/question-study-tier.mjs`。基础题库把 40 道深题从 `core` 调整为 `role`；如果你已经维护自己的分级，可以只采用路线与筛选代码，不覆盖 `docs/_questions/`。网页新题导出会补上 `study_tier: archive`，旧的浏览器 JSON 无需迁移。
+
+1.6.0 同时把题目评论改为正文下方的内嵌输入框。请一起替换 `docs/assets/js/question-comments.js`，并合并 `docs/_layouts/question.html`、`docs/_layouts/default.html`、`docs/_data/settings.yml`、`.pages.yml` 和评论样式；Public 仓库必须开启 Issues，且仓库主人需要在 [utterances](https://github.com/apps/utterances) 中只授权自己的题库一次。页面会先按旧的 `[题目评论] question:<slug>` 精确查找线程，再用 Issue 编号加载，因此旧线程的普通回复会继续显示；旧 Issue Form 把第一条内容保存在 Issue 正文中，而 utterances 不把正文当评论显示，已有副本需要把这段正文复制为一条普通回复。Private 仓库应在“站点设置”关闭公开评论。
+
 ## 推荐升级方法
 
 先在自己仓库标题下方寻找 **generated from**，它指向创建副本时使用的基础模板。若看不到该标记，请从自己保存的创建记录、README 或可信维护者说明确认来源；不要把名称相似的陌生仓库直接当成上游。

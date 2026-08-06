@@ -2,6 +2,7 @@
 title: 关于
 permalink: /about/
 ---
+{% assign published_question_count = site.questions | where: 'published', true | size %}
 
 <div class="container prose standalone-page" markdown="1">
 
@@ -23,7 +24,7 @@ permalink: /about/
 
 带“资料核验”标记的题目已经检查题目来源、七段答题结构、追问接法和参考链接，具体依据列在每道题末尾。核验表示内容有可追溯资料，不表示不同团队会采用完全相同的标准答案；面试时仍应结合岗位和项目经验说明取舍。
 
-1000 道题用于覆盖不同岗位和知识边界，不表示 1000 道都同等重要或都应默认学习。本站另用“核心必会 / 岗位专项 / 扩展知识点 / 待重整”标记建议备考顺序；它与题目难度、答案核验、是否公开和个人复习状态相互独立。四级含义、证据边界和不同岗位的学习路径见[学习分级说明]({{ '/study-tiers/' | relative_url }})。
+当前 {{ published_question_count }} 道公开题用于覆盖不同岗位和知识边界，不表示每道都同等重要或都应默认学习。本站另用“核心必会 / 岗位专项 / 扩展知识点 / 待重整”标记建议备考顺序；它与题目难度、答案核验、是否公开和个人复习状态相互独立。四级含义、证据边界和不同岗位的学习路径见[学习分级说明]({{ '/study-tiers/' | relative_url }})。
 
 ## 如何使用
 

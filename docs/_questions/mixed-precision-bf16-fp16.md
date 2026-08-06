@@ -4,7 +4,7 @@ source: "大厂公开真实面试案例中的 BF16 与 FP16 对比题；答案�
 review_status: "待复习"
 category: "训练与对齐"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - Mixed Precision
   - BF16

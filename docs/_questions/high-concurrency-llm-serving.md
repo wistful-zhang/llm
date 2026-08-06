@@ -5,7 +5,7 @@ verified: true
 review_status: "待复习"
 category: "系统设计"
 difficulty: "中等"
-study_tier: "core"
+study_tier: "role"
 tags:
   - Continuous Batching
   - 限流

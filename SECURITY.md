@@ -8,7 +8,7 @@
 - API Key、数据库连接信息或云服务密钥
 - 个人身份信息、公司机密或受保密协议约束的资料
 
-Pages CMS 应通过 GitHub App 授权，并选择 **Only select repositories**，只授予实际使用的题库仓库。
+Pages CMS 应通过自己的 GitHub App 授权，并选择 **Only select repositories**，只授予实际使用的题库仓库。Public 题库启用题目下方评论时，utterances 是另一个独立 GitHub App，也应只授权当前公开题库；它不支持 Private 仓库评论。
 
 ## 公开、草稿与本地记录的边界
 
@@ -18,6 +18,8 @@ Pages CMS 应通过 GitHub App 授权，并选择 **Only select repositories**�
 - “彻底删除本机记录”会删除当前数据和系统保留的安全副本；普通的损坏恢复流程则会保留副本以防误删。
 
 公开 Markdown 会经过源文件规则、构建后 HTML 扫描和浏览器内容安全策略三层检查。这些防线用于降低脚本注入风险，不代表内容已经获得公开授权，也不能代替人工匿名检查。
+
+评论由本站脚本直接创建跨域 iframe，第三方代码不在本站 Origin 中执行。内容安全策略只精确允许 `https://utteranc.es` iframe，没有把它加入 `script-src`，也没有向任意 HTTPS 脚本或框架开放权限。若替换评论服务，必须同步复查 CSP、隐私说明、OAuth 权限和仓库可见性边界。
 
 如果密码、Token 或密钥误入仓库，应先立即在对应服务撤销或轮换。删除文件、关闭发布或追加一个修正提交都不能让已泄露的凭据恢复安全，也不会自动清除 Git 历史。
 

@@ -12,6 +12,8 @@ permalink: /setup-check/
 
 输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages、Issues 和最近一次发布。它不会登录 GitHub，也不会读取 Private 仓库、题目草稿或浏览器面试记录。
 
+公开 API 不能可靠判断评论应用是否已经授权。自检完成后，请使用结果下方的“安装 / 检查评论应用”，确认 utterances 只被授权到这个公开题库；仓库主人只需做一次。
+
 <form class="setup-check-form" data-setup-check-form>
   <label for="setup-repository"><strong>GitHub 仓库</strong><span>例如：your-name/llm-notes</span></label>
   <div class="setup-check-input-row">

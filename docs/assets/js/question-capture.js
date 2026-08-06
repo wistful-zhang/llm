@@ -308,8 +308,9 @@ ${JSON.stringify(question, null, 2)}
 2. 使用仓库现有题目格式创建一个新文件，不覆盖同名题目；保留用户选择的 answerStatus 和 visibility 意图。
 3. 如果答案状态是 pending，允许正文为空或保留草稿，但不要把它改成 complete；如果是 complete，先检查答案确实完整。
 4. 不要编造公司、岗位、项目数据、面试轮次或资料来源；发现隐私、会议链接、公司机密、NDA 或未授权题库内容时停止发布并说明。
-5. 新文件必须保持 published: false；完成内容、隐私和仓库可见性检查后，再由我明确决定是否改为 true 并在阅读网站展示。
-6. 修改后运行 npm run check；只有检查通过才提交到 GitHub。`;
+5. 新文件必须保留 study_tier: archive，表示尚待人工分级；不要因为题目看起来重要就自动提升为 core、role 或 extended。
+6. 新文件必须保持 published: false；完成内容、隐私和仓库可见性检查后，再由我明确决定是否改为 true 并在阅读网站展示。以后切换 published 时也要保留 study_tier: archive，除非我明确要求重新分级。
+7. 修改后运行 npm run check；只有检查通过才提交到 GitHub。`;
   };
 
   const unsafeMetadataReasons = (question) => {
@@ -605,12 +606,11 @@ ${JSON.stringify(question, null, 2)}
     }
   };
 
-  // 表单内容没有 name，按钮也不是 submit：即使脚本加载失败，浏览器也不会把题目拼进网址。
+  // 题目、答案和来源控件没有 name；脚本接管 submit 后只写入当前浏览器。
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     saveQuestion();
   });
-  saveButton.addEventListener('click', saveQuestion);
 
   form.addEventListener('input', (event) => {
     formDirty = true;

@@ -294,6 +294,12 @@ content:
             - name: amber
               label: 琥珀橙
 
+      - name: comments_enabled
+        label: 在正式题目下方显示公开评论
+        type: boolean
+        default: true
+        description: 仅适用于开启 Issues 并安装 utterances 的 Public 仓库。Private / Internal 仓库或不需要公开评论时请关闭。
+
       - name: footer
         label: 页脚文字
         type: string

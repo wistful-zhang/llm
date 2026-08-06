@@ -56,7 +56,7 @@ test('快速记题页提供无需 Markdown 的完整表单，并允许只保存�
   assert.match(page, /写了几句思路也不会自动算完成/);
 
   assert.match(page, /普通段落即可，不要求 Markdown/);
-  assert.match(attributesFor(page, 'question-draft-save'), /\btype="button"/);
+  assert.match(attributesFor(page, 'question-draft-save'), /\btype="submit"/);
   assert.match(page, /保存为我的题目/);
   assert.match(page, /question-capture\.js/);
 });
@@ -77,9 +77,15 @@ test('脚本失效时原生表单不会把题目、答案或来源拼进网址',
     assert.doesNotMatch(attributesFor(page, id), /\bname=/, `${id} 不应成为原生表单的成功控件`);
   }
   assert.match(script, /form\.addEventListener\('submit',[\s\S]*?event\.preventDefault\(\);[\s\S]*?saveQuestion\(\);[\s\S]*?\}\);/);
-  assert.match(script, /saveButton\.addEventListener\('click', saveQuestion\)/);
+  assert.doesNotMatch(script, /saveButton\.addEventListener\('click', saveQuestion\)/);
   assert.doesNotMatch(script, /form\.elements\.namedItem/);
   assert.doesNotMatch(script, /\.submit\s*\(|requestSubmit\s*\(/);
+});
+
+test('网页导出的仓库草稿默认待重整，Codex 写入和后续发布都必须保留该层级', () => {
+  assert.match(script, /新文件必须保留 study_tier: archive/);
+  assert.match(script, /切换 published 时也要保留 study_tier: archive/);
+  assert.match(script, /不要因为题目看起来重要就自动提升为 core、role 或 extended/);
 });
 
 test('新增题目必须明确选择可见性，并默认安全地只保存在当前浏览器', () => {

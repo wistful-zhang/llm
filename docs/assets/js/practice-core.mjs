@@ -9,6 +9,7 @@ export const RATINGS = Object.freeze({
 
 const WEAK_RATING_ORDER = Object.freeze({ unknown: 0, prompted: 1, skipped: 2 });
 const STUDY_TIERS = new Set(['core', 'role', 'extended', 'archive']);
+const RECOMMENDED_ROUTE = 'recommended';
 
 export function normalizeStudyTier(value) {
   const tier = String(value || '');
@@ -33,15 +34,38 @@ export function filterQuestions(questions, filters = {}) {
   const difficulty = String(filters.difficulty || '');
   const requestedStudyTier = String(filters.studyTier || '');
   const studyTier = STUDY_TIERS.has(requestedStudyTier) ? requestedStudyTier : '';
+  const usesRecommendedRoute = requestedStudyTier === RECOMMENDED_ROUTE;
+  const trackCategories = new Set(
+    Array.isArray(filters.trackCategories)
+      ? filters.trackCategories.map((value) => String(value || '').trim()).filter(Boolean)
+      : [],
+  );
   const requestedVerification = String(filters.verification || '');
   const verification = ['verified', 'review'].includes(requestedVerification) ? requestedVerification : '';
 
-  return uniqueQuestions(questions).filter((question) => (
-    (!category || question.category === category) &&
-    (!studyTier || normalizeStudyTier(question.studyTier) === studyTier) &&
-    (!difficulty || question.difficulty === difficulty) &&
-    (!verification || (verification === 'verified') === (question.verified === true))
-  ));
+  return uniqueQuestions(questions).filter((question) => {
+    const questionStudyTier = normalizeStudyTier(question.studyTier);
+    const matchesRecommendedRoute = questionStudyTier === 'core' || (
+      questionStudyTier === 'role'
+      && trackCategories.size > 0
+      && trackCategories.has(question.category)
+    );
+    const matchesExactScope = (
+      (!studyTier || questionStudyTier === studyTier)
+      && (
+        trackCategories.size === 0
+        || studyTier === 'core'
+        || trackCategories.has(question.category)
+      )
+    );
+
+    return (
+      (!category || question.category === category) &&
+      (usesRecommendedRoute ? matchesRecommendedRoute : matchesExactScope) &&
+      (!difficulty || question.difficulty === difficulty) &&
+      (!verification || (verification === 'verified') === (question.verified === true))
+    );
+  });
 }
 
 export function shuffleQuestions(questions, random = Math.random) {
@@ -60,7 +84,29 @@ export function buildQueue(questions, filters = {}, requestedCount = 5, random =
   const pool = filterQuestions(questions, filters);
   const parsedCount = Number.parseInt(requestedCount, 10);
   const limit = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 5;
-  return shuffleQuestions(pool, random).slice(0, Math.min(limit, pool.length));
+  const targetSize = Math.min(limit, pool.length);
+  const grouped = new Map();
+  pool.forEach((question) => {
+    const key = String(question.category || '未分类');
+    const group = grouped.get(key) || [];
+    group.push(question);
+    grouped.set(key, group);
+  });
+  const categoryQueues = shuffleQuestions([...grouped.values()], random)
+    .map((group) => shuffleQuestions(group, random));
+  const queue = [];
+
+  while (queue.length < targetSize) {
+    let added = false;
+    categoryQueues.forEach((group) => {
+      if (queue.length >= targetSize || group.length === 0) return;
+      queue.push(group.shift());
+      added = true;
+    });
+    if (!added) break;
+  }
+
+  return queue;
 }
 
 export function summarizeSession(queue, records) {
