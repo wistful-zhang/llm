@@ -303,8 +303,8 @@ content:
       - name: comments_enabled
         label: 在正式题目下方显示站内评论
         type: boolean
-        default: true
-        description: 访客填写昵称即可原地留言，不需要 GitHub 账号。首次使用前，题库主人仍需按“站内评论开通”页面部署自己的评论服务；Private / Internal 题库或不需要公开评论时请关闭。
+        default: false
+        description: 当前项目默认关闭。只有以后明确部署并维护独立评论服务时才开启；关闭评论不影响建题、补答案、公开补题和模拟面试。
 
       - name: footer
         label: 页脚文字

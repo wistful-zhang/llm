@@ -19,7 +19,7 @@ const assertNoCredentialField = (source) => {
   assert.doesNotMatch(source, /type:\s*password\b/i);
 };
 
-test('每个正式题目页都在答案下方提供无需 GitHub 登录的原生评论区', async () => {
+test('评论实现保留但站点默认关闭，题目页只在开关开启时渲染评论区', async () => {
   const [layout, defaultLayout, script, settings, cms] = await Promise.all([
     read('../docs/_layouts/question.html'),
     read('../docs/_layouts/default.html'),
@@ -29,6 +29,8 @@ test('每个正式题目页都在答案下方提供无需 GitHub 登录的原生
   ]);
 
   assert.match(layout, /data-question-comments/);
+  assert.match(layout, /\{%\s*if comments_enabled\s*%\}[\s\S]*<section id="question-comments"/);
+  assert.match(layout, /comments_enabled == nil\s*%\}\{% assign comments_enabled = false/);
   assert.match(layout, /data-question-slug="{{\s*page\.slug\s*\|\s*escape\s*}}"/);
   assert.match(layout, /data-comments-api="{{\s*comments_api_url\s*\|\s*escape\s*}}"/);
   assert.match(layout, /question-answer[\s\S]*data-question-comments/);
@@ -40,8 +42,9 @@ test('每个正式题目页都在答案下方提供无需 GitHub 登录的原生
   assert.match(layout, /assets\/js\/question-comments\.js/);
   assert.doesNotMatch(layout, /utteranc|data-comment-issue-term|登录 GitHub/);
   assert.doesNotMatch(layout, /issues\/new\?template=question-comment/);
-  assert.match(settings, /^comments_enabled:\s*true$/m);
+  assert.match(settings, /^comments_enabled:\s*false$/m);
   assert.match(cms, /name:\s*comments_enabled[\s\S]*type:\s*boolean/);
+  assert.match(cms, /name:\s*comments_enabled[\s\S]*default:\s*false/);
 
   assert.match(script, /buildCommentsUrl/);
   assert.match(script, /turnstile\.render|state\.turnstile\.render/);
@@ -53,8 +56,8 @@ test('每个正式题目页都在答案下方提供无需 GitHub 登录的原生
   assert.doesNotMatch(script, /api\.github\.com|utteranc/i);
 
   const csp = defaultLayout.match(/Content-Security-Policy" content="([^"]+)"/)?.[1] || '';
-  assert.match(csp, /frame-src \{% if comments_api_url != empty %\}https:\/\/challenges\.cloudflare\.com\{% else %\}'none'/);
-  assert.match(csp, /connect-src 'self' https:\/\/api\.github\.com\{% if comments_api_url != empty %\} {{ comments_api_url \| escape }}/);
+  assert.match(csp, /frame-src \{% if comments_enabled and comments_api_url != empty %\}https:\/\/challenges\.cloudflare\.com\{% else %\}'none'/);
+  assert.match(csp, /connect-src 'self' https:\/\/api\.github\.com\{% if comments_enabled and comments_api_url != empty %\} {{ comments_api_url \| escape }}/);
   assert.doesNotMatch(csp, /utteranc\.es|frame-src https:;|connect-src[^;]+\shttps:\s/);
 });
 
