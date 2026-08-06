@@ -1,0 +1,3 @@
+# 本文件只保留安全的空默认值。GitHub Actions 会用仓库变量 COMMENTS_API_URL
+# 在构建时生成实际配置；模板副本不会继承原题库的评论数据库。
+api_url: ""

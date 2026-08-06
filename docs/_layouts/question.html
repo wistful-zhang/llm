@@ -3,6 +3,7 @@ layout: default
 ---
 {% assign comments_enabled = site.data.settings.comments_enabled %}
 {% if comments_enabled == nil %}{% assign comments_enabled = true %}{% endif %}
+{% assign comments_api_url = site.data.comment_runtime.api_url | default: '' | strip %}
 {% assign cms_branch = site.github.source.branch | default: 'main' %}
 {% capture cms_question_path %}docs/{{ page.path }}{% endcapture %}
 {% capture cms_edit_url %}https://app.pagescms.org/{{ site.github.repository_nwo }}/{{ cms_branch | url_encode }}/collection/questions/edit/{{ cms_question_path | strip | url_encode }}{% endcapture %}
@@ -128,38 +129,63 @@ layout: default
     </section>
   {% endif %}
   {% if comments_enabled %}
-  {% capture legacy_comment_issue_title %}[题目评论] question:{{ page.slug }}{% endcapture %}
-  {% capture comment_issue_title %}[题目评论] question:{{ page.slug }} ·{% endcapture %}
-  {% capture comment_search_query %}is:issue in:title "{{ legacy_comment_issue_title }}"{% endcapture %}
   <section id="question-comments"
            class="question-comments"
            data-question-comments
            data-question-slug="{{ page.slug | escape }}"
-           data-comment-issue-term="{{ comment_issue_title | strip | escape }}"
-           data-repository-nwo="{{ site.github.repository_nwo | escape }}"
+           data-comments-api="{{ comments_api_url | escape }}"
            aria-labelledby="question-comments-title">
     <div class="question-comments-heading">
       <div>
-        <span class="eyebrow">围绕这道题</span>
-        <h2 id="question-comments-title">评论与补充</h2>
+        <span class="eyebrow">无需注册 · 原地交流</span>
+        <h2 id="question-comments-title">讨论<span data-comment-count></span></h2>
       </div>
     </div>
-    <p class="question-comments-intro">直接在下面写回答、追问、答案修改建议或纠错。修改建议请写清对应段落、建议改法，有资料时附上链接。第一次使用只需在评论框内登录 GitHub；提交后仍停留在本页。评论会公开显示，请勿填写个人隐私或公司机密。</p>
-    {% if site.github.repository_nwo %}
-      <p class="question-comments-status" data-question-comments-status role="status" aria-live="polite">正在加载评论框…</p>
-      <div class="question-comments-embed" data-inline-comments></div>
-      {% if site.github.repository_url %}
-        <p class="question-comments-fallback" data-question-comments-fallback hidden>评论框没有显示？<a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">在 GitHub 打开这道题的评论 ↗</a></p>
-      {% endif %}
+    <p class="question-comments-intro">像普通论坛一样，评论会直接显示在这道题下面。填写昵称即可发布回答、追问或纠错，不需要 GitHub 账号；内容会公开，请勿填写个人隐私、公司机密或受保密约束的材料。</p>
+    {% if comments_api_url != empty %}
+      <form class="comment-composer" data-comment-form hidden>
+        <p class="comment-reply-context" data-comment-reply-context hidden></p>
+        <div class="comment-composer-fields">
+          <label class="comment-nickname-field">
+            <span>昵称 <small>不用注册</small></span>
+            <input type="text" data-comment-nickname name="nickname" minlength="2" maxlength="24" autocomplete="nickname" required placeholder="例如：学习中的小张">
+          </label>
+          <label class="comment-body-field">
+            <span>评论内容</span>
+            <textarea data-comment-body name="body" minlength="2" maxlength="2000" rows="5" required placeholder="写下你的答法、追问或修改建议…"></textarea>
+          </label>
+        </div>
+        <label class="comment-honeypot" aria-hidden="true">请勿填写<input type="text" data-comment-website name="website" tabindex="-1" autocomplete="off"></label>
+        <div class="comment-composer-footer">
+          <div class="comment-turnstile" data-comment-turnstile aria-label="人机验证"></div>
+          <div class="comment-composer-submit">
+            <span data-comment-counter>0 / 2000</span>
+            <button class="text-button" type="button" data-comment-cancel hidden>取消</button>
+            <button class="primary-button" type="submit" data-comment-submit disabled>发布评论</button>
+          </div>
+        </div>
+        <p class="comment-publish-note">发布即允许本站公开展示、排版和管理这条评论。只支持纯文本；需要删除不当内容时可使用“举报”。</p>
+      </form>
+      <p class="comment-form-status" data-comment-form-status role="status" aria-live="polite">正在连接站内评论服务…</p>
+      <div class="comment-list-region" data-comment-list-region aria-busy="true">
+        <p class="question-comments-status" data-comment-list-status role="status" aria-live="polite">正在加载讨论…</p>
+        <div class="comment-load-error" data-comment-load-error hidden>
+          <span>评论暂时没有加载出来。</span>
+          <button class="text-button" type="button" data-comment-retry hidden>重新加载</button>
+        </div>
+        <p class="comment-empty" data-comment-empty hidden>还没有评论，来坐第一个沙发。</p>
+        <ol class="question-comments-list" data-comment-list hidden></ol>
+        <button class="secondary-button comment-load-more" type="button" data-comment-load-more hidden>加载更多评论</button>
+      </div>
     {% else %}
-      <p class="question-comments-unavailable">本地预览没有仓库信息；发布到公开 GitHub Pages 后会在这里显示评论框。</p>
+      <aside class="comment-setup-notice" role="note">
+        <strong>站内评论尚未开通。</strong>
+        <span>题库主人完成一次评论服务部署后，访客就能在这里免登录留言；当前不会跳转 GitHub，也不会把评论只存在某个人的浏览器。</span>
+        <a class="text-link" href="{{ '/comments/setup/' | relative_url }}">题库主人：查看可视化开通步骤 →</a>
+      </aside>
     {% endif %}
     <noscript>
-      {% if site.github.repository_url %}
-        <p><a class="text-link" href="{{ site.github.repository_url }}/issues?q={{ comment_search_query | url_encode }}" target="_blank" rel="noopener noreferrer">在 GitHub 查看或参与这道题的评论 ↗</a></p>
-      {% else %}
-        <p>发布到 GitHub Pages 后即可启用评论。</p>
-      {% endif %}
+      <p>请开启 JavaScript，才能在本页查看和发表公开评论；评论不会跳转到 GitHub。</p>
     </noscript>
   </section>
   {% endif %}
@@ -209,4 +235,4 @@ layout: default
   <script type="module" src="{{ '/assets/js/unanswered-question.js' | relative_url }}"></script>
 {% endif %}
 <script type="module" src="{{ '/assets/js/share.js' | relative_url }}"></script>
-{% if comments_enabled %}<script type="module" src="{{ '/assets/js/question-comments.js' | relative_url }}"></script>{% endif %}
+{% if comments_enabled and comments_api_url != empty %}<script type="module" src="{{ '/assets/js/question-comments.js' | relative_url }}"></script>{% endif %}

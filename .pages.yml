@@ -301,10 +301,10 @@ content:
               label: 琥珀橙
 
       - name: comments_enabled
-        label: 在正式题目下方显示公开评论
+        label: 在正式题目下方显示站内评论
         type: boolean
         default: true
-        description: 仅适用于开启 Issues 并安装 utterances 的 Public 仓库。Private / Internal 仓库或不需要公开评论时请关闭。
+        description: 访客填写昵称即可原地留言，不需要 GitHub 账号。首次使用前，题库主人仍需按“站内评论开通”页面部署自己的评论服务；Private / Internal 题库或不需要公开评论时请关闭。
 
       - name: footer
         label: 页脚文字

@@ -8,7 +8,9 @@
 - API Key、数据库连接信息或云服务密钥
 - 个人身份信息、公司机密或受保密协议约束的资料
 
-Pages CMS 应通过自己的 GitHub App 授权，并选择 **Only select repositories**，只授予实际使用的题库仓库。Public 题库启用题目下方评论时，utterances 是另一个独立 GitHub App，也应只授权当前公开题库；它不支持 Private 仓库评论。
+Pages CMS 应通过自己的 GitHub App 授权，并选择 **Only select repositories**，只授予实际使用的题库仓库。
+
+题目下方的站内评论使用题库主人自己部署的 Cloudflare Worker、D1 和 Turnstile。`TURNSTILE_SECRET_KEY`、`HASH_SECRET` 与 `ADMIN_TOKEN` 只能保存在 Worker 的加密变量中，不能写进仓库、Actions 日志、Pages CMS 或网页；`TURNSTILE_SITE_KEY` 和 Worker 根网址属于公开配置。GitHub Actions 变量 `COMMENTS_API_URL` 只能填写 HTTPS Worker 根网址，不能附加账号、Token、查询参数或路径。
 
 ## 公开、草稿与本地记录的边界
 
@@ -16,10 +18,14 @@ Pages CMS 应通过自己的 GitHub App 授权，并选择 **Only select reposit
 - Pages CMS 会先把保存内容提交到 GitHub，Actions 才能校验。自动校验可以阻止部署，但不能撤回已经进入 Public 仓库历史的隐私信息。
 - “面试记录”保存在当前浏览器的本地存储，不会自动上传；它没有账号鉴权或加密。同一浏览器资料的其他用户，以及同一 `username.github.io` Origin 下的其他项目脚本，理论上可能读取这些数据。清理站点数据或设备损坏也会造成丢失，请使用公司匿名代号并定期导出 JSON。
 - “彻底删除本机记录”会删除当前数据和系统保留的安全副本；普通的损坏恢复流程则会保留副本以防误删。
+- 站内评论使用昵称而不是账号身份，昵称可以重复，不能据此确认真实身份。评论正文、楼层和回复关系会公开保存在题库主人的 D1 中；请勿发表个人隐私、公司机密或受 NDA 约束的内容。
+- 发布评论后，浏览器会保存该条评论的随机修改凭据，用于本机编辑或删除。它不是账号或云同步；清理浏览器数据、换设备或泄露凭据都会影响控制权。
 
 公开 Markdown 会经过源文件规则、构建后 HTML 扫描和浏览器内容安全策略三层检查。这些防线用于降低脚本注入风险，不代表内容已经获得公开授权，也不能代替人工匿名检查。
 
-评论由本站脚本直接创建跨域 iframe，第三方代码不在本站 Origin 中执行。内容安全策略只精确允许 `https://utteranc.es` iframe，没有把它加入 `script-src`，也没有向任意 HTTPS 脚本或框架开放权限。若替换评论服务，必须同步复查 CSP、隐私说明、OAuth 权限和仓库可见性边界。
+评论前端只连接构建时配置的 Worker 根网址；Worker 应把跨域访问精确限制到自己的 `SITE_URL`，并用 Turnstile、蜜罐、内容长度限制和按日限流降低滥用。正常评论会立即公开，举报不会自动隐藏内容，题库主人需要定期在 Worker 的管理页处理举报。管理员口令只应放在管理页当前标签的会话存储中，不要通过 URL、聊天或截图传递。
+
+每个模板副本或 Fork 都必须部署自己的 Worker 和 D1。未配置 `COMMENTS_API_URL` 时，构建保持空运行配置，页面不会连接任何评论后端，也不会回退到原作者的数据库。Private / Internal 题库应在站点设置中关闭评论；匿名昵称评论不提供组织成员鉴权，不能代替受控的内部讨论系统。
 
 如果密码、Token 或密钥误入仓库，应先立即在对应服务撤销或轮换。删除文件、关闭发布或追加一个修正提交都不能让已泄露的凭据恢复安全，也不会自动清除 Git 历史。
 

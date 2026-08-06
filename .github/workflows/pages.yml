@@ -46,6 +46,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: 生成站内评论公开配置
+        env:
+          COMMENTS_API_URL: ${{ vars.COMMENTS_API_URL }}
+        run: node scripts/build-comments-config.mjs
+
       - name: 构建预览网站
         uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1
         with:
@@ -68,6 +73,11 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
+
+      - name: 生成站内评论公开配置
+        env:
+          COMMENTS_API_URL: ${{ vars.COMMENTS_API_URL }}
+        run: node scripts/build-comments-config.mjs
 
       - name: 读取 GitHub Pages 配置
         id: pages

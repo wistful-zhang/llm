@@ -1,18 +1,18 @@
 ---
 title: 配置自检
-description: 不填写 Token，检查公开题库的 GitHub Pages 和最近一次发布状态。
+description: 不填写 Token，检查公开题库的 GitHub Pages、最近一次发布和站内评论配置。
 permalink: /setup-check/
 ---
 
-<div class="container prose standalone-page setup-check-page" data-setup-check data-default-repository="{{ site.github.repository_nwo | escape }}" markdown="1">
+<div class="container prose standalone-page setup-check-page" data-setup-check data-default-repository="{{ site.github.repository_nwo | escape }}" data-comments-api="{{ site.data.comment_runtime.api_url | default: '' | strip | escape }}" data-comments-enabled="{{ site.data.settings.comments_enabled | escape }}" markdown="1">
 
 <span class="status-badge">公开仓库 · 无需 Token</span>
 
 # 检查题库为什么没有更新
 
-输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages、Issues 和最近一次发布。它不会登录 GitHub，也不会读取 Private 仓库、题目草稿或浏览器面试记录。
+输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages、Issues 和最近一次发布；如果当前网站已打开站内评论，还会检查这次构建是否配置了评论服务地址。它不会登录 GitHub，也不会读取 Private 仓库、题目草稿或浏览器面试记录。
 
-公开 API 不能可靠判断评论应用是否已经授权。自检完成后，请使用结果下方的“安装 / 检查评论应用”，确认 utterances 只被授权到这个公开题库；仓库主人只需做一次。
+站内评论需要题库主人按[开通步骤]({{ '/comments/setup/' | relative_url }})单独部署自己的 Cloudflare Worker、D1 和 Turnstile。未配置时不会连接任何评论后端，也不会回退到原作者的数据库；Private / Internal 题库应在站点设置中保持评论关闭。公开补题仍使用 GitHub Issues，因此启用“公开增加题目”时 Issues 检查仍然有意义。
 
 <form class="setup-check-form" data-setup-check-form>
   <label for="setup-repository"><strong>GitHub 仓库</strong><span>例如：your-name/llm-notes</span></label>

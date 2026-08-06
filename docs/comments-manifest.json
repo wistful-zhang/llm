@@ -1,0 +1,8 @@
+---
+layout: null
+permalink: /comments-manifest.json
+---
+{
+  "version": 1,
+  "questions": [{% assign public_questions = site.questions | where: 'published', true %}{% for question in public_questions %}{% unless forloop.first %},{% endunless %}{{ question.slug | jsonify }}{% endfor %}]
+}

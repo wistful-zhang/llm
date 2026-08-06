@@ -1,0 +1,4 @@
+# Cloudflare Deploy Button 会把这些名称识别为需要填写的加密 Secret。
+TURNSTILE_SECRET_KEY=replace-with-turnstile-secret
+HASH_SECRET=replace-with-at-least-32-random-characters
+ADMIN_TOKEN=replace-with-at-least-32-random-characters

@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "llm-interview-comments",
+  "main": "src/index.js",
+  "compatibility_date": "2025-04-01",
+  "workers_dev": true,
+  "vars": {
+    "SITE_URL": "https://example.github.io/llm",
+    "SITE_ID": "llm-interview-notes",
+    "TURNSTILE_SITE_KEY": "REPLACE_WITH_TURNSTILE_SITE_KEY"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "llm-comments",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
