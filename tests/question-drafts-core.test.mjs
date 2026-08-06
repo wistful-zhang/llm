@@ -119,6 +119,20 @@ test('新增题目会清理空白、去重标签，且不修改原对象', () =>
   );
 });
 
+test('旧草稿中的历史自定义分类经过 JSON 与 Markdown 往返不会丢失', () => {
+  const state = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    category: '向量数据库',
+  });
+  const restored = parseQuestionDraftsJson(serializeQuestionDrafts(state), {
+    repositoryId: 'owner/repo',
+  });
+  const markdown = buildQuestionMarkdown(restored.questions[0]);
+  const parsed = parseQuestionDocument(markdown, 'legacy-category.md');
+
+  assert.equal(restored.questions[0].category, '向量数据库');
+  assert.equal(parsed.values.get('category'), '向量数据库');
+});
+
 test('题目可见性只接受 private 或 public，旧记录缺省时安全迁移为 private', () => {
   const privateState = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME));
   assert.equal(privateState.questions[0].visibility, 'private');

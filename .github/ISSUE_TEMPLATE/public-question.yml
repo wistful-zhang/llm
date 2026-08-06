@@ -17,12 +17,27 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: dropdown
     id: category
     attributes:
       label: 分类
-      description: 例如 LLM 基础、RAG、Agent、推理与部署；不确定时填“待整理”。
-      placeholder: 待整理
+      description: 从当前正式题库已有分类中选择；不确定时选择“待整理”。
+      options:
+        - 待整理
+        - Agent
+        - LLM 基础
+        - NLP 与机器学习
+        - RAG
+        - 多模态
+        - 工程实践
+        - 评测与安全
+        - 数学基础
+        - 推理与部署
+        - 系统设计
+        - 训练工程
+        - 训练与对齐
+        - 预训练与数据
+      default: 0
     validations:
       required: true
 

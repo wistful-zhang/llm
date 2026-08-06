@@ -78,12 +78,26 @@ content:
 
       - name: category
         label: 分类
-        type: string
+        type: select
         required: true
         default: 待整理
-        description: 只发布问题时可保留“待整理”；完成答案前可选数学基础、LLM 基础、NLP 与机器学习、预训练与数据、训练与对齐、训练工程、Prompt 与上下文工程、推理与部署、RAG、Agent、多模态、评测与安全、工程实践、系统设计、编程与框架、项目与行为面，也可以输入自己的分类。
+        description: 从当前正式题库已有分类中选择；还不确定时保留“待整理”。
         options:
-          maxlength: 30
+          values:
+            - 待整理
+            - Agent
+            - LLM 基础
+            - NLP 与机器学习
+            - RAG
+            - 多模态
+            - 工程实践
+            - 评测与安全
+            - 数学基础
+            - 推理与部署
+            - 系统设计
+            - 训练工程
+            - 训练与对齐
+            - 预训练与数据
 
       - name: difficulty
         label: 难度
