@@ -50,29 +50,16 @@ export const CORE_QUESTION_SLUGS = Object.freeze([
   'llm-evaluation-dataset-design',
   'llm-judge-bias-calibration',
   'llm-pii-leakage-prevention',
-  'exp1000-eval-quality-latency-pareto',
   'llm-production-observability',
   'llm-cost-estimation-optimization',
   'structured-output-reliability',
   'llm-model-routing-fallback',
   'llm-conversation-state-storage',
   'llm-online-ab-testing',
-  'exp1000-python-asyncio-event-loop',
-  'exp1000-python-gil-thread-process',
-  'exp1000-context-budget-allocation-strategy',
-  'exp1000-deterministic-llm-workflow-boundaries',
-  'exp1000-prompt-regression-suite-construction',
-  'exp1000-career-project-elevator-pitch',
-  'exp1000-career-personal-contribution',
-  'exp1000-career-architecture-tradeoff',
-  'exp1000-career-success-metric',
-  'exp1000-career-failed-experiment',
-  'exp1000-career-production-impact-evidence',
-  'exp1000-career-hardest-technical-problem',
 ]);
 
 // 这些题仍然重要，但更适合在目标岗位路线中学习，而不是要求所有候选人优先准备。
-// 保留完整迁移清单，避免后续批量重建时把扩展批次中的岗位题降回 extended。
+// 这份迁移清单只包含当前资料已核验、仍在活跃题库中的题目。
 export const ROLE_FROM_CORE_QUESTION_SLUGS = Object.freeze([
   'agent-context-management',
   'agent-human-approval-interrupts',
@@ -96,8 +83,6 @@ export const ROLE_FROM_CORE_QUESTION_SLUGS = Object.freeze([
   'paged-attention-kv-management',
   'prefill-vs-decode',
   'continuous-batching-scheduling',
-  'exp1000-eval-atomic-rubric',
-  'exp1000-eval-golden-set-maintenance',
   'llm-confidence-calibration-abstention',
   'llm-jailbreak-defense-evaluation',
   'paired-model-comparison-significance',
@@ -116,16 +101,6 @@ export const ROLE_FROM_CORE_QUESTION_SLUGS = Object.freeze([
   'zero-fsdp-sharding',
 ]);
 
-const CORE_QUESTION_SLUG_SET = new Set(CORE_QUESTION_SLUGS);
-const ROLE_FROM_CORE_QUESTION_SLUG_SET = new Set(ROLE_FROM_CORE_QUESTION_SLUGS);
-
 export function isStudyTier(value) {
   return Object.hasOwn(STUDY_TIERS, String(value || ''));
-}
-
-export function studyTierForExpansionBatch(batchFilename, slug = '') {
-  const questionSlug = `exp1000-${String(slug || '')}`;
-  if (CORE_QUESTION_SLUG_SET.has(questionSlug)) return 'core';
-  if (ROLE_FROM_CORE_QUESTION_SLUG_SET.has(questionSlug)) return 'role';
-  return /^batch-c-/i.test(String(batchFilename || '')) ? 'archive' : 'extended';
 }

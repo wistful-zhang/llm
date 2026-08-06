@@ -25,6 +25,8 @@
 
 从 1.5.x 升级到 1.6.0 时，请一起合并 `docs/_data/study_tracks.yml`、首页、学习分级页、模拟面试脚本、样式和 `scripts/question-study-tier.mjs`。基础题库把 40 道深题从 `core` 调整为 `role`；如果你已经维护自己的分级，可以只采用路线与筛选代码，不覆盖 `docs/_questions/`。网页新题导出会补上 `study_tier: archive`，旧的浏览器 JSON 无需迁移。
 
+从 1.6.x 升级到 1.7.0 时，上游主题库会移除 768 个 `exp1000-*.md` 批量扩展题，只保留 232 道资料核验题。不要直接删除自己后来编辑、补充来源或改名的题目；先给仓库打标签并导出备份，再按自己的核验状态决定是否精简。上游原始 1000 题保存在 `questions-1000-snapshot-2026-08-06` 标签和对应 Release 中，详见 `QUESTION_ARCHIVE.md`。
+
 1.6.0 当时把题目评论改为正文下方的内嵌输入框，并使用 [utterances](https://github.com/apps/utterances) 显示 GitHub Issue 回复。这段只用于识别旧副本：该方案已经退役，不要再为新副本安装评论应用。旧 Issue 和回复仍保留在 GitHub，但不会自动出现在新的站内评论数据库中。
 
 ## 升级到下一版本的站内评论（尚未发布）

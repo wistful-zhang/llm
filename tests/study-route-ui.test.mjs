@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const read = (relativePath) => readFile(new URL(relativePath, import.meta.url), 'utf8');
 
-const [tracks, home, practice, guide, search, practiceScript, stylesheet, about] = await Promise.all([
+const [tracks, home, practice, guide, search, practiceScript, stylesheet, about, contributing] = await Promise.all([
   read('../docs/_data/study_tracks.yml'),
   read('../docs/index.html'),
   read('../docs/practice.html'),
@@ -13,6 +13,7 @@ const [tracks, home, practice, guide, search, practiceScript, stylesheet, about]
   read('../docs/assets/js/practice.js'),
   read('../docs/assets/css/style.css'),
   read('../docs/about.md'),
+  read('../CONTRIBUTING.md'),
 ]);
 
 test('四条岗位路线由单一数据文件驱动，并同时用于浏览、模拟和说明页', () => {
@@ -65,13 +66,23 @@ test('首页会显示当前范围的分类计数、禁用空分类，并能一�
   assert.match(stylesheet, /\.filter:disabled/);
 });
 
-test('可复用页面使用真实公开题数，不向题库副本硬编码 1000 道', () => {
+test('可复用页面使用真实公开题数和核验数，不把后来新增的题目冒充为已核验', () => {
   assert.match(home, /{{ published_questions\.size }} 道是覆盖面/);
-  assert.match(guide, /published_question_count = site\.questions \| where: 'published', true \| size/);
-  assert.match(about, /published_question_count = site\.questions \| where: 'published', true \| size/);
+  assert.match(guide, /published_questions = site\.questions \| where: 'published', true/);
+  assert.match(guide, /verified_question_count = published_questions \| where: 'verified', true \| size/);
+  assert.match(about, /published_questions = site\.questions \| where: 'published', true/);
+  assert.match(about, /verified_question_count = published_questions \| where: 'verified', true \| size/);
+  assert.match(practice, /待校对题不会自动混入默认练习/);
+  assert.doesNotMatch(practice, /当前主题库只保留资料已核验内容/);
   assert.doesNotMatch(home, />1000 道是覆盖面/);
   assert.doesNotMatch(guide, /^# 1000 道题/m);
   assert.doesNotMatch(about, /^1000 道题/m);
+});
+
+test('资料核验只说明技术依据可追溯，不冒充真实公司面试来源证明', () => {
+  assert.match(home, /答案的技术依据附有可核验资料；不等于真实公司面试来源证明/);
+  assert.match(about, /不等于证明它来自某家公司真实面试/);
+  assert.match(contributing, /这个标记不证明题目来自某家公司真实面试/);
 });
 
 test('岗位路线卡片和移动端布局可直接操作', () => {

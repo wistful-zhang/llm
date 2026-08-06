@@ -20,11 +20,13 @@ permalink: /practice/
 {% assign role_questions = published_questions | where: 'study_tier', 'role' %}
 {% assign extended_questions = published_questions | where: 'study_tier', 'extended' %}
 {% assign archive_questions = published_questions | where: 'study_tier', 'archive' %}
+{% assign verified_questions = published_questions | where: 'verified', true %}
+{% assign review_question_count = published_questions.size | minus: verified_questions.size %}
 <div class="container practice-page">
   <header class="practice-intro">
     <span class="status-badge">随机抽题 · 自我复盘</span>
     <h1>随机模拟面试</h1>
-    <p>默认只从资料已核验的“核心必会”中出题；选择目标方向后，再合并该方向的岗位专项，不会让扩展题稀释重点。先用自己的话回答，再看参考说法和完整题解。</p>
+    <p>默认优先从资料已核验的“核心必会”中出题；选择目标方向后，再合并该方向的岗位专项。以后新增的待校对题不会自动混入默认练习。先用自己的话回答，再看参考说法和完整题解。</p>
   </header>
 
   <noscript>
@@ -91,9 +93,9 @@ permalink: /practice/
                         aria-describedby="practice-pool-status">
                   <option value="recommended">核心＋所选方向专项</option>
                   {% if core_questions.size > 0 %}<option value="core" selected>仅核心必会（{{ core_questions.size }} 题）</option>{% endif %}
-                  <option value="role">仅岗位专项（{{ role_questions.size }} 题）</option>
-                  <option value="extended">扩展知识点（{{ extended_questions.size }} 题）</option>
-                  <option value="archive">待重整（{{ archive_questions.size }} 题，不推荐）</option>
+                  {% if role_questions.size > 0 %}<option value="role">仅岗位专项（{{ role_questions.size }} 题）</option>{% endif %}
+                  {% if extended_questions.size > 0 %}<option value="extended">扩展知识点（{{ extended_questions.size }} 题）</option>{% endif %}
+                  {% if archive_questions.size > 0 %}<option value="archive">待重整（{{ archive_questions.size }} 题，不推荐）</option>{% endif %}
                   <option value=""{% if core_questions.size == 0 %} selected{% endif %}>全部可练题（{{ published_questions.size }} 题）</option>
                 </select>
               </label>
@@ -120,9 +122,9 @@ permalink: /practice/
               <label class="practice-field">
                 <span>答案可靠性</span>
                 <select id="practice-verification" name="verification" aria-describedby="practice-pool-status">
-                  <option value="verified" selected>资料已核验（推荐）</option>
+                  {% if verified_questions.size > 0 %}<option value="verified" selected>资料已核验（推荐）</option>{% endif %}
                   <option value="">包含全部可用答案</option>
-                  <option value="review">只练参考答案待校对</option>
+                  {% if review_question_count > 0 %}<option value="review">只练参考答案待校对</option>{% endif %}
                 </select>
               </label>
               <label class="practice-field">
@@ -156,7 +158,7 @@ permalink: /practice/
         <button id="practice-last-weak" class="secondary-button" type="button" hidden>继续练薄弱题</button>
       </aside>
 
-      <p class="practice-local-note">练习进度与上次选择的目标方向只保存在当前浏览器，不会写回 GitHub。默认只抽资料已核验的题；待解答题不会被抽到，“待重整”题也只有主动选择时才会进入本轮。</p>
+      <p class="practice-local-note">练习进度与上次选择的目标方向只保存在当前浏览器，不会写回 GitHub。默认只抽资料已核验的题；以后新增的待解答题不会被抽到，非默认层级也只有主动选择时才会进入本轮。</p>
     </section>
 
     <section id="practice-session" class="practice-session" aria-labelledby="practice-session-title" hidden>

@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const read = (relativePath) => readFile(new URL(relativePath, import.meta.url), 'utf8');
 
-test('千题规模下支持难度筛选和分批显示', async () => {
+test('较大题库支持难度筛选和分批显示', async () => {
   const [page, script] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/assets/js/search.js'),
@@ -90,7 +90,7 @@ test('题卡使用浏览器延迟渲染提示降低长列表绘制开销', async
   assert.match(cardRule, /contain-intrinsic-size: auto 112px/);
 });
 
-test('已核验答案与批量扩展后的待校对答案不会混为一谈', async () => {
+test('已核验答案与以后新增的待校对答案不会混为一谈', async () => {
   const [page, questionLayout, css, practicePage, practiceScript] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/_layouts/question.html'),
