@@ -21,6 +21,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const TOKEN_RE = /^[A-Za-z0-9_-]{32,172}$/;
 const SLUG_RE = /^[\p{L}\p{N}](?:[\p{L}\p{N}._-]{0,199})$/u;
 const DISALLOWED_CONTROLS_RE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
+const KNOWN_PLACEHOLDERS = new Set([
+  "https://example.github.io/llm",
+  "replace_with_turnstile_site_key",
+  "replace_with_d1_database_id",
+  "replace-with-turnstile-secret",
+  "replace-with-at-least-32-random-characters",
+]);
 
 export function isUuid(value) {
   return typeof value === "string" && UUID_RE.test(value);
@@ -145,6 +152,17 @@ export function parseJsonByteLength(text) {
   return new TextEncoder().encode(text).byteLength;
 }
 
+export function isPlaceholderValue(value) {
+  if (typeof value !== "string") return false;
+  return KNOWN_PLACEHOLDERS.has(value.trim().toLowerCase());
+}
+
+export function isConfiguredSecret(value, minLength = 1) {
+  return typeof value === "string"
+    && value.trim().length >= minLength
+    && !isPlaceholderValue(value);
+}
+
 export function normalizeSiteConfig(env) {
   let siteUrl = null;
   try {
@@ -166,7 +184,9 @@ export function normalizeSiteConfig(env) {
       && !siteUrl.username
       && !siteUrl.password
       && !siteUrl.search
-      && !siteUrl.hash,
+      && !siteUrl.hash
+      && siteUrl.hostname.toLowerCase() !== "example.github.io"
+      && !isPlaceholderValue(env.SITE_URL),
   );
   const readable = Boolean(
     safeSiteUrl && /^[A-Za-z0-9_-]{8,80}$/.test(siteId) && env.DB,
@@ -174,9 +194,10 @@ export function normalizeSiteConfig(env) {
   const writeEnabled = Boolean(
     readable
       && /^[A-Za-z0-9_-]{10,100}$/.test(siteKey)
-      && hashSecret.length >= 32
-      && turnstileSecret
-      && adminToken.length >= 32,
+      && !isPlaceholderValue(siteKey)
+      && isConfiguredSecret(hashSecret, 32)
+      && isConfiguredSecret(turnstileSecret)
+      && isConfiguredSecret(adminToken, 32),
   );
   return {
     siteId,

@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   HttpError,
   isAllowedOrigin,
+  isConfiguredSecret,
+  isPlaceholderValue,
   isUuid,
   normalizePlainText,
   normalizeSiteConfig,
@@ -12,6 +14,7 @@ import {
   parseReportInput,
   validateSlug,
 } from "../comments-worker/src/validation.js";
+import { assertAdmin } from "../comments-worker/src/security.js";
 import {
   assertPublishedQuestion,
   clearManifestCacheForTests,
@@ -84,7 +87,7 @@ test("昵称压缩空白，正文保留换行，并执行长度限制", () => {
 
 test("单站配置只在数据库和所有写入密钥齐全时开放发布", () => {
   const base = {
-    SITE_URL: "https://example.github.io/llm/",
+    SITE_URL: "https://notes.example.com/llm/",
     SITE_ID: "demo-site",
     TURNSTILE_SITE_KEY: "site-key-123",
     TURNSTILE_SECRET_KEY: "turnstile-secret",
@@ -95,7 +98,7 @@ test("单站配置只在数据库和所有写入密钥齐全时开放发布", ()
   const ready = normalizeSiteConfig(base);
   assert.equal(ready.readable, true);
   assert.equal(ready.writeEnabled, true);
-  assert.equal(ready.siteOrigin, "https://example.github.io");
+  assert.equal(ready.siteOrigin, "https://notes.example.com");
   assert.equal(normalizeSiteConfig({ ...base, HASH_SECRET: "short" }).writeEnabled, false);
   assert.equal(normalizeSiteConfig({ ...base, ADMIN_TOKEN: "short" }).writeEnabled, false);
   assert.equal(normalizeSiteConfig({ ...base, DB: undefined }).readable, false);
@@ -121,6 +124,46 @@ test("SITE_URL 正式环境强制 HTTPS，允许项目子路径和本机 HTTP �
   ]) {
     assert.equal(normalizeSiteConfig({ ...env, SITE_URL }).readable, false, SITE_URL);
   }
+});
+
+test("Deploy Button placeholders fail closed", async () => {
+  const placeholderSecret = "replace-with-at-least-32-random-characters";
+  for (const value of [
+    "https://example.github.io/llm",
+    "REPLACE_WITH_TURNSTILE_SITE_KEY",
+    "replace-with-turnstile-secret",
+    placeholderSecret,
+  ]) {
+    assert.equal(isPlaceholderValue(value), true, value);
+  }
+  assert.equal(isConfiguredSecret(placeholderSecret, 32), false);
+
+  const defaults = {
+    SITE_URL: "https://example.github.io/llm",
+    SITE_ID: "llm-interview-notes",
+    TURNSTILE_SITE_KEY: "REPLACE_WITH_TURNSTILE_SITE_KEY",
+    TURNSTILE_SECRET_KEY: "replace-with-turnstile-secret",
+    HASH_SECRET: placeholderSecret,
+    ADMIN_TOKEN: placeholderSecret,
+    DB: {},
+  };
+  const defaultConfig = normalizeSiteConfig(defaults);
+  assert.equal(defaultConfig.readable, false);
+  assert.equal(defaultConfig.writeEnabled, false);
+
+  const realSite = { ...defaults, SITE_URL: "https://notes.example.com/llm" };
+  assert.equal(normalizeSiteConfig(realSite).readable, true);
+  assert.equal(normalizeSiteConfig(realSite).writeEnabled, false);
+
+  await assert.rejects(
+    assertAdmin(
+      new Request("https://comments.example.com/v1/admin/overview", {
+        headers: { authorization: `Bearer ${placeholderSecret}` },
+      }),
+      { ADMIN_TOKEN: placeholderSecret },
+    ),
+    (error) => error instanceof HttpError && error.code === "admin_unauthorized",
+  );
 });
 
 test("CORS 只接受配置站点 origin 或 Worker 自身 origin", () => {

@@ -1,4 +1,11 @@
-import { HttpError, LIMITS, isAllowedOrigin, normalizeSiteConfig, parseJsonByteLength } from "./validation.js";
+import {
+  HttpError,
+  LIMITS,
+  isAllowedOrigin,
+  isConfiguredSecret,
+  normalizeSiteConfig,
+  parseJsonByteLength,
+} from "./validation.js";
 
 const encoder = new TextEncoder();
 
@@ -146,7 +153,7 @@ export async function assertAdmin(request, env) {
   const configured = typeof env.ADMIN_TOKEN === "string" ? env.ADMIN_TOKEN : "";
   const header = request.headers.get("authorization") || "";
   const candidate = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (configured.length < 32 || !(await constantTimeEqual(candidate, configured))) {
+  if (!isConfiguredSecret(configured, 32) || !(await constantTimeEqual(candidate, configured))) {
     throw new HttpError(401, "admin_unauthorized", "管理员身份验证失败");
   }
 }
