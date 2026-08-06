@@ -83,7 +83,7 @@ title: 题库
     <div>
       <span class="eyebrow">先学真正重要的</span>
       <h2 id="study-tier-intro-title">{{ published_questions.size }} 道是覆盖面，不是每道都要背</h2>
-      <p>默认只显示 {{ core_count }} 道“核心必会”。准备专项岗位时再看 {{ role_count }} 道“岗位专项”；{{ extended_count }} 道扩展知识点用于查漏补缺，{{ archive_count }} 道题仍待重整，不进入默认学习路径。</p>
+      <p>{% if review_count == 0 and unanswered_count == 0 %}当前正式题库只保留资料已核验内容。{% endif %}默认显示 {{ core_count }} 道“核心必会”{% if role_count > 0 %}，准备专项岗位时再看 {{ role_count }} 道“岗位专项”{% endif %}{% if extended_count > 0 %}；{{ extended_count }} 道扩展知识点用于查漏补缺{% endif %}{% if archive_count > 0 %}，{{ archive_count }} 道题仍待重整{% endif %}。</p>
     </div>
     <a class="text-link" href="{{ '/study-tiers/' | relative_url }}">分级依据与使用方法 →</a>
   </section>
@@ -109,9 +109,9 @@ title: 题库
               aria-label="按备考层级筛选题目">
         <option value="recommended">核心＋所选方向专项</option>
         <option value="core"{% if core_count > 0 %} selected{% endif %}>核心必会（{{ core_count }}）</option>
-        <option value="role">岗位专项（{{ role_count }}）</option>
-        <option value="extended">扩展知识点（{{ extended_count }}）</option>
-        <option value="archive">待重整（{{ archive_count }}）</option>
+        {% if role_count > 0 %}<option value="role">岗位专项（{{ role_count }}）</option>{% endif %}
+        {% if extended_count > 0 %}<option value="extended">扩展知识点（{{ extended_count }}）</option>{% endif %}
+        {% if archive_count > 0 %}<option value="archive">待重整（{{ archive_count }}）</option>{% endif %}
         <option value=""{% if core_count == 0 %} selected{% endif %}>全部（{{ published_questions.size }}）</option>
       </select>
     </label>
@@ -128,9 +128,9 @@ title: 题库
       <span>答案状态</span>
       <select id="question-review-state" aria-label="按答案核验状态筛选题目">
         <option value="">全部状态</option>
-        <option value="verified">资料已核验</option>
-        <option value="review">参考答案待校对</option>
-        <option value="pending">待解答</option>
+        {% if verified_count > 0 %}<option value="verified">资料已核验（{{ verified_count }}）</option>{% endif %}
+        {% if review_count > 0 %}<option value="review">参考答案待校对（{{ review_count }}）</option>{% endif %}
+        {% if unanswered_count > 0 %}<option value="pending">待解答（{{ unanswered_count }}）</option>{% endif %}
       </select>
     </label>
     <div class="filters" role="group" aria-label="按分类筛选">
@@ -184,7 +184,7 @@ title: 题库
             {% if question.difficulty != '待评估' %}<span class="difficulty difficulty-{{ question.difficulty | escape }}">{{ question.difficulty | escape }}</span>{% endif %}
             <span class="study-tier-badge study-tier-{{ study_tier | escape }}">{{ study_tier_label }}</span>
             {% unless answer_ready %}<span class="answer-state-badge">待解答</span>{% endunless %}
-            {% if answer_ready and question.verified == true %}<span class="verification-badge" title="题目主题与答案均附有可核验来源">✓ 资料核验</span>{% endif %}
+            {% if answer_ready and question.verified == true %}<span class="verification-badge" title="答案的技术依据附有可核验资料；不等于真实公司面试来源证明">✓ 资料核验</span>{% endif %}
             {% if answer_ready and question.verified != true %}<span class="review-pending-badge" title="题目和参考答案均已发布，尚未逐题对照一手资料核验">参考答案 · 待校对</span>{% endif %}
           </div>
           <h2>{{ question.title | escape }}</h2>

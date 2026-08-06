@@ -1,18 +1,22 @@
 ---
 title: 学习分级说明
-description: 说明千题题库的学习优先级、证据边界和不同岗位的使用路径。
+description: 说明资料核验题库的学习优先级、证据边界和不同岗位的使用路径。
 permalink: /study-tiers/
 ---
 
-{% assign published_question_count = site.questions | where: 'published', true | size %}
+{% assign published_questions = site.questions | where: 'published', true %}
+{% assign published_question_count = published_questions | size %}
+{% assign verified_question_count = published_questions | where: 'verified', true | size %}
 {% assign practice_path = '/practice/' | relative_url %}
 {% assign library_path = '/' | relative_url %}
 
 <div class="container prose standalone-page" markdown="1">
 
-# {{ published_question_count }} 道题，不等于每道都要背
+# {{ published_question_count }} 道公开题，先看资料状态再决定学习顺序
 
-题库做到 {{ published_question_count }} 道，是为了覆盖基础原理、应用工程、训练、推理、评测、系统设计和项目表达等不同方向，不代表每道题同等重要，也不代表所有岗位都会问到。对大多数人，更有效的顺序是：**先掌握核心必会，再按目标岗位选择岗位专项，最后把其余题目当作查漏补缺的资料库。**
+内置基础题库保留了 232 道逐题附有参考资料、标记为“资料核验”的内容。当前副本共有 {{ published_question_count }} 道公开题，其中 {{ verified_question_count }} 道标记为“资料核验”；以后新增的题目按自身状态显示。它们覆盖基础原理、应用工程、训练、推理、评测和系统设计等方向，但不代表每道题同等重要，也不代表所有岗位都会问到。对大多数人，更有效的顺序是：**先掌握核心必会，再按目标岗位选择岗位专项。**
+
+此前 768 道批量扩展题只有按类别附加的通用“延伸阅读”，没有完成逐题资料核验，因此已经移出主题库并固定归档。归档题不会出现在搜索、筛选或随机模拟中；以后确有需要时，可以取回单题、补齐资料并重新校验，而不是一次性全部恢复。
 
 页面上的“备考层级”只表示建议学习顺序。它不等于题目难度、答案是否经过资料核验、题目是否公开，也不等于你个人的复习状态。这几项会分别显示，不能互相替代。
 
@@ -43,7 +47,7 @@ permalink: /study-tiers/
   {% endfor %}
 </div>
 
-## 四个层级分别表示什么
+## 四个层级字段分别表示什么
 
 | 层级 | 含义 | 建议怎么用 |
 | --- | --- | --- |
@@ -118,6 +122,6 @@ permalink: /study-tiers/
 
 这些资料主要用于核对工程边界、评测方法和系统设计思路。具体题目的答案仍应优先追溯到对应论文、标准或官方文档。
 
-**更新时间：2026-07-22。** 分级是可修订的学习导航，不是对任何公司题库的承诺。
+**更新时间：2026-08-06。** 分级是可修订的学习导航，不是对任何公司题库的承诺。
 
 </div>
