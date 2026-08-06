@@ -95,6 +95,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .content-utility > .text-link, .content-utility-links .text-link { white-space: nowrap; }
 .content-utility-status { flex: 1 0 100%; min-height: 1.5em; margin: -4px 0 0; color: var(--muted); font-size: .86rem; }
 .question-comments { margin-top: 54px; padding-top: 34px; border-top: 1px solid var(--line); }
+.answer-edit-bar { display: flex; align-items: center; justify-content: space-between; gap: 22px; margin-top: 30px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: #f8fafc; }
+.answer-edit-bar-copy { display: grid; gap: 4px; }
+.answer-edit-bar-copy strong { color: var(--ink); font-size: .92rem; }
+.answer-edit-bar-copy span { max-width: 680px; color: var(--muted); font-size: .84rem; line-height: 1.6; }
+.answer-edit-bar-copy .answer-edit-verification-warning { color: #9a3412; font-weight: 650; }
+.answer-edit-bar-actions { display: flex; flex: 0 0 auto; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 10px 14px; }
+.answer-edit-bar-actions .secondary-button { white-space: nowrap; }
+.answer-edit-fallback { color: var(--muted); font-size: .78rem; }
 .question-comments-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
 .question-comments-heading h2 { margin: 5px 0 0; font-size: clamp(1.55rem, 4vw, 2rem); letter-spacing: -.025em; }
 .question-comments-intro { max-width: 740px; margin: 12px 0 18px; color: var(--muted); }
@@ -132,6 +140,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .content-utility { align-items: stretch; flex-direction: column; }
   .content-utility-actions { flex-wrap: wrap; }
   .content-utility > .text-link, .content-utility-links .text-link { white-space: normal; }
+  .answer-edit-bar { align-items: stretch; flex-direction: column; }
+  .answer-edit-bar-actions { align-items: flex-start; flex-direction: column; }
+  .answer-edit-bar-actions .secondary-button { width: 100%; text-align: center; }
   .question-comments-heading { align-items: stretch; flex-direction: column; gap: 14px; }
   .setup-check-input-row, .setup-check-actions { align-items: stretch; flex-direction: column; }
   .setup-check-input-row .primary-button, .setup-check-actions > * { width: 100%; text-align: center; }
@@ -601,6 +612,7 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .unanswered-panel > p { max-width: 680px; margin: 0; color: var(--muted); }
 .unanswered-actions { display: flex; flex-wrap: wrap; margin-top: 18px; align-items: center; gap: 10px 14px; }
 .unanswered-actions > * { margin: 0; }
+.unanswered-permanent-actions { margin-top: 10px; }
 .copy-status { color: var(--muted); font-size: .84rem; }
 .unanswered-panel > .copy-status { margin-top: 12px; }
 
