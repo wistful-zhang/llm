@@ -153,7 +153,7 @@ test('公开补题保留可视化表单，站内评论不再创建 GitHub Issue'
   assert.match(questionForm, /labels:\s*\[["']public-question["']\]/);
   assert.match(fieldSection(questionForm, 'question'), /required:\s*true/);
   assert.doesNotMatch(fieldSection(questionForm, 'answer'), /required:\s*true/);
-  assert.match(fieldSection(questionForm, 'category'), /- type:\s*input/);
+  assert.match(fieldSection(questionForm, 'category'), /- type:\s*dropdown/);
   assert.match(fieldSection(questionForm, 'difficulty'), /- type:\s*input/);
 
   assert.match(questionForm, /提交后会公开/);

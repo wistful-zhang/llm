@@ -1,17 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 
 import { findSensitivePublicContent } from '../docs/assets/js/public-content-privacy.mjs';
+import { parseQuestionDocument } from '../scripts/question-publication.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-const [page, script, layout, stylesheet] = await Promise.all([
+const [page, script, layout, stylesheet, cms, publicQuestionForm] = await Promise.all([
   read('../docs/capture.html'),
   read('../docs/assets/js/question-capture.js'),
   read('../docs/_layouts/default.html'),
   read('../docs/assets/css/style.css'),
+  read('../.pages.yml'),
+  read('../.github/ISSUE_TEMPLATE/public-question.yml'),
 ]);
+
+const questionDirectory = new URL('../docs/_questions/', import.meta.url);
+const questionFilenames = (await readdir(questionDirectory))
+  .filter((filename) => /\.(?:md|markdown)$/i.test(filename));
+const questionCategoryRows = await Promise.all(questionFilenames.map(async (filename) => {
+  const source = await readFile(new URL(filename, questionDirectory), 'utf8');
+  const parsed = parseQuestionDocument(source, filename);
+  return {
+    category: String(parsed.values.get('category') || ''),
+    published: parsed.values.get('published') === true,
+  };
+}));
+const currentCategories = [...new Set(questionCategoryRows
+  .filter(({ published }) => published)
+  .map(({ category }) => category))]
+  .filter(Boolean)
+  .sort((left, right) => left.localeCompare(right, 'zh-CN'));
 
 const attributesFor = (html, id) => {
   const match = html.match(new RegExp(`<[^>]+\\bid=["']${id}["'][^>]*>`, 'i'));
@@ -26,6 +46,30 @@ const inputFor = (html, name, value) => {
   ));
   assert.ok(match, `页面缺少 name=${name} value=${value} 的输入项`);
   return match[0];
+};
+
+const yamlFieldSection = (source, fieldName, nextFieldName) => {
+  const normalized = source.replace(/\r\n?/g, '\n');
+  const match = normalized.match(new RegExp(
+    `\\n      - name: ${fieldName}\\n[\\s\\S]*?(?=\\n      - name: ${nextFieldName}\\n)`,
+  ));
+  assert.ok(match, `配置缺少 ${fieldName} 字段`);
+  return match[0];
+};
+
+const issueFieldSection = (source, fieldId) => {
+  const normalized = source.replace(/\r\n?/g, '\n');
+  const match = normalized.match(new RegExp(
+    `\\n  - type: [^\\n]+\\n    id: ${fieldId}\\n[\\s\\S]*?(?=\\n  - type:|$)`,
+  ));
+  assert.ok(match, `Issue Form 缺少 ${fieldId} 字段`);
+  return match[0];
+};
+
+const yamlListAfter = (section, marker, endMarker = null) => {
+  const tail = section.split(marker)[1] || '';
+  const block = endMarker ? tail.split(endMarker)[0] : tail;
+  return [...block.matchAll(/^\s+-\s+(.+?)\s*$/gm)].map((match) => match[1]);
 };
 
 test('快速记题页提供无需 Markdown 的完整表单，并允许只保存问题', () => {
@@ -47,18 +91,50 @@ test('快速记题页提供无需 Markdown 的完整表单，并允许只保存�
   assert.match(page, /我的答案或思路[\s\S]*可留空/);
   assert.match(page, /不确定答案也可以先保存/);
 
-  assert.match(attributesFor(page, 'question-draft-category'), /\bvalue="待整理"/);
+  const category = attributesFor(page, 'question-draft-category');
+  assert.match(category, /^<select\b/i);
+  assert.doesNotMatch(category, /\bname=/);
+  assert.match(page, /<option value="待整理" selected>待整理（稍后分类）<\/option>/);
+  assert.match(page, /for category in published_categories/);
+  assert.match(page, /unless category == '待整理'/);
+  assert.doesNotMatch(page, /<datalist\b|list="question-draft-categories"/);
   assert.doesNotMatch(attributesFor(page, 'question-draft-difficulty'), /\bname=/);
   assert.match(page, /<option value="待评估" selected>待评估<\/option>/);
   assert.doesNotMatch(attributesFor(page, 'question-draft-answer-status'), /\bname=/);
   assert.match(page, /<option value="pending" selected>/);
   assert.match(page, /<option value="complete">/);
   assert.match(page, /写了几句思路也不会自动算完成/);
+  assert.match(page, /选项来自当前正式题库已有分类/);
 
   assert.match(page, /普通段落即可，不要求 Markdown/);
   assert.match(attributesFor(page, 'question-draft-save'), /\btype="submit"/);
   assert.match(page, /保存为我的题目/);
   assert.match(page, /question-capture\.js/);
+});
+
+test('网页、Pages CMS 和公开投稿使用同一组当前已有分类下拉选项', () => {
+  const expected = ['待整理', ...currentCategories].sort((left, right) => left.localeCompare(right, 'zh-CN'));
+  const cmsCategory = yamlFieldSection(cms, 'category', 'difficulty');
+  const publicCategory = issueFieldSection(publicQuestionForm, 'category');
+  const cmsValues = yamlListAfter(cmsCategory, '          values:\n')
+    .sort((left, right) => left.localeCompare(right, 'zh-CN'));
+  const publicValues = yamlListAfter(publicCategory, '      options:\n', '    validations:')
+    .sort((left, right) => left.localeCompare(right, 'zh-CN'));
+
+  assert.match(cmsCategory, /type: select/);
+  assert.match(publicCategory, /type: dropdown/);
+  assert.match(publicCategory, /default: 0/);
+  assert.deepEqual(cmsValues, expected);
+  assert.deepEqual(publicValues, expected);
+});
+
+test('编辑旧草稿时临时保留已经不在当前下拉框中的历史分类', () => {
+  assert.match(script, /const selectCategory = \(category\) =>/);
+  assert.match(script, /document\.createElement\('option'\)/);
+  assert.match(script, /option\.textContent = `\$\{value\}（已有草稿）`/);
+  assert.match(script, /option\.dataset\.legacyCategory = 'true'/);
+  assert.match(script, /selectCategory\(question\.category\)/);
+  assert.doesNotMatch(script, /categoryInput\.value = question\.category/);
 });
 
 test('脚本失效时原生表单不会把题目、答案或来源拼进网址', () => {

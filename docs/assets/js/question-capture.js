@@ -480,10 +480,27 @@ ${JSON.stringify(question, null, 2)}
     filterEmpty.hidden = state.questions.length === 0 || filtered.length !== 0;
   }
 
+  const clearLegacyCategoryOptions = () => {
+    categoryInput.querySelectorAll('option[data-legacy-category]').forEach((option) => option.remove());
+  };
+
+  const selectCategory = (category) => {
+    const value = String(category || '').trim() || '待整理';
+    clearLegacyCategoryOptions();
+    if (![...categoryInput.options].some((option) => option.value === value)) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = `${value}（已有草稿）`;
+      option.dataset.legacyCategory = 'true';
+      categoryInput.append(option);
+    }
+    categoryInput.value = value;
+  };
+
   const resetForm = (focus = false) => {
     form.reset();
     idInput.value = '';
-    categoryInput.value = '待整理';
+    selectCategory('待整理');
     difficultyInput.value = '待评估';
     answerStatusInput.value = 'pending';
     visibilityInputs.forEach((input) => { input.checked = input.value === 'private'; });
@@ -517,7 +534,7 @@ ${JSON.stringify(question, null, 2)}
     answerStatusInput.value = question.answerStatus;
     visibilityInputs.forEach((input) => { input.checked = input.value === question.visibility; });
     publicConfirmedInput.checked = false;
-    categoryInput.value = question.category;
+    selectCategory(question.category);
     difficultyInput.value = question.difficulty;
     tagsInput.value = question.tags.join('，');
     sourceInput.value = question.source;

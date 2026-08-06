@@ -59,11 +59,11 @@ permalink: /capture/
 
         <label class="question-draft-field" for="question-draft-category">
           <span>分类</span>
-          <input id="question-draft-category" type="text" maxlength="30" list="question-draft-categories" value="待整理" autocomplete="off">
-          <datalist id="question-draft-categories">
-            <option value="待整理"></option>
-            {% for category in published_categories %}<option value="{{ category | escape }}"></option>{% endfor %}
-          </datalist>
+          <select id="question-draft-category">
+            <option value="待整理" selected>待整理（稍后分类）</option>
+            {% for category in published_categories %}{% unless category == '待整理' %}<option value="{{ category | escape }}">{{ category | escape }}</option>{% endunless %}{% endfor %}
+          </select>
+          <small>选项来自当前正式题库已有分类。</small>
         </label>
 
         <label class="question-draft-field" for="question-draft-difficulty">
