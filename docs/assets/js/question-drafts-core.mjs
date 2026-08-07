@@ -1,10 +1,12 @@
 export const QUESTION_DRAFTS_FORMAT = 'llm-question-drafts';
 export const QUESTION_DRAFTS_BACKUP_FORMAT = 'llm-question-drafts-backup';
-export const QUESTION_DRAFTS_SCHEMA_VERSION = 1;
+export const QUESTION_DRAFTS_SCHEMA_VERSION = 2;
 
 export const MAX_QUESTION_DRAFTS = 500;
 export const MAX_QUESTION_TITLE_LENGTH = 160;
 export const MAX_QUESTION_ANSWER_LENGTH = 50_000;
+export const MAX_QUESTION_FOLLOWUPS = 10;
+export const MAX_QUESTION_FOLLOWUP_LENGTH = 300;
 export const MAX_QUESTION_CATEGORY_LENGTH = 30;
 export const MAX_QUESTION_SOURCE_LENGTH = 80;
 export const MAX_QUESTION_TAGS = 12;
@@ -24,6 +26,7 @@ export const QUESTION_VISIBILITIES = Object.freeze(['private', 'public']);
 const DIFFICULTY_SET = new Set(QUESTION_DIFFICULTIES);
 const ANSWER_STATUS_SET = new Set(QUESTION_ANSWER_STATUSES);
 const VISIBILITY_SET = new Set(QUESTION_VISIBILITIES);
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2]);
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,119}$/;
 const REPOSITORY_SEGMENT_PATTERN = /^[A-Za-z0-9_.-]{1,100}$/;
 
@@ -131,6 +134,39 @@ const cleanAnswer = (value) => assertLength(
   { field: 'answer', max: MAX_QUESTION_ANSWER_LENGTH },
 );
 
+export function parseQuestionFollowUps(value = []) {
+  let candidates;
+  if (Array.isArray(value)) {
+    candidates = value;
+  } else if (typeof value === 'string') {
+    candidates = value.split(/\r?\n/);
+  } else {
+    fail('followUps 必须是文字列表或每行一条的文字。', 'invalid_type', 'followUps');
+  }
+
+  const followUps = [];
+  const seen = new Set();
+  candidates.forEach((candidate) => {
+    if (typeof candidate !== 'string') {
+      fail('followUps 中的每一项都必须是文字。', 'invalid_type', 'followUps');
+    }
+    const followUp = assertLength(cleanInlineText(candidate), {
+      field: 'followUps',
+      max: MAX_QUESTION_FOLLOWUP_LENGTH,
+    });
+    if (!followUp) return;
+    const identity = followUp.normalize('NFKC').toLocaleLowerCase('zh-CN');
+    if (seen.has(identity)) return;
+    seen.add(identity);
+    followUps.push(followUp);
+  });
+
+  if (followUps.length > MAX_QUESTION_FOLLOWUPS) {
+    fail(`followUps 最多填写 ${MAX_QUESTION_FOLLOWUPS} 条。`, 'too_many_followups', 'followUps');
+  }
+  return followUps;
+}
+
 const cleanCategory = (value) => assertLength(
   cleanInlineText(requireString(value, 'category', '待整理')),
   { field: 'category', min: 1, max: MAX_QUESTION_CATEGORY_LENGTH },
@@ -209,6 +245,7 @@ const sanitizeQuestion = (value) => {
     id: cleanId(value.id),
     title: cleanTitle(value.title),
     answer,
+    followUps: parseQuestionFollowUps(value.followUps),
     answerStatus: cleanAnswerStatus(value.answerStatus, answer),
     visibility: cleanVisibility(value.visibility),
     category: cleanCategory(value.category),
@@ -245,7 +282,7 @@ export function sanitizeQuestionDrafts(value, options = {}) {
   if (value.format !== QUESTION_DRAFTS_FORMAT) {
     fail('这不是大模型面经的站内题目数据。', 'wrong_format');
   }
-  if (value.schemaVersion !== QUESTION_DRAFTS_SCHEMA_VERSION) {
+  if (!SUPPORTED_SCHEMA_VERSIONS.has(value.schemaVersion)) {
     const code = Number(value.schemaVersion) > QUESTION_DRAFTS_SCHEMA_VERSION
       ? 'future_version'
       : 'unsupported_version';
@@ -303,6 +340,7 @@ const cleanQuestionInput = (value) => {
   return {
     title: cleanTitle(value.title),
     answer,
+    followUps: parseQuestionFollowUps(value.followUps),
     answerStatus: cleanAnswerStatus(value.answerStatus, answer),
     visibility: cleanVisibility(value.visibility),
     category: cleanCategory(value.category),
@@ -379,6 +417,7 @@ export const removeQuestionDraft = deleteQuestionDraft;
 const comparableQuestion = (question) => JSON.stringify({
   title: question.title,
   answer: question.answer,
+  followUps: question.followUps,
   answerStatus: question.answerStatus,
   visibility: question.visibility,
   category: question.category,
@@ -521,8 +560,11 @@ export function parseQuestionDraftBackup(raw, options = {}) {
   if (!isPlainObject(backup) || backup.format !== QUESTION_DRAFTS_BACKUP_FORMAT) {
     fail('这不是大模型面经的题目草稿备份。', 'wrong_backup_format', 'backup');
   }
-  if (backup.schemaVersion !== QUESTION_DRAFTS_SCHEMA_VERSION) {
-    fail('暂不支持这份题目备份的版本。', 'unsupported_version', 'schemaVersion');
+  if (!SUPPORTED_SCHEMA_VERSIONS.has(backup.schemaVersion)) {
+    const code = Number(backup.schemaVersion) > QUESTION_DRAFTS_SCHEMA_VERSION
+      ? 'future_version'
+      : 'unsupported_version';
+    fail('暂不支持这份题目备份的版本。', code, 'schemaVersion');
   }
   const sourceRepositoryId = normalizeRepositoryId(backup.repositoryId);
   if (options.allowCrossRepository === true && options.repositoryId === undefined) {
@@ -697,6 +739,9 @@ export function buildQuestionMarkdown(value) {
   const tags = question.tags.length
     ? `tags:\n${question.tags.map((tag) => `  - ${quoteYamlString(tag)}`).join('\n')}`
     : 'tags: []';
+  const followUps = question.followUps.length
+    ? `followups:\n${question.followUps.map((followUp) => `  - ${quoteYamlString(followUp)}`).join('\n')}`
+    : 'followups: []';
   const body = question.answer ? `\n${question.answer}\n` : '\n';
 
   return `---
@@ -707,8 +752,9 @@ review_status: ${quoteYamlString(reviewStatus)}
 category: ${quoteYamlString(question.category)}
 difficulty: ${quoteYamlString(question.difficulty)}
 study_tier: archive
+${followUps}
 ${tags}
-published: false
+published: ${question.visibility === 'public'}
 answer_status: ${answerStatus}
 date: ${question.date}
 ---
@@ -719,6 +765,7 @@ export function buildQuestionAnswerPrompt(value) {
   const question = sanitizeQuestion(value);
   const metadata = JSON.stringify({
     title: question.title,
+    followUps: question.followUps,
     answerStatus: question.answerStatus,
     visibility: question.visibility,
     category: question.category,
@@ -740,7 +787,8 @@ ${existingAnswer}
 1. 只输出 Markdown 正文，不要输出 YAML frontmatter，不要伪造公司、面试轮次、项目经历或指标。
 2. 先写“## 面试时怎么答”，包含开场思路、回答边界，以及一段 80～240 字、可直接口述的“可以这样答”。
 3. 再写核心回答、展开说明、工程实践、至少 3 个带直接接法的常见追问、一句话复习和公开参考资料。
-4. 如果信息不足，明确标出需要核实的地方；不要用听起来真实但无法核实的细节填空。`;
+4. followUps 是用户记录的原始追问；如果非空，优先在“常见追问”中覆盖这些问题，保留原意和已有的“答：”简短接法，不要静默删除。
+5. 如果信息不足，明确标出需要核实的地方；不要用听起来真实但无法核实的细节填空。`;
 }
 
 export const buildCodexAnswerPrompt = buildQuestionAnswerPrompt;

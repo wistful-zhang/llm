@@ -18,7 +18,7 @@ content:
       fields: [title, published, answer_status, study_tier, review_status, category, date]
       primary: title
       sort: [date, title, review_status, category, difficulty]
-      search: [title, source, category, tags, body]
+      search: [title, source, category, tags, followups, body]
       default:
         sort: date
         order: desc
@@ -48,11 +48,19 @@ content:
       - name: body
         label: 答案正文（待解答时可以留空）
         type: rich-text
-        description: 答案状态为“待解答”时，半成品不会在阅读网站展示或进入模拟；但 Public 仓库中的源文件始终可见。可在题目页复制补答指令交给 Codex；手动写完后请把答案状态改为“已完成”。
+        description: 答案状态为“待解答”时，半成品不会在阅读网站展示或进入模拟；但 Public 仓库中的源文件始终可见。现场原始追问请填在下方独立字段；整理后的完整“常见追问 + 回答”可继续写进正文。手动写完答案后请把状态改为“已完成”。
         options:
           format: markdown
           switcher: false
           media: false
+
+      - name: followups
+        label: 现场追问（可留空）
+        type: string
+        list: true
+        description: 每项填写一道面试官继续追问的问题，最多 10 条、每条不超过 300 字。不要填写姓名、联系方式、公司机密、内部题库或 NDA 内容。
+        options:
+          maxlength: 300
 
       - name: verified
         label: 修改过答案？请重新确认资料核验状态

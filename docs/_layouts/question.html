@@ -75,6 +75,14 @@ layout: default
       <span>它用于补充知识边界，目前不属于统一必会清单。</span>
     </aside>
   {% endif %}
+  {% if page.followups and page.followups != empty %}
+    <section class="prose question-followups" aria-labelledby="question-followups-title">
+      <h2 id="question-followups-title">现场追问</h2>
+      <ol>
+        {% for followup in page.followups %}<li>{{ followup | escape }}</li>{% endfor %}
+      </ol>
+    </section>
+  {% endif %}
   {% if answer_ready %}
     <section class="answer-coach" data-question-coach aria-labelledby="answer-coach-title">
       <div class="answer-coach-copy">

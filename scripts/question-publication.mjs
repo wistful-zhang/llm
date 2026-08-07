@@ -8,6 +8,8 @@ import { STUDY_TIERS, isStudyTier } from './question-study-tier.mjs';
 export { STUDY_TIERS };
 export const QUESTION_STUDY_TIERS = Object.freeze(Object.keys(STUDY_TIERS));
 export const isQuestionStudyTier = isStudyTier;
+export const MAX_QUESTION_FOLLOWUPS = 10;
+export const MAX_QUESTION_FOLLOWUP_LENGTH = 300;
 
 const ALLOWED_FIELDS = new Set([
   'title',
@@ -17,6 +19,7 @@ const ALLOWED_FIELDS = new Set([
   'difficulty',
   'study_tier',
   'tags',
+  'followups',
   'review_status',
   'published',
   'answer_status',
@@ -24,6 +27,7 @@ const ALLOWED_FIELDS = new Set([
 ]);
 
 const BOOLEAN_FIELDS = new Set(['verified', 'published']);
+const LIST_FIELDS = new Set(['tags', 'followups']);
 
 const parseSafeScalar = (rawValue, fieldName, lineNumber, filename, errors) => {
   const raw = String(rawValue || '').trim();
@@ -66,7 +70,7 @@ const parseSafeScalar = (rawValue, fieldName, lineNumber, filename, errors) => {
   return raw;
 };
 
-const splitInlineList = (source, lineNumber, filename, errors) => {
+const splitInlineList = (source, fieldName, lineNumber, filename, errors) => {
   const items = [];
   let quote = '';
   let start = 0;
@@ -85,22 +89,37 @@ const splitInlineList = (source, lineNumber, filename, errors) => {
       start = index + 1;
     }
   }
-  if (quote) errors.push(`${filename}: frontmatter 第 ${lineNumber} 行的 tags 引号没有闭合`);
+  if (quote) errors.push(`${filename}: frontmatter 第 ${lineNumber} 行的 ${fieldName} 引号没有闭合`);
   items.push(source.slice(start));
   return items;
 };
 
-const parseTagList = (rawValue, lineNumber, filename, errors) => {
+const parseStringList = (rawValue, fieldName, lineNumber, filename, errors) => {
   const raw = String(rawValue || '').trim();
   if (raw === '[]') return [];
   if (!raw.startsWith('[') || !raw.endsWith(']')) {
-    errors.push(`${filename}: frontmatter 第 ${lineNumber} 行的 tags 必须使用列表，不能使用折叠标量、别名或对象`);
+    errors.push(`${filename}: frontmatter 第 ${lineNumber} 行的 ${fieldName} 必须使用列表，不能使用折叠标量、别名或对象`);
     return [];
   }
   const inner = raw.slice(1, -1).trim();
   if (!inner) return [];
-  return splitInlineList(inner, lineNumber, filename, errors)
-    .map((item) => parseSafeScalar(item, 'tags', lineNumber, filename, errors));
+  return splitInlineList(inner, fieldName, lineNumber, filename, errors)
+    .map((item) => parseSafeScalar(item, fieldName, lineNumber, filename, errors));
+};
+
+const validateFollowups = (values, filename, errors) => {
+  if (!values.has('followups')) return;
+  const followups = values.get('followups');
+  if (!Array.isArray(followups)) return;
+  if (followups.length > MAX_QUESTION_FOLLOWUPS) {
+    errors.push(`${filename}: followups 最多填写 ${MAX_QUESTION_FOLLOWUPS} 条追问`);
+  }
+  followups.forEach((followup, index) => {
+    const length = String(followup || '').trim().length;
+    if (length < 1 || length > MAX_QUESTION_FOLLOWUP_LENGTH) {
+      errors.push(`${filename}: followups 第 ${index + 1} 条长度应为 1～${MAX_QUESTION_FOLLOWUP_LENGTH} 个字符`);
+    }
+  });
 };
 
 const parseSafeFrontmatter = (frontmatter, filename) => {
@@ -115,10 +134,10 @@ const parseSafeFrontmatter = (frontmatter, filename) => {
 
     if (/^\s/.test(line)) {
       const listItem = /^ {2,}-[ \t]+(.+?)\s*$/.exec(line);
-      if (activeList === 'tags' && listItem) {
-        const tags = values.get('tags') || [];
-        tags.push(parseSafeScalar(listItem[1], 'tags', lineNumber, filename, errors));
-        values.set('tags', tags);
+      if (LIST_FIELDS.has(activeList) && listItem) {
+        const items = values.get(activeList) || [];
+        items.push(parseSafeScalar(listItem[1], activeList, lineNumber, filename, errors));
+        values.set(activeList, items);
       } else {
         errors.push(`${filename}: frontmatter 第 ${lineNumber} 行使用了折叠标量、嵌套对象或非法缩进，题目只支持安全的单行字段`);
       }
@@ -140,12 +159,12 @@ const parseSafeFrontmatter = (frontmatter, filename) => {
     }
     if (values.has(key)) duplicates.add(key);
 
-    if (key === 'tags') {
+    if (LIST_FIELDS.has(key)) {
       if (!rawValue.trim()) {
         values.set(key, []);
         activeList = key;
       } else {
-        values.set(key, parseTagList(rawValue, lineNumber, filename, errors));
+        values.set(key, parseStringList(rawValue, key, lineNumber, filename, errors));
       }
       return;
     }
@@ -166,6 +185,7 @@ const parseSafeFrontmatter = (frontmatter, filename) => {
   duplicates.forEach((name) => {
     errors.push(`${filename}: frontmatter 字段 ${name} 重复，已拒绝发布以避免可见性歧义`);
   });
+  validateFollowups(values, filename, errors);
   return { values, errors };
 };
 
@@ -201,6 +221,7 @@ export function parseQuestionDocument(source, filename = 'question.md') {
       parsed.values.get('title'),
       parsed.values.get('source'),
       parsed.values.get('tags'),
+      parsed.values.get('followups'),
       body,
     ).forEach((label) => errors.push(`${filename}: 公开题目包含${label}，请先删除或匿名处理`));
   }
