@@ -61,6 +61,6 @@
     {% if page.url == '/practice/' %}<script type="module" src="{{ '/assets/js/practice.js' | relative_url }}"></script>{% endif %}
     {% if page.url == '/interviews/' %}<script type="module" src="{{ '/assets/js/interview-tracker.js' | relative_url }}"></script>{% endif %}
     {% if page.url == '/' %}<script type="module" src="{{ '/assets/js/local-questions.js' | relative_url }}"></script>{% endif %}
-    {% if page.url == '/' %}<script type="module" src="{{ '/assets/js/public-questions.js' | relative_url }}"></script>{% endif %}
+    {% if page.url == '/' or page.url == '/manage/' %}<script type="module" src="{{ '/assets/js/public-questions.js' | relative_url }}"></script>{% endif %}
   </body>
 </html>

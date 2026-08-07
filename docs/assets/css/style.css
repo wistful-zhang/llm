@@ -1059,6 +1059,13 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .owner-notice span { color: var(--accent-strong); }
 .manage-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: -10px 0 38px; }
 .manage-actions .secondary-button { margin-top: 0; }
+.public-question-review-panel { margin-bottom: 28px; }
+.public-question-review-panel .public-questions-status { margin-bottom: 12px; }
+.public-question-review-panel .public-questions-list { margin-bottom: 18px; }
+.public-question-review-steps { margin-bottom: 20px; }
+.public-question-review-actions { margin: 0 0 18px; }
+.public-question-review-actions .primary-button,
+.public-question-review-actions .secondary-button { margin-top: 0; }
 
 .text-button {
   min-height: 44px;
