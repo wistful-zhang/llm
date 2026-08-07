@@ -1,3 +1,5 @@
+import { validateKramdownMath } from './latex-input-core.mjs';
+
 export const QUESTION_DRAFTS_FORMAT = 'llm-question-drafts';
 export const QUESTION_DRAFTS_BACKUP_FORMAT = 'llm-question-drafts-backup';
 export const QUESTION_DRAFTS_SCHEMA_VERSION = 2;
@@ -731,9 +733,27 @@ const assertSafeQuestionAnswer = (answer) => {
   throw error;
 };
 
+const assertValidQuestionMath = (question) => {
+  const fields = [
+    ['题目', 'title', question.title],
+    ['答案', 'answer', question.answer],
+    ...question.followUps.map((followUp, index) => [`第 ${index + 1} 条追问`, 'followUps', followUp]),
+  ];
+  for (const [label, field, value] of fields) {
+    const [message] = validateKramdownMath(value);
+    if (!message) continue;
+    throw new QuestionDraftDataError(
+      `${label}：${message}。草稿已经保留，请补完整后再导出或同步 GitHub。`,
+      'invalid_math',
+      field,
+    );
+  }
+};
+
 export function buildQuestionMarkdown(value) {
   const question = sanitizeQuestion(value);
   assertSafeQuestionAnswer(question.answer);
+  assertValidQuestionMath(question);
   const answerStatus = question.answerStatus;
   const reviewStatus = answerStatus === 'complete' ? '待复习' : '待整理';
   const tags = question.tags.length

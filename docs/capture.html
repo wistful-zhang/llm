@@ -40,7 +40,7 @@ permalink: /capture/
         <label class="question-draft-field question-draft-field-wide" for="question-draft-title">
           <span>面试题目 <b>必填</b></span>
           <textarea id="question-draft-title" rows="3" minlength="2" maxlength="160" placeholder="例如：为什么 KV Cache 能加速推理？" required></textarea>
-          <small>尽量保留面试官原本的问法，不确定答案也可以先保存。</small>
+          <small>尽量保留面试官原本的问法，不确定答案也可以先保存；题目中的公式可写成 <code>$$x_i$$</code>。</small>
         </label>
 
         <fieldset class="question-visibility-field question-draft-field-wide">
@@ -99,14 +99,47 @@ permalink: /capture/
 
         <label class="question-draft-field question-draft-field-wide" for="question-draft-answer">
           <span>我的答案或思路 <i>可留空</i></span>
-          <textarea id="question-draft-answer" rows="10" maxlength="12000" placeholder="直接写你会怎样回答，普通段落即可，不要求 Markdown。也可以只记关键词，以后交给 Codex 补全。"></textarea>
-          <small>这里仍是浏览器明文本地存储，不适合保存密码、个人隐私、公司机密、未授权题库或受 NDA 约束的材料。</small>
+          <textarea id="question-draft-answer" rows="10" maxlength="12000" aria-describedby="question-draft-answer-help question-draft-latex-status" placeholder="直接写你会怎样回答，普通段落即可，不要求 Markdown。也可以只记关键词，以后交给 Codex 补全。"></textarea>
+          <small id="question-draft-answer-help">普通文字照常写；需要公式时可以在下方一键插入 LaTeX。这里仍是浏览器明文本地存储，不适合保存密码、个人隐私、公司机密、未授权题库或受 NDA 约束的材料。</small>
         </label>
+
+        <section class="question-latex-assist question-draft-field-wide" aria-labelledby="question-draft-latex-title">
+          <div class="question-latex-heading">
+            <div>
+              <strong id="question-draft-latex-title">LaTeX 公式</strong>
+              <span>普通答案不需要公式；按钮只插入公式源码，预览不会改写保存内容。</span>
+            </div>
+            <div class="question-latex-actions" role="group" aria-label="插入 LaTeX 公式">
+              <button id="question-draft-latex-inline" class="text-button" type="button" aria-controls="question-draft-answer">＋ 行内公式</button>
+              <button id="question-draft-latex-display" class="text-button" type="button" aria-controls="question-draft-answer">＋ 独立公式</button>
+            </div>
+          </div>
+          <p class="question-latex-note">公式用成对的 <code>$$</code> 包住：和正文写在同一行就是行内公式，两边的 <code>$$</code> 各单独占一行就是独立公式。中间直接写 LaTeX，反斜杠只写一次；单个 <code>$</code> 不作为公式分隔符，避免把金额误认成公式。</p>
+          <details class="question-latex-help">
+            <summary>第一次写公式？看两个例子</summary>
+            <div class="question-latex-examples">
+              <div><strong>行内公式</strong><code>注意力复杂度是 $$O(n^2)$$。</code></div>
+              <div><strong>独立公式</strong><pre><code>$$
+\operatorname{Attention}(Q,K,V)
+= \operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+$$</code></pre></div>
+            </div>
+          </details>
+          <div class="question-latex-preview" role="region" aria-labelledby="question-draft-latex-preview-title">
+            <div class="question-latex-preview-heading">
+              <strong id="question-draft-latex-preview-title">公式预览</strong>
+              <span id="question-draft-latex-status" aria-live="polite">输入完整公式后，这里会显示排版效果。</span>
+            </div>
+            <div id="question-draft-latex-preview" class="question-latex-preview-list">
+              <p class="is-empty">还没有公式，普通文字仍可直接保存。</p>
+            </div>
+          </div>
+        </section>
 
         <label class="question-draft-field question-draft-field-wide" for="question-draft-follow-ups">
           <span>追问 / 补充问题 <i>可留空</i></span>
           <textarea id="question-draft-follow-ups" rows="5" maxlength="3200" placeholder="每行写一条，例如：为什么这里不能使用 MQA？"></textarea>
-          <small>最多 10 条，每条最多 300 字。可以只记面试官的追问，也可以在同一行补一句当时的回答。</small>
+          <small>最多 10 条，每条最多 300 字；公式也可使用相同的 <code>$$...$$</code>。上方只预览答案里的公式。</small>
         </label>
       </div>
 

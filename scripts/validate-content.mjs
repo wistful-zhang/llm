@@ -122,12 +122,21 @@ for (const filename of files) {
   const verified = values.get('verified');
   const answerStatus = value('answer_status');
   const date = value('date');
+  const followUps = Array.isArray(values.get('followups')) ? values.get('followups') : [];
   const isPublished = published === true;
   const isVerified = verified === true;
   const effectiveAnswerStatus = getEffectiveAnswerStatus({ answerStatus, body });
   const hasAnswer = hasCompleteAnswer({ answerStatus, body });
   validateMathFormatting(body).forEach((message) => {
     errors.push(`${filename}: ${message}`);
+  });
+  validateMathFormatting(title).forEach((message) => {
+    errors.push(`${filename}: title ${message}`);
+  });
+  followUps.forEach((followUp, index) => {
+    validateMathFormatting(followUp).forEach((message) => {
+      errors.push(`${filename}: followups 第 ${index + 1} 条 ${message}`);
+    });
   });
   if (isPublished) publishedCount += 1;
   if (isVerified) verifiedCount += 1;

@@ -37,3 +37,18 @@ test('keeps text examples but rejects formulas disguised as text code', () => {
   assert.ok(validateMathFormatting(formulaExample)
     .includes('数学公式不能放在 ```text 代码块中，请改用 $$'));
 });
+
+test('ignores literal delimiters in inline and fenced code', () => {
+  const source = [
+    '金额 $19.99，代码 `const marker = "$$"`。',
+    '',
+    '```js',
+    'const marker = "$$";',
+    '```',
+    '',
+    String.raw`正文公式 $$x_i^2$$。`,
+  ].join('\n');
+
+  assert.deepEqual(validateMathFormatting(source), []);
+  assert.deepEqual(extractMathSegments(source), ['x_i^2']);
+});

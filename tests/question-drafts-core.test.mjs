@@ -574,6 +574,44 @@ test('生成的 Markdown 正确转义 YAML，并严格遵循用户选择的 answ
   assert.match(completeParsed.body, /^\n?## 面试时怎么答/m);
 });
 
+test('LaTeX 在本机备份和 Markdown 导出中逐字保留，未完成公式只阻止外发', () => {
+  const answer = String.raw`复杂度是 $$O(n^2)$$。
+
+$$
+\operatorname{Attention}(Q,K,V)
+= \operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+$$`;
+  const state = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: String.raw`为什么缩放因子是 $$\sqrt{d_k}$$？`,
+    answer,
+    answerStatus: 'complete',
+    followUps: [String.raw`如果不除以 $$\sqrt{d_k}$$ 会怎样？`],
+  });
+
+  const backup = parseQuestionDraftBackup(
+    exportQuestionDraftsJson(state, { now: SECOND_TIME }),
+    { repositoryId: 'owner/repo' },
+  );
+  assert.equal(backup.data.questions[0].answer, answer);
+  assert.equal(backup.data.questions[0].title, state.questions[0].title);
+  assert.deepEqual(backup.data.questions[0].followUps, state.questions[0].followUps);
+
+  const markdown = buildQuestionMarkdown(state.questions[0]);
+  const parsed = parseQuestionDocument(markdown, 'latex-roundtrip.md');
+  assert.equal(parsed.errors.length, 0);
+  assert.equal(parsed.values.get('title'), state.questions[0].title);
+  assert.deepEqual(parsed.values.get('followups'), state.questions[0].followUps);
+  assert.equal(parsed.body.trim(), answer);
+
+  assert.throws(
+    () => buildQuestionMarkdown({ ...state.questions[0], answer: '尚未写完 $$x+y' }),
+    (error) => error instanceof QuestionDraftDataError
+      && error.code === 'invalid_math'
+      && error.field === 'answer',
+  );
+  assert.equal(state.questions[0].answer, answer);
+});
+
 test('Markdown 导出拒绝可执行 HTML、Liquid、图片和危险链接，但允许代码示例和 YAML 型普通文字', () => {
   const state = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
     title: '如何处理\n---\npublished: true 这类文字？',

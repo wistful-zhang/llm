@@ -7,7 +7,18 @@ import { parseQuestionDocument } from '../scripts/question-publication.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-const [page, script, layout, stylesheet, cms, publicQuestionForm, prefilledQuestionForm] = await Promise.all([
+const [
+  page,
+  script,
+  layout,
+  stylesheet,
+  cms,
+  publicQuestionForm,
+  prefilledQuestionForm,
+  latexCore,
+  questionMath,
+  questionLayout,
+] = await Promise.all([
   read('../docs/capture.html'),
   read('../docs/assets/js/question-capture.js'),
   read('../docs/_layouts/default.html'),
@@ -15,6 +26,9 @@ const [page, script, layout, stylesheet, cms, publicQuestionForm, prefilledQuest
   read('../.pages.yml'),
   read('../.github/ISSUE_TEMPLATE/public-question.yml'),
   read('../.github/ISSUE_TEMPLATE/public-question-from-web.yml'),
+  read('../docs/assets/js/latex-input-core.mjs'),
+  read('../docs/assets/js/question-math.js'),
+  read('../docs/_layouts/question.html'),
 ]);
 
 const questionDirectory = new URL('../docs/_questions/', import.meta.url);
@@ -121,6 +135,46 @@ test('快速记题页提供无需 Markdown 的完整表单，并允许只保存�
   assert.match(attributesFor(page, 'question-draft-save'), /\btype="submit"/);
   assert.match(page, /保存草稿/);
   assert.match(page, /question-capture\.js/);
+});
+
+test('答案输入支持安全的 LaTeX 插入、即时预览和失败兜底', () => {
+  assert.match(attributesFor(page, 'question-draft-answer'), /aria-describedby="question-draft-answer-help question-draft-latex-status"/);
+  assert.match(attributesFor(page, 'question-draft-latex-inline'), /type="button"/);
+  assert.match(attributesFor(page, 'question-draft-latex-display'), /type="button"/);
+  assert.match(attributesFor(page, 'question-draft-latex-inline'), /aria-controls="question-draft-answer"/);
+  assert.match(page, /公式用成对的 <code>\$\$<\/code> 包住/);
+  assert.match(page, /单个 <code>\$<\/code> 不作为公式分隔符/);
+  assert.match(page, /注意力复杂度是 \$\$O\(n\^2\)\$\$/);
+  assert.match(page, /question-draft-latex-preview-title/);
+  assert.match(page, /aria-live="polite"/);
+
+  assert.match(script, /insertLatexTemplate,/);
+  assert.match(script, /parseKramdownMath,/);
+  assert.match(script, /validateKramdownMath,/);
+  assert.match(script, /import \{ clearMath, renderMath \} from '\.\/math-render\.mjs'/);
+  assert.match(script, /answerInput\.dispatchEvent\(new Event\('input', \{ bubbles: true \}\)\)/);
+  assert.match(script, /window\.setTimeout\(\(\) => \{[\s\S]*?latexPreviewRenderQueue = latexPreviewRenderQueue\.then\([\s\S]*?\}, 280\)/);
+  assert.match(script, /clearMath\(latexPreview\);[\s\S]*?latexPreview\.replaceChildren[\s\S]*?await renderMath\(latexPreview\)/);
+  assert.match(script, /公式预览暂时不可用，内容已原样保留，仍可保存和导出/);
+  assert.match(script, /if \(!rendered\) \{[\s\S]*?latexPreviewItem\(segment, index, false\)/);
+  assert.match(script, /result\.value\.length > answerInput\.maxLength/);
+  assert.match(script, /refreshLatexPreview\(\);[\s\S]*?formDirty = false/);
+  assert.doesNotMatch(`${script}\n${latexCore}`, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
+
+  assert.match(stylesheet, /\.question-latex-actions button \{ min-height: 44px/);
+  assert.match(stylesheet, /\.question-latex-preview-formula \{[^}]*overflow-x: auto/);
+  assert.match(stylesheet, /\.question-latex-examples \{[^}]*grid-template-columns/);
+  assert.match(stylesheet, /\.question-latex-help summary \{[^}]*min-height: 44px/);
+});
+
+test('正式题目与本机口述练习也会渲染答案、标题和追问中的公式', () => {
+  assert.match(questionMath, /prepareKramdownMath\(title, \{ forceInline: true \}\)/);
+  assert.match(questionMath, /\.question-followups li/);
+  assert.match(questionMath, /void renderMath\(article\)/);
+  assert.match(questionLayout, /\{% endif %\}\s*<script type="module" src="\{\{ '\/assets\/js\/question-math\.js'/);
+  assert.match(script, /kramdownMathToMathJax\(question\.answer\)/);
+  assert.match(script, /kramdownMathToMathJax\(item, \{ forceInline: true \}\)/);
+  assert.match(script, /void renderMath\(practice\)/);
 });
 
 test('网页、Pages CMS 和公开投稿使用同一组当前已有分类下拉选项', () => {

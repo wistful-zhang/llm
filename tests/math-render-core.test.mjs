@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   MATHJAX_INTEGRITY,
@@ -8,9 +9,11 @@ import {
   createMathJaxConfig,
   hasMathDelimiters,
 } from '../docs/assets/js/math-render-core.mjs';
+import { prepareKramdownMath } from '../docs/assets/js/math-render.mjs';
 
 const text = (nodeValue) => ({ nodeType: 3, nodeValue });
 const element = (tagName, ...childNodes) => ({ nodeType: 1, tagName, childNodes });
+const browserLoader = readFileSync(new URL('../docs/assets/js/math-render.mjs', import.meta.url), 'utf8');
 
 test('detects Kramdown MathJax inline and display delimiters', () => {
   assert.equal(hasMathDelimiters('before \\(x_1 + y\\) after'), true);
@@ -32,17 +35,58 @@ test('ignores formula-like text inside code and pre elements', () => {
 });
 
 test('creates a lazy MathJax 4 CommonHTML configuration', () => {
-  const config = createMathJaxConfig({ tex: { macros: { RR: '{\\mathbb R}' } } });
+  const config = createMathJaxConfig({
+    loader: { load: ['ui/safe'] },
+    tex: {
+      macros: { RR: '{\\mathbb R}' },
+      packages: {
+        '[+]': ['ams', 'require', 'texhtml'],
+        '[-]': ['autoload'],
+      },
+    },
+  });
 
-  assert.match(MATHJAX_SOURCE, /mathjax@4\.0\.0\/tex-chtml\.js$/);
+  assert.match(MATHJAX_SOURCE, /mathjax@4\.1\.3\/tex-chtml\.js$/);
   assert.match(MATHJAX_INTEGRITY, /^sha384-[A-Za-z0-9+/=]+$/);
+  assert.deepEqual(config.loader.load, ['ui/safe']);
   assert.equal(config.startup.typeset, false);
   assert.equal(config.tex.processEscapes, true);
+  assert.equal(config.tex.processEnvironments, false);
+  assert.equal(config.tex.processRefs, false);
+  assert.equal(config.tex.maxBuffer, 5 * 1024);
+  assert.equal(config.tex.maxTemplateSubtitutions, 1000);
+  assert.deepEqual(config.tex.inlineMath, [['\\(', '\\)']]);
+  assert.deepEqual(config.tex.displayMath, [['\\[', '\\]']]);
+  assert.deepEqual(config.tex.packages['[-]'], ['autoload', 'require', 'texhtml']);
+  assert.deepEqual(config.tex.packages['[+]'], ['ams']);
   assert.deepEqual(config.tex.macros, { RR: '{\\mathbb R}' });
+  assert.deepEqual(config.options.safeOptions.allow, {
+    URLs: 'none',
+    classes: 'none',
+    cssIDs: 'none',
+    styles: 'none',
+  });
   assert.equal(config.output.displayOverflow, 'scroll');
   assert.equal(config.output.mtextInheritFont, true);
   assert.equal(config.output.merrorInheritFont, true);
   assert.equal(config.output.linebreaks.inline, true);
   assert.ok(config.options.skipHtmlTags.includes('code'));
   assert.ok(config.options.skipHtmlTags.includes('mjx-container'));
+});
+
+test('prepares raw Kramdown math in text nodes while leaving code untouched', () => {
+  const titleText = text('标题 $$x_i$$');
+  const codeText = text('代码 $$not_math$$');
+  const root = element('DIV', titleText, element('CODE', codeText));
+
+  assert.equal(prepareKramdownMath(root, { forceInline: true }), true);
+  assert.equal(titleText.nodeValue, '标题 \\(x_i\\)');
+  assert.equal(codeText.nodeValue, '代码 $$not_math$$');
+});
+
+test('MathJax CDN 加载超时后会回退，不会让公式预览无限等待', () => {
+  assert.match(browserLoader, /window\.setTimeout\(fail, 15_000\)/);
+  assert.match(browserLoader, /window\.clearTimeout\(timeoutId\)/);
+  assert.match(browserLoader, /settle\(null, 'failed'/);
+  assert.match(browserLoader, /if \(settled\) return/);
 });
