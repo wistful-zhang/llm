@@ -4,10 +4,12 @@ import test from 'node:test';
 
 const read = (relativePath) => readFile(new URL(relativePath, import.meta.url), 'utf8');
 
-test('较大题库支持难度筛选和分批显示', async () => {
-  const [page, script] = await Promise.all([
+test('较大统一题库支持动态计数、难度筛选和分批显示', async () => {
+  const [page, script, localQuestions, publicQuestions] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/assets/js/search.js'),
+    read('../docs/assets/js/local-questions.js'),
+    read('../docs/assets/js/public-questions.js'),
   ]);
 
   assert.match(page, /id="question-difficulty"/);
@@ -16,9 +18,15 @@ test('较大题库支持难度筛选和分批显示', async () => {
   assert.match(page, /data-verified="{{ question\.verified \| default: false }}"/);
   assert.match(page, /id="library-result-summary"/);
   assert.match(page, /未启用 JavaScript[\s\S]*?筛选和分批显示暂不可用/);
-  assert.match(page, /默认显示 {{ core_count }} 道核心必会题/);
   assert.match(page, /id="question-load-more"/);
+  assert.match(page, /data-question-total/);
+  assert.match(page, /data-local-questions-list/);
+  assert.match(page, /data-public-questions-list/);
   assert.match(script, /const pageSize = 60/);
+  assert.match(script, /const currentCards = \(\) =>/);
+  assert.match(script, /questionList \? \[\.\.\.questionList\.querySelectorAll\('\.question-card'\)\]/);
+  assert.match(script, /document\.addEventListener\('question-library:changed'/);
+  assert.match(script, /total\.textContent = String\(cards\.length\)/);
   assert.match(script, /matchesDifficulty/);
   assert.match(script, /matchesReviewState/);
   assert.match(script, /matchingCount <= visibleLimit/);
@@ -27,6 +35,10 @@ test('较大题库支持难度筛选和分批显示', async () => {
   assert.match(script, /controller\.abort\(\), 8000/);
   assert.match(script, /已显示 \$\{visibleCount\} \/ \$\{matchingCount\} 道符合条件/);
   assert.match(script, /当前显示 \$\{visibleCount\} \/ \$\{matchingCount\} 道题目/);
+  assert.match(localQuestions, /question-card question-card-local/);
+  assert.match(localQuestions, /question-library:changed/);
+  assert.match(publicQuestions, /question-card question-card-public/);
+  assert.match(publicQuestions, /question-library:changed/);
 });
 
 test('更换搜索和筛选条件会从首批题目重新显示', async () => {
@@ -38,7 +50,7 @@ test('更换搜索和筛选条件会从首批题目重新显示', async () => {
   assert.match(script, /reviewState\?\.addEventListener\('change',[\s\S]*?visibleLimit = pageSize/);
 });
 
-test('首页默认显示核心必会，并支持核心与岗位专项的方向路线', async () => {
+test('首页默认显示全部题目，并保留核心与岗位专项方向路线', async () => {
   const [page, script] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/assets/js/search.js'),
@@ -47,13 +59,14 @@ test('首页默认显示核心必会，并支持核心与岗位专项的方向�
 
   assert.match(page, /id="question-track"/);
   assert.match(tierSelect, /<option value="recommended">核心＋所选方向专项/);
-  assert.match(tierSelect, /<option value="core"\{% if core_count > 0 %\} selected\{% endif %\}>核心必会/);
+  assert.match(tierSelect, /<option value="core">核心必会/);
   assert.match(tierSelect, /<option value="role">岗位专项/);
   assert.match(tierSelect, /<option value="extended">扩展知识点/);
   assert.match(tierSelect, /<option value="archive">待重整/);
-  assert.match(tierSelect, /<option value=""\{% if core_count == 0 %\} selected\{% endif %\}>全部/);
+  assert.match(tierSelect, /<option value="" selected>全部（当前可见）<\/option>/);
+  assert.match(page, /data-default-tier=""/);
   assert.match(page, /data-study-tier="{{ study_tier \| escape }}"/);
-  assert.match(page, /id="library-result-summary">默认显示 {{ core_count }} 道核心必会题/);
+  assert.match(page, /id="library-result-summary">正在整理当前可见题目/);
   assert.match(script, /const activeStudyTier = studyTier\?\.value \|\| ''/);
   assert.match(script, /const matchesRecommendedRoute = cardStudyTier === 'core'/);
   assert.match(script, /cardStudyTier === 'role'[\s\S]*?trackCategories\.has\(card\.dataset\.category\)/);

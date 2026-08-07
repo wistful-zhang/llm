@@ -11,10 +11,10 @@ permalink: /manage/
 
 <div class="owner-notice" role="note">
   <strong>这是题库主人的编辑入口，不是本站投稿表单。</strong>
-  <span>只有拥有目标仓库写入权限的 GitHub 用户才能保存；其他访客仍可使用“增加题目”公开补题。本站当前关闭题目评论，专注于个人建题、补答案和复习。</span>
+  <span>只有拥有目标仓库写入权限的 GitHub 用户才能保存；其他访客可在“增加题目”中选择“公开”直接发布，不需要站主审核。本站当前关闭题目评论，专注于个人建题、补答案和复习。</span>
 </div>
 
-只想快速记下一道题时，不必进入这里：使用[增加题目]({{ '/capture/' | relative_url }})，直接选择只保存草稿或发布到我的题目；还可以逐行记录面试官追问。本页更适合批量管理已经进入 GitHub 仓库的正式题目。
+只想快速记下一道题时，不必进入这里：使用[增加题目]({{ '/capture/' | relative_url }})，直接选择“私人”或“公开”；还可以逐行记录面试官追问。两种题都在首页同一个题库中显示，私人题会标注“私人”并且只存在当前浏览器。本页更适合管理已经进入 GitHub 仓库的公开题目。
 
 Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和发布不需要打开源码，也不需要 Git 命令。
 
@@ -26,34 +26,25 @@ Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和�
   <a class="journey-card" href="{{ '/interviews/' | relative_url }}"><strong>记录一次面试</strong><span>保存公司代号、岗位、轮次、结果和复盘，自动统计公司数。</span><b>打开本地记录 →</b></a>
   <a class="journey-card" href="#question-only-workflow"><strong>记录一道题</strong><span>Private 仓库可个人速记；Public 仓库可先公开问题、以后再补答案。</span><b>查看记题流程 →</b></a>
   <a class="journey-card" href="{{ '/start/' | relative_url }}"><strong>第一次使用</strong><span>先完成仓库可见性、Pages 和后台授权设置。</span><b>查看完整图解 →</b></a>
-  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>增加一道题</strong><span>答案和追问可以留空；保存前选择草稿或发布到我的题目。</span><b>打开增加题目 →</b></a>
-  {% if site.github.repository_url %}<a class="journey-card" href="#public-question-review"><strong>处理公开补充</strong><span>访客投稿已经立即公开；在这里查重并决定是否收录进正式题库。</span><b>查看待处理投稿 →</b></a>{% endif %}
+  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>增加一道题</strong><span>答案和追问可以留空；保存前只需选择私人或公开。</span><b>打开增加题目 →</b></a>
+  {% if site.github.repository_url %}<a class="journey-card" href="#public-question-maintenance"><strong>管理公开题</strong><span>公开题自动发布；站主只需编辑内容，或下架违规题目。</span><b>打开发布后管理 →</b></a>{% endif %}
 </nav>
 
 {% if site.github.repository_url %}
-<section id="public-question-review"
-         class="capture-panel public-question-review-panel"
-         data-public-questions
-         data-public-questions-view="manage"
-         data-repository-nwo="{{ site.github.repository_nwo | escape }}"
-         aria-labelledby="public-question-review-title">
-  <span class="status-badge">站主入口 · 投稿已经公开</span>
-  <h2 id="public-question-review-title">公开补充在这里处理</h2>
-  <p>访客提交后会立即显示在首页“访客公开补充”，不需要先审核。这里的处理只决定它是否进入正式题库、搜索、统计和模拟面试。</p>
-  <ol class="capture-steps public-question-review-steps">
-    <li><strong>先查重</strong><span>打开投稿并搜索正式题库；重复题标记为 duplicate 后关闭，不要再建一份。</span></li>
-    <li><strong>再决定收录</strong><span>确认内容有权公开、不含隐私或 NDA 材料，并核对分类、答案和资料来源。</span></li>
-    <li><strong>正式入库</strong><span>题库主人用 Codex 或 Pages CMS 建题；收录完成后关闭原 Issue，它就会离开待处理列表。</span></li>
+<section id="public-question-maintenance" class="capture-panel public-question-maintenance-panel">
+  <span class="status-badge">发布后管理 · 无审核队列</span>
+  <h2>公开题发布后，站主只做编辑和下架</h2>
+  <p>访客在 GitHub 完成最终确认后，对应 Issue 会直接显示为统一题库中的公开题，不需要站主查重、批准或再次收录。</p>
+  <ol class="capture-steps">
+    <li><strong>编辑公开题</strong><span>需要补答案或修正错误时，打开对应 GitHub Issue，点击 Edit 并保存；刷新题库后即可看到更新。</span></li>
+    <li><strong>下架公开题</strong><span>作者想撤回，或遇到隐私、NDA、侵权、广告等滥用时，关闭对应 Issue；重新打开则恢复显示。</span></li>
+    <li><strong>编辑仓库内置题</strong><span>Markdown 题仍使用 Pages CMS 的中文表单管理，这和访客公开 Issue 是两种存储来源。</span></li>
   </ol>
-  <p class="public-questions-status" data-public-questions-status role="status" aria-live="polite">正在读取待处理公开补充…</p>
-  <div class="public-questions-list" data-public-questions-list hidden></div>
-  <p data-public-questions-fallback hidden>暂时无法读取列表，请使用下方“打开待处理列表”。</p>
-  <div class="manage-actions public-question-review-actions">
-    <a class="primary-button" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aopen+label%3Apublic-question" target="_blank" rel="noopener noreferrer">打开待处理列表 ↗</a>
-    <a class="secondary-button" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aclosed+label%3Apublic-question" target="_blank" rel="noopener noreferrer">查看已处理投稿 ↗</a>
-    <a class="secondary-button cms-button" href="https://app.pagescms.org/{{ site.github.repository_nwo | escape }}/{{ site.github.source.branch | default: 'main' | url_encode }}/collection/questions" target="_blank" rel="noopener noreferrer">自己的题：直接入库 ↗</a>
+  <div class="manage-actions">
+    <a class="primary-button" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aopen+label%3Apublic-question" target="_blank" rel="noopener noreferrer">管理公开题目 ↗</a>
+    <a class="secondary-button cms-button" href="https://app.pagescms.org/{{ site.github.repository_nwo | escape }}/{{ site.github.source.branch | default: 'main' | url_encode }}/collection/questions" target="_blank" rel="noopener noreferrer">编辑仓库内置题 ↗</a>
   </div>
-  <p class="privacy-warning"><strong>为什么不让所有投稿直接混入正式题库：</strong>自动化无法可靠判断语义重复、错误答案、个人隐私、内部题库或版权边界。公开展示可以即时完成；正式收录仍保留一次站主判断。你自己或可信编辑拥有仓库写权限时，不必创建公开补充 Issue，可直接使用 Pages CMS 或 Codex 写入题库。</p>
+  <p class="privacy-warning"><strong>公开默认意味着真正公开：</strong>不要等到事后再依赖站主脱敏。每位发布者都必须在 GitHub 最终提交前确认自己有权公开内容。</p>
 </section>
 {% endif %}
 

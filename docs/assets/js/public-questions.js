@@ -8,65 +8,88 @@ const root = document.querySelector('[data-public-questions]');
 
 if (root) {
   const repositoryNwo = root.dataset.repositoryNwo || '';
-  const manageView = root.dataset.publicQuestionsView === 'manage';
   const status = root.querySelector('[data-public-questions-status]');
   const list = root.querySelector('[data-public-questions-list]');
   const fallback = root.querySelector('[data-public-questions-fallback]');
   let lastLoadedAt = 0;
   let loadPromise = null;
-  const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+
+  const makeElement = (tag, className = '', text = '') => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text) element.textContent = text;
+    return element;
+  };
 
   const setStatus = (message) => {
     if (status) status.textContent = message;
   };
 
-  const formatDate = (value) => {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '最近更新' : `${dateFormatter.format(date)} 更新`;
-  };
-
   const createQuestion = (question) => {
-    const link = document.createElement('a');
-    link.className = 'public-question-card';
+    const link = makeElement('a', 'question-card question-card-public');
     link.href = question.url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
+    link.dataset.category = question.category || '待整理';
+    link.dataset.difficulty = question.difficulty || '待评估';
+    link.dataset.verified = 'false';
+    link.dataset.answerStatus = question.answerStatus;
+    link.dataset.studyTier = question.studyTier;
+    link.dataset.searchId = question.id;
+    link.dataset.source = 'github';
+    if (question.localId) link.dataset.localId = question.localId;
+    link.dataset.search = [
+      question.title,
+      question.category,
+      question.difficulty,
+      question.answer,
+      ...question.followUps,
+      ...question.tags,
+      question.author,
+    ].join(' ');
 
-    const meta = document.createElement('div');
-    meta.className = 'public-question-meta';
-    const badge = document.createElement('span');
-    badge.className = 'public-question-badge';
-    badge.textContent = manageView ? '待处理补充' : '公开补充';
-    if (question.category) {
-      const category = document.createElement('span');
-      category.textContent = question.category;
-      meta.append(badge, category);
-    } else {
-      meta.append(badge);
+    link.append(makeElement('div', 'card-number', ''));
+    const body = makeElement('div', 'card-body');
+    const meta = makeElement('div', 'card-meta');
+    meta.append(
+      makeElement('span', '', question.category === '待整理' || !question.category
+        ? '未分类'
+        : question.category),
+      makeElement('span', 'question-visibility-badge question-visibility-public', '公开'),
+      makeElement('span', 'public-question-author', `${question.author} · #${question.number}`),
+    );
+    if (question.difficulty && question.difficulty !== '待评估') {
+      meta.insertBefore(
+        makeElement('span', `difficulty difficulty-${question.difficulty}`, question.difficulty),
+        meta.children[1],
+      );
     }
-    const detail = document.createElement('span');
-    detail.textContent = `#${question.number} · ${question.author} · ${formatDate(question.updatedAt)}`;
-    meta.append(detail);
-
-    const title = document.createElement('h3');
-    title.textContent = question.title;
-    const action = document.createElement('span');
-    action.className = 'public-question-action';
-    action.textContent = manageView ? '打开 Issue 处理 ↗' : '查看公开补充 ↗';
-
-    link.append(meta, title, action);
+    if (question.answerStatus !== 'complete') {
+      meta.append(makeElement('span', 'answer-state-badge', '待解答'));
+    } else {
+      meta.append(makeElement('span', 'review-pending-badge', '参考答案 · 用户提供'));
+    }
+    if (question.followUps.length > 0) {
+      meta.append(makeElement('span', '', `${question.followUps.length} 个追问`));
+    }
+    body.append(meta, makeElement('h2', '', question.title));
+    const tags = makeElement('div', 'tag-list');
+    question.tags.forEach((tag) => tags.append(makeElement('span', 'tag', tag)));
+    body.append(tags);
+    link.append(body, makeElement('span', 'card-arrow', '查看 →'));
     return link;
+  };
+
+  const notifyLoaded = (questions) => {
+    document.dispatchEvent(new CustomEvent('question-library:public-loaded', {
+      detail: { localIds: questions.map((question) => question.localId).filter(Boolean) },
+    }));
+    document.dispatchEvent(new CustomEvent('question-library:changed'));
   };
 
   const loadPublicQuestions = async ({ force = false } = {}) => {
     if (!repositoryNwo || !list) {
-      setStatus(manageView
-        ? '当前预览没有连接可用的 GitHub 仓库，无法读取待处理投稿。'
-        : '当前预览没有连接可用的 GitHub 仓库。');
+      setStatus('当前预览没有连接可用的 GitHub 仓库；仓库题和私人题仍可正常使用。');
       if (fallback) fallback.hidden = false;
       return;
     }
@@ -77,32 +100,24 @@ if (root) {
     const timeoutId = window.setTimeout(() => controller.abort(), PUBLIC_QUESTIONS_TIMEOUT_MS);
     loadPromise = (async () => {
       try {
-        const response = await fetch(buildPublicQuestionsApiUrl(repositoryNwo, 30, 1), {
+        const response = await fetch(buildPublicQuestionsApiUrl(repositoryNwo, 100, 1), {
           headers: { Accept: 'application/vnd.github+json' },
           signal: controller.signal,
         });
         if (!response.ok) throw new Error(`GitHub Issues API ${response.status}`);
-        const questions = normalizePublicQuestions(await response.json(), repositoryNwo).slice(0, 12);
+        const questions = normalizePublicQuestions(await response.json(), repositoryNwo);
         list.replaceChildren(...questions.map(createQuestion));
         list.hidden = questions.length === 0;
         if (fallback) fallback.hidden = true;
-        if (manageView) {
-          setStatus(questions.length > 0
-            ? `当前读取到 ${questions.length} 道待处理公开补充；它们已经在首页公开显示。`
-            : '目前没有待处理公开补充。');
-        } else {
-          setStatus(questions.length > 0
-            ? `最近 ${questions.length} 道已经公开提交的补充题目；点击可查看内容和处理状态。`
-            : '还没有使用者公开增加题目。你可以只发布问题，答案以后再补。');
-        }
+        setStatus(questions.length > 0
+          ? `已载入 ${questions.length} 道大家直接发布的公开题目。`
+          : '还没有使用者发布公开题目；公开提交后会直接加入这里。');
         lastLoadedAt = Date.now();
+        notifyLoaded(questions);
       } catch {
-        list.replaceChildren();
-        list.hidden = true;
-        setStatus(manageView
-          ? '暂时无法读取待处理公开补充，请使用下方 GitHub 列表入口。'
-          : '暂时无法读取使用者公开补充，可能是网络异常或 GitHub API 限流。');
+        setStatus('大家发布的公开题目暂时无法读取；仓库题和私人题仍可正常使用。');
         if (fallback) fallback.hidden = false;
+        document.dispatchEvent(new CustomEvent('question-library:changed'));
       } finally {
         window.clearTimeout(timeoutId);
         loadPromise = null;

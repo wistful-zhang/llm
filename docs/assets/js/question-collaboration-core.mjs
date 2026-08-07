@@ -12,14 +12,60 @@ const cleanPublicField = (value, maxLength = 30) => {
   return [...cleaned].slice(0, maxLength).join('');
 };
 
-export const readPublicQuestionField = (body, label) => {
+const cleanPublicText = (value, maxLength = 12_000) => {
+  const cleaned = String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .trim();
+  if (!cleaned || /^_?no response_?$/i.test(cleaned)) return '';
+  return [...cleaned].slice(0, maxLength).join('');
+};
+
+export const readPublicQuestionSection = (body, label, maxLength = 12_000) => {
+  const source = typeof body === 'string' ? body.replace(/\r\n?/g, '\n') : '';
+  const escapedLabel = String(label || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!source || !escapedLabel) return '';
+  const heading = new RegExp(`^###\\s+${escapedLabel}\\s*$`, 'mi').exec(source);
+  if (!heading) return '';
+  const remainder = source.slice(heading.index + heading[0].length).replace(/^\s*\n/, '');
+  const nextHeading = remainder.search(/^###\s+/m);
+  return cleanPublicText(nextHeading >= 0 ? remainder.slice(0, nextHeading) : remainder, maxLength);
+};
+
+const readInlineBlock = (source, label, stopLabels = [], maxLength = 12_000) => {
+  const lines = String(source || '').replace(/\r\n?/g, '\n').split('\n');
+  const labelPattern = new RegExp(`^${String(label).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[：:]\\s*(.*)$`);
+  const stopPatterns = stopLabels.map((item) => new RegExp(
+    `^${String(item).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[：:]`,
+  ));
+  const start = lines.findIndex((line) => labelPattern.test(line.trim()));
+  if (start < 0) return '';
+  const first = lines[start].trim().match(labelPattern)?.[1] || '';
+  const values = first ? [first] : [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (stopPatterns.some((pattern) => pattern.test(lines[index].trim()))) break;
+    values.push(lines[index]);
+  }
+  return cleanPublicText(values.join('\n'), maxLength);
+};
+
+export const readPublicQuestionField = (body, label, maxLength = 30) => {
   const source = typeof body === 'string' ? body.replace(/\r\n?/g, '\n') : '';
   const escapedLabel = String(label || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (!source || !escapedLabel) return '';
   const heading = source.match(new RegExp(`^###\\s+${escapedLabel}\\s*\\n+(?:\\s*\\n)*([^\\n]+)`, 'mi'));
   const inline = source.match(new RegExp(`^${escapedLabel}[：:]\\s*([^\\n]+)`, 'mi'));
-  return cleanPublicField(heading?.[1] || inline?.[1] || '');
+  return cleanPublicField(heading?.[1] || inline?.[1] || '', maxLength);
 };
+
+const hasPublicConfirmation = (body) => (
+  /^###\s+(?:最终)?公开确认\s*$[\s\S]*?^- \[x\]\s+/mi.test(String(body || ''))
+);
+
+const parseTags = (value) => [...new Set(String(value || '')
+  .replace(/^标签[：:]\s*/i, '')
+  .split(/[，,、|]/)
+  .map((tag) => cleanPublicField(tag, 30))
+  .filter(Boolean))].slice(0, 12);
 
 const validateRepositoryNwo = (value) => {
   const repository = String(value || '').trim();
@@ -71,13 +117,56 @@ export const normalizePublicQuestions = (payload, repositoryNwo) => {
         ? label === PUBLIC_QUESTION_LABEL
         : label?.name === PUBLIC_QUESTION_LABEL
     ));
-    if (!Number.isSafeInteger(number) || number < 1 || !hasLabel || !title.startsWith(PUBLIC_QUESTION_PREFIX)) {
+    if (
+      !Number.isSafeInteger(number)
+      || number < 1
+      || !hasLabel
+      || issue.state === 'closed'
+      || !hasPublicConfirmation(issue.body)
+    ) {
       return [];
     }
-    const cleanTitle = title.slice(PUBLIC_QUESTION_PREFIX.length).trim();
+    const webDetails = readPublicQuestionSection(issue.body, '已从网站带入的题目内容', 20_000);
+    const directTitle = readPublicQuestionSection(issue.body, '面试题目', 160).split('\n')[0];
+    const webTitle = readInlineBlock(
+      webDetails,
+      '题目',
+      ['站内题目编号', '可见性', '答案状态', '分类'],
+      160,
+    ).split('\n')[0];
+    const titleFromBody = directTitle || webTitle;
+    const cleanTitle = titleFromBody || (title.startsWith(PUBLIC_QUESTION_PREFIX)
+      ? title.slice(PUBLIC_QUESTION_PREFIX.length)
+      : title).trim().slice(0, 160);
     if (!cleanTitle) return [];
+    const directAnswer = readPublicQuestionSection(issue.body, '你的答案或思路（可选）');
+    const answer = directAnswer || readInlineBlock(
+      webDetails,
+      '参考答案 / 当前思路',
+      ['追问记录（每行一条）', '追问记录', '追问'],
+    );
+    const directFollowUps = readPublicQuestionSection(issue.body, '现场追问（可选）', 3_200);
+    const followUpText = directFollowUps || readInlineBlock(
+      webDetails,
+      '追问记录（每行一条）',
+      [],
+      3_200,
+    );
+    const explicitAnswerStatus = readPublicQuestionField(issue.body, '答案状态');
+    const answerStatus = answer && (!explicitAnswerStatus || explicitAnswerStatus === '已完成')
+      ? 'complete'
+      : 'pending';
+    const context = readPublicQuestionSection(issue.body, '标签或匿名背景（可选）', 500);
+    const tags = parseTags(readPublicQuestionField(issue.body, '标签') || context);
+    const localIdValue = readPublicQuestionField(issue.body, '站内题目编号', 80);
+    const localId = /^[A-Za-z0-9._:-]{1,80}$/.test(localIdValue) ? localIdValue : '';
+    const rawDifficulty = readPublicQuestionField(issue.body, '难度');
+    const difficulty = ['待评估', '简单', '中等', '困难'].includes(rawDifficulty)
+      ? rawDifficulty
+      : '待评估';
     return [{
       number,
+      id: `github:${repository}#${number}`,
       title: cleanTitle,
       author: typeof issue.user?.login === 'string' && issue.user.login.trim()
         ? issue.user.login.trim()
@@ -85,9 +174,21 @@ export const normalizePublicQuestions = (payload, repositoryNwo) => {
       comments: Number.isSafeInteger(Number(issue.comments)) && Number(issue.comments) > 0
         ? Number(issue.comments)
         : 0,
-      state: issue.state === 'closed' ? 'closed' : 'open',
+      state: 'open',
       locked: issue.locked === true,
-      category: readPublicQuestionField(issue.body, '分类'),
+      category: readPublicQuestionField(issue.body, '分类') || '待整理',
+      difficulty,
+      answer,
+      answerStatus,
+      followUps: followUpText
+        .split('\n')
+        .map((item) => cleanPublicText(item, 300))
+        .filter(Boolean)
+        .slice(0, 10),
+      tags,
+      localId,
+      verified: false,
+      studyTier: 'archive',
       createdAt: typeof issue.created_at === 'string' ? issue.created_at : '',
       updatedAt: typeof issue.updated_at === 'string' ? issue.updated_at : '',
       url: `https://github.com/${repository}/issues/${number}`,

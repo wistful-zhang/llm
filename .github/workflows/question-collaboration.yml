@@ -1,11 +1,9 @@
-name: 准备公开补题标签
+name: 准备公开题目标签
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
-  issues:
-    types: [opened]
 
 permissions:
   contents: read
@@ -18,8 +16,7 @@ concurrency:
 
 jobs:
   labels:
-    name: 创建并应用公开补题标签
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[新增题目] ')
+    name: 创建公开题目标签
     runs-on: ubuntu-latest
     steps:
       - name: 确保标签存在
@@ -27,19 +24,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh label create public-question --color 0e8a16 --description "使用者主动公开增加的面试题" --force
-          gh label create duplicate --color cfd3d7 --description "已有对应题目的重复 Issue" --force
-
-      - name: 为新题目应用标签
-        if: github.event_name == 'issues'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-        run: |
-          case "$ISSUE_TITLE" in
-            "[新增题目] "*) LABEL="public-question" ;;
-            *) exit 0 ;;
-          esac
-          gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL"
+          gh label create public-question --color 0e8a16 --description "提交后直接显示在题库中的公开题目" --force

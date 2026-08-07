@@ -9,7 +9,7 @@ const VALID_VISIBILITIES = new Set(['private', 'public']);
 export function selectLocalQuestions(questions, options = {}) {
   const visibility = VALID_VISIBILITIES.has(options.visibility) ? options.visibility : '';
   const limit = Number.isInteger(options.limit) && options.limit > 0
-    ? Math.min(options.limit, 20)
+    ? Math.min(options.limit, 1000)
     : PREVIEW_LIMIT;
   const filtered = (Array.isArray(questions) ? questions : [])
     .filter((question) => !visibility || question.visibility === visibility)
@@ -18,7 +18,7 @@ export function selectLocalQuestions(questions, options = {}) {
   return {
     total: filtered.length,
     complete: filtered.filter((question) => question.answerStatus === 'complete').length,
-    questions: filtered.slice(0, limit),
+    questions: options.all === true ? filtered : filtered.slice(0, limit),
   };
 }
 
@@ -27,6 +27,8 @@ const roots = typeof document === 'undefined'
   : [...document.querySelectorAll('[data-local-questions]')];
 
 if (roots.length > 0) {
+  const publishedLocalIds = new Set();
+
   const makeElement = (tag, className = '', text = '') => {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -48,7 +50,6 @@ if (roots.length > 0) {
       repositoryId,
       storageKey: questionDraftsStorageKey(repositoryId),
       captureUrl: root.dataset.captureUrl || '/capture/',
-      visibility: VALID_VISIBILITIES.has(root.dataset.visibility) ? root.dataset.visibility : '',
       status: root.querySelector('[data-local-questions-status]'),
       list: root.querySelector('[data-local-questions-list]'),
       error: root.querySelector('[data-local-questions-error]'),
@@ -56,46 +57,75 @@ if (roots.length > 0) {
   });
 
   const createQuestionCard = (question, context) => {
-    const card = makeElement('a', 'local-question-card');
+    const card = makeElement('a', 'question-card question-card-local');
     card.href = editUrl(context.captureUrl, question.id);
+    card.dataset.category = question.category;
+    card.dataset.difficulty = question.difficulty;
+    card.dataset.verified = 'false';
+    card.dataset.answerStatus = question.answerStatus;
+    card.dataset.studyTier = 'unclassified';
+    card.dataset.searchId = `local:${question.id}`;
+    card.dataset.source = 'local';
+    card.dataset.localId = question.id;
+    card.dataset.search = [
+      question.title,
+      question.category,
+      question.difficulty,
+      question.answer,
+      ...(question.followUps || []),
+      ...(question.tags || []),
+    ].join(' ');
 
-    const meta = makeElement('div', 'local-question-meta');
-    meta.append(
-      makeElement(
+    card.append(makeElement('div', 'card-number', ''));
+    const body = makeElement('div', 'card-body');
+    const meta = makeElement('div', 'card-meta');
+    meta.append(makeElement('span', '', question.category === '待整理' ? '未分类' : question.category));
+    if (question.difficulty !== '待评估') {
+      meta.append(makeElement(
         'span',
-        'local-question-badge',
-        question.visibility === 'public' ? '我的题目' : '未发布草稿',
-      ),
-      makeElement('span', '', question.category),
-      makeElement('span', '', question.answerStatus === 'complete' ? '答案已完成' : '待解答'),
-      makeElement(
-        'span',
-        question.visibility === 'public' ? 'local-question-planned' : '',
-        question.visibility === 'public' ? '当前浏览器保存' : '仅我可见',
-      ),
-    );
+        `difficulty difficulty-${question.difficulty}`,
+        question.difficulty,
+      ));
+    }
+    meta.append(makeElement(
+      'span',
+      question.visibility === 'private'
+        ? 'question-visibility-badge question-visibility-private'
+        : 'question-visibility-badge question-publication-incomplete',
+      question.visibility === 'private'
+        ? '私人 · 仅此浏览器'
+        : '公开发布未完成 · 仅此浏览器',
+    ));
+    if (question.answerStatus !== 'complete') {
+      meta.append(makeElement('span', 'answer-state-badge', '待解答'));
+    }
     const followUpCount = Array.isArray(question.followUps) ? question.followUps.length : 0;
     if (followUpCount > 0) meta.append(makeElement('span', '', `${followUpCount} 个追问`));
+    body.append(meta, makeElement('h2', '', question.title));
 
-    const title = makeElement('h3', '', question.title);
-    const action = makeElement(
-      'span',
-      'local-question-action',
-      question.visibility === 'public' ? '打开、补追问或同步 →' : '打开并编辑 →',
-    );
-    card.append(meta, title, action);
+    const tags = makeElement('div', 'tag-list');
+    (question.tags || []).forEach((tag) => tags.append(makeElement('span', 'tag', tag)));
+    body.append(tags);
+    card.append(body, makeElement('span', 'card-arrow', '编辑 →'));
     return card;
   };
 
+  const notifyLibraryChanged = () => {
+    document.dispatchEvent(new CustomEvent('question-library:changed'));
+  };
+
   const showError = (context, message) => {
-    context.root.hidden = false;
-    context.list.replaceChildren();
-    context.status.textContent = '本机题目暂时无法读取。';
-    context.error.textContent = `${message} 请到“增加题目”页下载原始数据或恢复备份；这里不会重置或上传任何内容。`;
-    context.error.hidden = false;
+    context.list?.replaceChildren();
+    if (context.status) context.status.textContent = '私人题暂时无法读取。';
+    if (context.error) {
+      context.error.textContent = `${message} 请到“增加题目”页下载原始数据或恢复备份；这里不会重置或上传任何内容。`;
+      context.error.hidden = false;
+    }
+    notifyLibraryChanged();
   };
 
   const render = (context) => {
+    if (!context.list) return;
     let raw;
     try {
       raw = window.localStorage.getItem(context.storageKey) || '';
@@ -108,22 +138,24 @@ if (roots.length > 0) {
       const state = raw
         ? parseQuestionDraftsJson(raw, { repositoryId: context.repositoryId })
         : { questions: [] };
-      const summary = selectLocalQuestions(state.questions, { visibility: context.visibility });
-      if (summary.total === 0) {
-        context.root.hidden = true;
-        context.list.replaceChildren();
-        context.error.hidden = true;
-        return;
-      }
-
-      context.root.hidden = false;
-      context.error.hidden = true;
-      context.status.textContent = context.visibility === 'public'
-        ? `${summary.total} 道我的题目 · ${summary.complete} 道答案已完成 · GitHub 同步状态以仓库为准`
-        : `${summary.total} 道未发布草稿 · ${summary.complete} 道答案已完成`;
+      const summary = selectLocalQuestions(state.questions, { all: true });
+      const visibleQuestions = summary.questions.filter((question) => (
+        question.visibility === 'private' || !publishedLocalIds.has(question.id)
+      ));
       context.list.replaceChildren(
-        ...summary.questions.map((question) => createQuestionCard(question, context)),
+        ...visibleQuestions.map((question) => createQuestionCard(question, context)),
       );
+      if (context.error) context.error.hidden = true;
+      if (context.status) {
+        const privateCount = summary.questions
+          .filter((question) => question.visibility === 'private').length;
+        const unfinishedPublicCount = visibleQuestions
+          .filter((question) => question.visibility === 'public').length;
+        context.status.textContent = summary.total === 0
+          ? '私人题只在当前浏览器显示。'
+          : `本机有 ${privateCount} 道私人题${unfinishedPublicCount ? ` · ${unfinishedPublicCount} 道公开发布未完成` : ''}`;
+      }
+      notifyLibraryChanged();
     } catch (caught) {
       showError(context, caught?.message || '题目数据格式无效。');
     }
@@ -131,6 +163,12 @@ if (roots.length > 0) {
 
   const renderAll = () => contexts.forEach(render);
 
+  document.addEventListener('question-library:public-loaded', (event) => {
+    publishedLocalIds.clear();
+    const localIds = Array.isArray(event.detail?.localIds) ? event.detail.localIds : [];
+    localIds.forEach((id) => publishedLocalIds.add(String(id)));
+    renderAll();
+  });
   window.addEventListener('storage', (event) => {
     contexts
       .filter((context) => event.key === context.storageKey)
