@@ -112,6 +112,7 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
   const {
     buildPublicQuestionsApiUrl,
     normalizePublicQuestions,
+    PUBLIC_QUESTIONS_TIMEOUT_MS,
   } = await importCore();
   const url = new URL(buildPublicQuestionsApiUrl('example-owner/example-repo', 20, 2));
 
@@ -121,6 +122,7 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
   assert.equal(url.searchParams.get('labels'), 'public-question');
   assert.equal(url.searchParams.get('per_page'), '20');
   assert.equal(url.searchParams.get('page'), '2');
+  assert.equal(PUBLIC_QUESTIONS_TIMEOUT_MS, 15_000);
   assert.equal(new URL(buildPublicQuestionsApiUrl('owner/repo', 100, 1, 'all')).searchParams.get('state'), 'all');
   assert.throws(() => buildPublicQuestionsApiUrl('owner/repo', 30, 1, 'closed'), /open 或 all/);
 

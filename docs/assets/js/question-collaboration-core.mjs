@@ -1,6 +1,7 @@
 const REPOSITORY_NWO_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]+$/;
 const PUBLIC_QUESTION_PREFIX = '[新增题目]';
 const PUBLIC_QUESTION_LABEL = 'public-question';
+export const PUBLIC_QUESTIONS_TIMEOUT_MS = 15_000;
 
 const cleanPublicField = (value, maxLength = 30) => {
   const cleaned = String(value || '')
