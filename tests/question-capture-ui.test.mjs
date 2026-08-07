@@ -7,13 +7,14 @@ import { parseQuestionDocument } from '../scripts/question-publication.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-const [page, script, layout, stylesheet, cms, publicQuestionForm] = await Promise.all([
+const [page, script, layout, stylesheet, cms, publicQuestionForm, prefilledQuestionForm] = await Promise.all([
   read('../docs/capture.html'),
   read('../docs/assets/js/question-capture.js'),
   read('../docs/_layouts/default.html'),
   read('../docs/assets/css/style.css'),
   read('../.pages.yml'),
   read('../.github/ISSUE_TEMPLATE/public-question.yml'),
+  read('../.github/ISSUE_TEMPLATE/public-question-from-web.yml'),
 ]);
 
 const questionDirectory = new URL('../docs/_questions/', import.meta.url);
@@ -178,7 +179,7 @@ test('新增题目必须明确选择可见性，并默认安全地只保存在�
   assert.doesNotMatch(publicOption, /\bchecked\b/);
   assert.match(attributesFor(page, 'question-public-confirmed'), /\btype="checkbox"/);
   assert.match(page, /只留给自己[\s\S]*当前浏览器/);
-  assert.match(page, /公开给大家[\s\S]*GitHub/);
+  assert.match(page, /准备公开[\s\S]*GitHub/);
   assert.match(page, /我确认已经移除姓名、联系方式、公司机密、内部题库和 NDA 内容/);
 
   assert.match(script, /visibility:\s*selectedVisibility\(\)/);
@@ -194,17 +195,20 @@ test('新增题目必须明确选择可见性，并默认安全地只保存在�
 test('页面明确区分本机、仓库和网站展示状态，且不收集访问凭据', () => {
   assert.match(page, /公开仓库没有“单题私密”/);
   assert.match(page, /只留给自己[\s\S]*当前浏览器/);
-  assert.match(page, /公开给大家[\s\S]*GitHub 用户名、题目和答案都会公开/);
+  assert.match(page, /准备公开[\s\S]*题库主人[\s\S]*其他使用者[\s\S]*GitHub 公开补充/);
   assert.match(page, /Private 仓库/);
   assert.match(page, /不会要求你填写 Token/);
-  assert.match(page, /默认只保存在当前浏览器/);
-  assert.match(page, /在 GitHub 点击提交/);
+  assert.match(page, /先保存本机副本/);
+  assert.match(page, /GitHub 最终确认/);
   assert.match(page, /浏览器明文本地存储/);
   assert.match(page, /公司机密、未授权题库或受 NDA 约束/);
 
   assert.doesNotMatch(page, /<input[^>]+type=["']password["']/i);
   assert.doesNotMatch(page, /<(?:input|textarea)[^>]+name=["'][^"']*(?:token|password|secret|pat)[^"']*["']/i);
-  assert.doesNotMatch(script, /\bfetch\s*\(|XMLHttpRequest|\bAuthorization\b|api\.github\.com/i);
+  assert.match(script, /apiUrl = buildPublicQuestionsApiUrl\(repositoryNwo, 100, 1, 'all'\)/);
+  assert.match(script, /fetch\(apiUrl/);
+  assert.match(script, /公开状态读取失败不影响本机记题/);
+  assert.doesNotMatch(script, /XMLHttpRequest|\bAuthorization\b/i);
 });
 
 test('脚本引用的页面控件全部存在，状态信息可被辅助技术获知', () => {
@@ -255,40 +259,53 @@ test('浏览器端隐私检查能识别常见及简单混淆的联系方式', ()
   assert.deepEqual(findSensitivePublicContent('讨论 HTTPS、95% 成功率和普通项目链接。'), []);
 });
 
-test('公开题目先查重和隐私确认，再用有长度降级的 Issue Form 预填且不会自动提交', () => {
-  assert.match(script, /'先检查是否已经公开 ↗'/);
-  assert.match(script, /'确认没有后，新建公开题目 ↗'/);
-  assert.match(script, /button\('确认没有后，新建公开题目 ↗', 'open-issue'/);
-  assert.match(script, /button\('先检查是否已经公开 ↗', 'search-public'/);
+test('公开题目区分正式收录与公开补充，分类和难度只在网页选择一次', () => {
+  assert.match(page, /data-library-url="\{\{ '\/' \| relative_url \}\}"/);
+  assert.match(page, /题库主人正式收录/);
+  assert.match(page, /其他人公开补充/);
+  assert.match(page, /分类和难度已自动带入，不需要再选/);
+  assert.match(script, /题库主人：复制给 Codex 整理入库/);
+  assert.match(script, /Pages CMS 手工收录（需重新填写）/);
+  assert.match(script, /其他使用者：提交公开补充（会创建 Issue）/);
+  assert.match(script, /const librarySearchTerm =/);
+  assert.match(script, /title\.match\(\/\[A-Za-z\]/);
+  assert.match(script, /url\.searchParams\.set\('q', librarySearchTerm\(question\.title\)\)/);
+  assert.match(script, /先搜索正式题库是否已有/);
 
   const issueLaunchBlock = script.match(/const buildIssueLaunch = \(question\) => \{[\s\S]*?\n  \};/);
   assert.ok(issueLaunchBlock, '应集中构造受控且有长度预算的 Issue 地址');
-  assert.match(issueLaunchBlock[0], /template: 'public-question\.yml'/);
+  assert.match(issueLaunchBlock[0], /template: 'public-question-from-web\.yml'/);
   assert.match(issueLaunchBlock[0], /title: `\[新增题目\] \$\{question\.title\}`/);
-  assert.match(issueLaunchBlock[0], /question:\s*question\.title/);
-  assert.match(issueLaunchBlock[0], /category:\s*question\.category/);
-  assert.match(issueLaunchBlock[0], /difficulty:\s*question\.difficulty/);
-  assert.match(issueLaunchBlock[0], /params\.set\('answer', question\.answer\)/);
-  assert.match(issueLaunchBlock[0], /params\.set\('source', question\.source\)/);
-  assert.match(issueLaunchBlock[0], /params\.set\('context', `标签：\$\{question\.tags\.join\('、'\)\}`\)/);
+  assert.match(issueLaunchBlock[0], /params\.set\('details', contributionText\(question, included\)\)/);
   assert.match(issueLaunchBlock[0], /toUrl\(\)\.length > 6500/);
   assert.match(issueLaunchBlock[0], /omit\('answer', '答案'\)/);
+  assert.match(issueLaunchBlock[0], /omit\('tags', '标签'\)/);
+  assert.match(issueLaunchBlock[0], /omit\('source', '来源'\)/);
   assert.match(issueLaunchBlock[0], /return \{ url: toUrl\(\), omittedFields \}/);
-  assert.doesNotMatch(issueLaunchBlock[0], /\bbody\s*:/);
+  assert.doesNotMatch(issueLaunchBlock[0], /params\.set\('(?:category|difficulty)'/);
 
   assert.match(script, /question\.visibility === 'public'[\s\S]*buildIssueLaunch\(question\)/);
-  assert.match(script, /savedQuestion\?\.visibility === 'public' && !questionId/);
-  assert.match(script, /savedQuestion\?\.visibility === 'public' && !questionId[\s\S]*buildPublicQuestionSearchUrl\(savedQuestion\)/);
-  assert.match(script, /savedQuestion\?\.visibility === 'public' && questionId[\s\S]*不会重复打开投稿页/);
+  assert.match(script, /const showPublicChoices = savedQuestion\?\.visibility === 'public' && !questionId/);
+  assert.match(script, /showPublicChoices[\s\S]*requestAnimationFrame[\s\S]*details\.open = true/);
+  const saveBlock = script.replace(/\r\n?/g, '\n').match(/const saveQuestion = \(\) => \{[\s\S]*?\n  \};\n\n  \/\/ 题目、答案和来源控件/);
+  assert.ok(saveBlock, '应能定位完整本机保存流程');
+  assert.doesNotMatch(saveBlock[0], /window\.open/);
   assert.match(script, /改成“只留给自己”不会撤回公开内容/);
-  assert.match(script, /网址参数发送给 GitHub[^'\n]*提交后[^'\n]*公开/);
   assert.match(script, /if \(action === 'open-issue'\)[\s\S]*publishSafety\(question, status\)[\s\S]*window\.confirm[\s\S]*window\.open\(launch\.url/);
-  assert.match(script, /if \(action === 'search-public'\)[\s\S]*publishSafety\(titleOnlyQuestion, status\)[\s\S]*window\.confirm[\s\S]*window\.open\(buildPublicQuestionSearchUrl\(question\)/);
-  assert.match(script, /if \(!window\.confirm\(warning\)\) event\.preventDefault\(\)/);
-  assert.match(script, /打开仓库，再进入 docs\/_questions\//);
-  assert.match(script, /放在仓库根目录不会生效/);
+  assert.match(script, /分类和难度已经带入，不需要再次选择/);
+  assert.match(script, /题目内容会作为网址参数发送给 GitHub/);
+  assert.match(script, /只有你在 GitHub 点击提交后才会创建公开 Issue/);
+  assert.match(script, /loadPublicIssueMatches/);
+  assert.match(script, /已公开补充 #\$\{submittedIssue\.number\}/);
+  assert.match(script, /if \(action === 'open-submitted-issue'\)/);
+  assert.doesNotMatch(script, /search-public|buildPublicQuestionSearchUrl/);
+
+  const detailsField = issueFieldSection(prefilledQuestionForm, 'details');
+  assert.match(detailsField, /type: textarea/);
+  assert.match(detailsField, /required:\s*true/);
+  assert.match(prefilledQuestionForm, /分类和难度已经由网站带入/);
+  assert.doesNotMatch(prefilledQuestionForm, /\bid:\s*(?:category|difficulty)\b/);
   assert.doesNotMatch(script, /\.submit\s*\(|requestSubmit\s*\(/);
-  assert.doesNotMatch(script, /(?:issue|existing)\.href\s*=\s*(?:buildIssueLaunch|buildPublicQuestionSearchUrl)/);
 });
 
 test('切换编辑、恢复或全删前不会静默覆盖尚未保存的表单', () => {

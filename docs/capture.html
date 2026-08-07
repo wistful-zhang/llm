@@ -4,21 +4,25 @@ description: 直接在网站表单中增加、编辑和练习面试题；可以�
 permalink: /capture/
 ---
 {% assign published_categories = site.questions | where: 'published', true | map: 'category' | uniq | sort %}
+{% assign cms_branch = site.github.source.branch | default: 'main' %}
 <div
   class="container question-capture-page"
   data-question-capture
   data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
   data-repository-url="{{ site.github.repository_url | escape }}"
+  data-repository-nwo="{{ site.github.repository_nwo | escape }}"
+  data-cms-url="{% if site.github.repository_nwo %}https://app.pagescms.org/{{ site.github.repository_nwo | escape }}/{{ cms_branch | url_encode }}/collection/questions{% endif %}"
+  data-library-url="{{ '/' | relative_url }}"
   data-codex-path="docs/_questions/">
   <header class="capture-intro">
     <span class="status-badge">不进后台 · 不需要 Markdown</span>
     <h1>增加一道题，由你决定谁能看</h1>
-    <p>直接填写正常文字，答案可以留空。默认只保存在当前浏览器；选择“公开给大家”后，会先保存本机副本并打开 GitHub 查重。确认没有相同题目，再回到题目卡新建并最终确认。</p>
+    <p>直接填写正常文字，答案可以留空。保存后会立即出现在首页“我的本机题目”。需要公开时，题库主人优先交给 Codex 正式收录，其他使用者才走 GitHub 公开补充；公开补充的分类和难度只在这里选择一次。</p>
   </header>
 
   <div class="capture-boundary" role="note">
     <strong>公开仓库没有“单题私密”</strong>
-    <span><b>只留给自己</b>表示内容留在当前浏览器；需要跨设备私密保存时，请使用自己的 Private 仓库。<b>公开给大家</b>会进入当前仓库的公开题目；打开预填页时内容会作为网址参数发送给 GitHub，提交后 GitHub 用户名、题目和答案都会公开。本站不会要求你填写 Token 或密码。</span>
+    <span><b>只留给自己</b>表示内容留在当前浏览器；需要跨设备私密保存时，请使用自己的 Private 仓库。<b>准备公开</b>仍会先保存本机副本：题库主人可交给 Codex 保留当前字段并正式收录，也可在 Pages CMS 手工录入；其他使用者可提交为 GitHub 公开补充。本站不会要求你填写 Token 或密码。</span>
   </div>
 
   <section class="capture-workspace" aria-labelledby="capture-form-title">
@@ -48,7 +52,7 @@ permalink: /capture/
             </label>
             <label class="question-visibility-option">
               <input type="radio" name="visibility" value="public">
-              <span><strong>公开给大家</strong><small>保存后先去 GitHub 查重；确认没有后，回到题目卡新建。提交成功后别人可以看到，并可在对应 GitHub Issue 讨论。</small></span>
+              <span><strong>准备公开</strong><small>先保存本机副本。题库主人可正式收录；其他使用者可提交为 GitHub 公开补充，尚不会自动进入正式题库。</small></span>
             </label>
           </div>
           <label id="question-public-confirmation" class="question-public-confirmation" hidden>
@@ -113,11 +117,11 @@ permalink: /capture/
 
     <aside class="capture-next-steps" aria-label="保存后的操作">
       <span class="section-kicker">两种去向</span>
-      <h2>私人积累和公开补题分开处理</h2>
+      <h2>保存后只需选择一次去向</h2>
       <ol>
         <li><strong>只留给自己</strong><span>点保存后立即回到“我的题目”，可以编辑、搜索、练习和导出。</span></li>
-        <li><strong>公开给大家</strong><span>先通过隐私检查并去 GitHub 查重；确认没有相同题目后，回到题目卡新建并在 GitHub 点击提交。改回“只留给自己”不会撤回已提交的内容。</span></li>
-        <li><strong>其他人参与</strong><span>公开题目可以被看到；评论功能目前已关闭，内容纠错可以使用题目页底部的反馈入口。</span></li>
+        <li><strong>题库主人正式收录</strong><span>把题目卡中的指令交给 Codex，所选分类和难度会一并保留；也可在 Pages CMS 手工录入。通过检查和发布后才进入正式搜索、分类和模拟面试。</span></li>
+        <li><strong>其他人公开补充</strong><span>使用题目卡中的“提交公开补充”进入 GitHub 最终确认；分类和难度已自动带入，不需要再选。打开确认页时题目内容会发送给 GitHub，点击提交后才创建公开 Issue。</span></li>
       </ol>
       <a class="text-link" href="{{ '/privacy/' | relative_url }}">查看本机存储的完整隐私边界 →</a>
       <a class="text-link" href="{{ '/start/' | relative_url }}#mode-choice">不确定 Public / Private？先看区别 →</a>
@@ -148,7 +152,7 @@ permalink: /capture/
     <div id="question-draft-practice-answer" class="capture-practice-answer" tabindex="-1" hidden></div>
   </section>
 
-  <section class="question-draft-library" aria-labelledby="question-draft-library-title">
+  <section id="question-draft-library" class="question-draft-library" aria-labelledby="question-draft-library-title">
     <div class="capture-section-heading">
       <div>
         <span class="section-kicker">当前浏览器</span>

@@ -2,6 +2,24 @@ const REPOSITORY_NWO_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._
 const PUBLIC_QUESTION_PREFIX = '[新增题目]';
 const PUBLIC_QUESTION_LABEL = 'public-question';
 
+const cleanPublicField = (value, maxLength = 30) => {
+  const cleaned = String(value || '')
+    .normalize('NFKC')
+    .replace(/^[#*_`\s]+|[#*_`\s]+$/g, '')
+    .trim();
+  if (!cleaned || /^no response$/i.test(cleaned)) return '';
+  return [...cleaned].slice(0, maxLength).join('');
+};
+
+export const readPublicQuestionField = (body, label) => {
+  const source = typeof body === 'string' ? body.replace(/\r\n?/g, '\n') : '';
+  const escapedLabel = String(label || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!source || !escapedLabel) return '';
+  const heading = source.match(new RegExp(`^###\\s+${escapedLabel}\\s*\\n+(?:\\s*\\n)*([^\\n]+)`, 'mi'));
+  const inline = source.match(new RegExp(`^${escapedLabel}[：:]\\s*([^\\n]+)`, 'mi'));
+  return cleanPublicField(heading?.[1] || inline?.[1] || '');
+};
+
 const validateRepositoryNwo = (value) => {
   const repository = String(value || '').trim();
   if (!REPOSITORY_NWO_PATTERN.test(repository)) {
@@ -22,11 +40,14 @@ const validatePagination = (perPage, page) => {
   return { pageSize, pageNumber };
 };
 
-export const buildPublicQuestionsApiUrl = (repositoryNwo, perPage = 30, page = 1) => {
+export const buildPublicQuestionsApiUrl = (repositoryNwo, perPage = 30, page = 1, state = 'open') => {
   const repository = validateRepositoryNwo(repositoryNwo);
   const { pageSize, pageNumber } = validatePagination(perPage, page);
+  if (!['open', 'all'].includes(state)) {
+    throw new RangeError('Issue 状态必须是 open 或 all');
+  }
   const url = new URL(`https://api.github.com/repos/${repository}/issues`);
-  url.searchParams.set('state', 'open');
+  url.searchParams.set('state', state);
   url.searchParams.set('labels', PUBLIC_QUESTION_LABEL);
   url.searchParams.set('sort', 'updated');
   url.searchParams.set('direction', 'desc');
@@ -65,6 +86,7 @@ export const normalizePublicQuestions = (payload, repositoryNwo) => {
         : 0,
       state: issue.state === 'closed' ? 'closed' : 'open',
       locked: issue.locked === true,
+      category: readPublicQuestionField(issue.body, '分类'),
       createdAt: typeof issue.created_at === 'string' ? issue.created_at : '',
       updatedAt: typeof issue.updated_at === 'string' ? issue.updated_at : '',
       url: `https://github.com/${repository}/issues/${number}`,
