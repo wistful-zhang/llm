@@ -14,6 +14,10 @@ import {
   updateQuestionDraft,
 } from './question-drafts-core.mjs';
 import { findSensitivePublicContent } from './public-content-privacy.mjs';
+import {
+  buildPublicQuestionsApiUrl,
+  normalizePublicQuestions,
+} from './question-collaboration-core.mjs';
 
 const root = document.querySelector('[data-question-capture]');
 
@@ -26,6 +30,26 @@ if (root) {
       const segments = url.pathname.split('/').filter(Boolean);
       return url.protocol === 'https:' && url.hostname === 'github.com' && segments.length === 2
         ? `${url.origin}/${segments.map(encodeURIComponent).join('/')}`
+        : '';
+    } catch {
+      return '';
+    }
+  })();
+  const repositoryNwo = root.dataset.repositoryNwo || '';
+  const cmsUrl = (() => {
+    try {
+      const url = new URL(root.dataset.cmsUrl);
+      return url.protocol === 'https:' && url.hostname === 'app.pagescms.org' ? url.toString() : '';
+    } catch {
+      return '';
+    }
+  })();
+  const libraryUrl = (() => {
+    try {
+      if (!root.dataset.libraryUrl) return '';
+      const url = new URL(root.dataset.libraryUrl, window.location.href);
+      return url.origin === window.location.origin && ['http:', 'https:'].includes(url.protocol)
+        ? url.toString()
         : '';
     } catch {
       return '';
@@ -87,6 +111,8 @@ if (root) {
   let hasUnpersistedState = false;
   let formDirty = false;
   let state = createEmptyQuestionDrafts(repositoryId);
+  let publicIssuesByTitle = new Map();
+  let publicIssuesLoadPromise = null;
 
   const makeElement = (tag, className = '', text = '') => {
     const element = document.createElement(tag);
@@ -230,6 +256,58 @@ if (root) {
 
   const questionById = (id) => state.questions.find((question) => question.id === id);
 
+  const publicTitleKey = (value) => String(value || '')
+    .normalize('NFKC')
+    .trim()
+    .toLocaleLowerCase('zh-CN');
+
+  const librarySearchTerm = (value) => {
+    const title = String(value || '').normalize('NFKC').trim();
+    const technicalTerm = title.match(/[A-Za-z][A-Za-z0-9.+#_-]{2,}/)?.[0];
+    return (technicalTerm || title).slice(0, 160);
+  };
+
+  const buildLibrarySearchUrl = (question) => {
+    if (!libraryUrl) return '';
+    const url = new URL(libraryUrl);
+    url.searchParams.set('q', librarySearchTerm(question.title));
+    url.hash = 'question-list-section';
+    return url.toString();
+  };
+
+  const loadPublicIssueMatches = async () => {
+    if (!repositoryNwo || publicIssuesLoadPromise) return publicIssuesLoadPromise;
+    let apiUrl = '';
+    try {
+      apiUrl = buildPublicQuestionsApiUrl(repositoryNwo, 100, 1, 'all');
+    } catch {
+      return undefined;
+    }
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    publicIssuesLoadPromise = fetch(apiUrl, {
+      headers: { Accept: 'application/vnd.github+json' },
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`GitHub Issues API ${response.status}`);
+        return response.json();
+      })
+      .then((payload) => {
+        publicIssuesByTitle = new Map(normalizePublicQuestions(payload, repositoryNwo)
+          .map((issue) => [publicTitleKey(issue.title), issue]));
+        render();
+      })
+      .catch(() => {
+        // 公开状态读取失败不影响本机记题、编辑、备份或导出。
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutId);
+        publicIssuesLoadPromise = null;
+      });
+    return publicIssuesLoadPromise;
+  };
+
   const formatTime = (value) => new Date(value).toLocaleString('zh-CN', {
     year: 'numeric',
     month: 'numeric',
@@ -241,38 +319,27 @@ if (root) {
   const buildIssueLaunch = (question) => {
     if (!repositoryUrl) return { url: '', omittedFields: [] };
     const params = new URLSearchParams({
-      template: 'public-question.yml',
+      template: 'public-question-from-web.yml',
       title: `[新增题目] ${question.title}`,
-      question: question.title,
-      category: question.category,
-      difficulty: question.difficulty,
     });
-    if (question.answer) params.set('answer', question.answer);
-    if (question.source) params.set('source', question.source);
-    if (question.tags.length > 0) params.set('context', `标签：${question.tags.join('、')}`);
-
     const omittedFields = [];
+    const included = { answer: true, source: true, tags: true };
+    const updateDetails = () => params.set('details', contributionText(question, included));
+    updateDetails();
     const toUrl = () => `${repositoryUrl}/issues/new?${params.toString()}`;
-    const omit = (parameter, label) => {
-      if (!params.has(parameter)) return;
-      params.delete(parameter);
+    const omit = (field, label) => {
+      if (!included[field]) return;
+      included[field] = false;
       omittedFields.push(label);
+      updateDetails();
     };
 
-    // GitHub 会拒绝过长的网址。按体积从大到小降级，最终只保留模板、标题和题目。
+    // GitHub 会拒绝过长的网址。只降级可选长字段，题目、分类和难度始终只从网页带入一次。
     if (toUrl().length > 6500) omit('answer', '答案');
-    if (toUrl().length > 6500) omit('context', '标签');
+    if (toUrl().length > 6500) omit('tags', '标签');
     if (toUrl().length > 6500) omit('source', '来源');
-    if (toUrl().length > 6500) omit('category', '分类');
-    if (toUrl().length > 6500) omit('difficulty', '难度');
 
     return { url: toUrl(), omittedFields };
-  };
-
-  const buildPublicQuestionSearchUrl = (question) => {
-    if (!repositoryUrl) return '';
-    const query = `is:issue in:title "[新增题目] ${question.title}"`;
-    return `${repositoryUrl}/issues?q=${encodeURIComponent(query)}`;
   };
 
   const filenameFor = (question) => {
@@ -280,18 +347,18 @@ if (root) {
     return `${question.date}-${suffix}.md`;
   };
 
-  const contributionText = (question) => [
+  const contributionText = (question, included = { answer: true, source: true, tags: true }) => [
     `题目：${question.title}`,
-    '可见范围：公开给大家',
+    '提交类型：公开补充（尚未正式收录）',
     `答案状态：${question.answerStatus === 'complete' ? '已完成' : '待解答'}`,
     `分类：${question.category}`,
     `难度：${question.difficulty}`,
-    `标签：${question.tags.join('、') || '无'}`,
-    `匿名来源：${question.source || '未填写'}`,
-    '',
-    '参考答案 / 当前思路：',
-    question.answer || '暂未作答',
-  ].join('\n');
+    included.tags ? `标签：${question.tags.join('、') || '无'}` : '',
+    included.source ? `匿名来源：${question.source || '未填写'}` : '',
+    included.answer ? '' : null,
+    included.answer ? '参考答案 / 当前思路：' : null,
+    included.answer ? (question.answer || '暂未作答') : null,
+  ].filter((line) => line !== null && line !== '').join('\n');
 
   const codexPublishPrompt = (question) => {
     const visibilityRule = question.visibility === 'private'
@@ -359,11 +426,12 @@ ${JSON.stringify(question, null, 2)}
     publicConfirmedInput.required = visibility === 'public';
     if (visibility !== 'public') publicConfirmedInput.checked = false;
     saveButton.textContent = visibility === 'public'
-      ? (editing ? '保存修改' : '保存并先去查重')
+      ? (editing ? '保存修改' : '保存，选择公开方式')
       : (editing ? '保存修改' : '保存为我的题目');
   };
 
   const createQuestionCard = (question) => {
+    const submittedIssue = publicIssuesByTitle.get(publicTitleKey(question.title));
     const card = makeElement('article', 'question-draft-card');
     card.dataset.questionId = question.id;
 
@@ -377,7 +445,9 @@ ${JSON.stringify(question, null, 2)}
       makeElement(
         'span',
         `question-visibility-badge question-visibility-${question.visibility}`,
-        question.visibility === 'public' ? '本机：计划公开' : '只留给自己',
+        question.visibility === 'public'
+          ? (submittedIssue ? `已公开补充 #${submittedIssue.number}` : '准备公开 · 尚未提交')
+          : '只留给自己',
       ),
     );
     copy.append(meta, makeElement('h3', '', question.title));
@@ -409,22 +479,32 @@ ${JSON.stringify(question, null, 2)}
     card.append(actions);
 
     const more = makeElement('details', 'question-draft-card-more');
-    more.append(makeElement('summary', '', '整理、写入 GitHub 与删除'));
+    more.append(makeElement('summary', '', '正式收录、公开补充与删除'));
     const note = makeElement(
       'p',
       'question-draft-publish-note',
       question.visibility === 'public'
-        ? '这是“计划公开”的本机副本，不代表 GitHub 已提交。先检查是否已经公开，避免重复建题；后续修改已公开内容，请直接编辑原 Issue。'
+        ? (submittedIssue
+          ? `这道题已经作为公开补充 #${submittedIssue.number} 提交，别人可以看到；它尚未进入正式题库、分类统计和模拟面试。题库主人审核后再决定是否正式收录。`
+          : '这只是准备公开的本机副本，别人还看不到。题库主人请选择正式收录；其他使用者才提交 GitHub 公开补充。')
         : '这道题当前只留在浏览器。若它以前已提交到 GitHub，改成“只留给自己”不会撤回公开内容，仍需到原 Issue 处理。',
     );
     const publishActions = makeElement('div', 'question-draft-publish-actions');
+    const librarySearchUrl = buildLibrarySearchUrl(question);
+    if (librarySearchUrl) {
+      const librarySearch = makeElement('a', 'secondary-button', '先搜索正式题库是否已有 ↗');
+      librarySearch.href = librarySearchUrl;
+      librarySearch.target = '_blank';
+      librarySearch.rel = 'noopener noreferrer';
+      publishActions.append(librarySearch);
+    }
     publishActions.append(
       button(
         question.visibility === 'private'
           ? '交给 Codex（仅限 Private 仓库）'
-          : '复制给 Codex 写入仓库草稿',
+          : '题库主人：复制给 Codex 整理入库',
         'copy-codex-publish',
-        'secondary-button',
+        question.visibility === 'public' ? 'primary-button' : 'secondary-button',
         question.id,
       ),
       button('只让 Codex 补答案', 'copy-answer-prompt', 'text-button', question.id),
@@ -435,15 +515,16 @@ ${JSON.stringify(question, null, 2)}
       publishActions.append(button('复制公开内容', 'copy-contribution', 'text-button', question.id));
     }
     if (repositoryUrl && question.visibility === 'public') {
-      const existing = button('先检查是否已经公开 ↗', 'search-public', 'secondary-button', question.id);
-      const issue = button('确认没有后，新建公开题目 ↗', 'open-issue', 'primary-button', question.id);
-      const repository = makeElement('a', 'text-link', '题库主人：打开仓库，再进入 docs/_questions/ ↗');
-      repository.href = repositoryUrl;
-      repository.target = '_blank';
-      repository.rel = 'noopener noreferrer';
-      repository.dataset.action = 'open-repository';
-      repository.dataset.questionId = question.id;
-      publishActions.append(existing, issue, repository);
+      if (cmsUrl) {
+        const cms = makeElement('a', 'text-button', 'Pages CMS 手工收录（需重新填写） ↗');
+        cms.href = cmsUrl;
+        cms.target = '_blank';
+        cms.rel = 'noopener noreferrer';
+        publishActions.append(cms);
+      }
+      publishActions.append(submittedIssue
+        ? button(`查看已提交的公开补充 #${submittedIssue.number} ↗`, 'open-submitted-issue', 'secondary-button', question.id)
+        : button('其他使用者：提交公开补充（会创建 Issue） ↗', 'open-issue', 'secondary-button', question.id));
     }
     publishActions.append(button('删除这道本机题目', 'delete', 'text-button interview-danger-button', question.id));
     const status = makeElement('p', 'question-draft-card-status');
@@ -589,25 +670,26 @@ ${JSON.stringify(question, null, 2)}
       if (commit(next, questionId
         ? '修改已保存到此浏览器，尚未上传 GitHub。'
         : '题目已保存到此浏览器，尚未上传 GitHub。')) {
-        if (savedQuestion?.visibility === 'public' && !questionId) {
-          if (!repositoryUrl) {
-            formStatus.textContent = '题目已保存，但当前站点没有连接 GitHub 仓库，尚未公开。你仍可导出备份。';
-          } else if (publishSafety(savedQuestion, formStatus)) {
-            const confirmed = window.confirm('为避免重复，下一步先在 GitHub 精确查找相同题目。完整题目标题会作为网址参数发送给 GitHub，并可能留在浏览器历史中；当前不会提交。确认继续吗？');
-            if (confirmed) {
-              const opened = window.open(buildPublicQuestionSearchUrl(savedQuestion), '_blank');
-              if (opened) opened.opener = null;
-              formStatus.textContent = opened
-                ? '题目已保存，并打开 GitHub 查重。确认没有相同题目后，请回到本页题目卡，再点“新建公开题目”；当前尚未提交。'
-                : '题目已保存，但浏览器拦截了查重窗口。请在下方题目卡先检查是否已经公开，再决定是否新建。';
-            } else {
-              formStatus.textContent = '题目已保存为本机副本，公开流程已取消；尚未上传 GitHub。';
-            }
-          }
+        const showPublicChoices = savedQuestion?.visibility === 'public' && !questionId;
+        if (showPublicChoices) {
+          formStatus.textContent = repositoryUrl
+            ? '题目已保存并会出现在首页“我的本机题目”。请在下方题目卡选择“题库主人正式收录”或“其他使用者提交公开补充”；当前尚未公开。'
+            : '题目已保存并会出现在首页“我的本机题目”，但当前站点没有连接 GitHub 仓库，尚未公开。';
         } else if (savedQuestion?.visibility === 'public' && questionId) {
-          formStatus.textContent = '修改已保存到本机，不会重复打开投稿页。若题目已经公开，请直接编辑原 GitHub Issue；若尚未公开，可在题目卡先检查再新建。';
+          const submittedIssue = publicIssuesByTitle.get(publicTitleKey(savedQuestion.title));
+          formStatus.textContent = submittedIssue
+            ? `修改已保存到本机；公开补充 #${submittedIssue.number} 不会被自动改写，请在 GitHub 中单独修改。`
+            : '修改已保存到本机；尚未提交的公开补充可以继续从题目卡发起。';
         }
         resetForm();
+        if (showPublicChoices) {
+          window.requestAnimationFrame(() => {
+            const card = list.querySelector(`[data-question-id="${CSS.escape(savedQuestion.id)}"]`);
+            const details = card?.querySelector('details');
+            if (details) details.open = true;
+            card?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          });
+        }
       }
     } catch (error) {
       const field = error instanceof QuestionDraftDataError && error.field
@@ -673,17 +755,17 @@ ${JSON.stringify(question, null, 2)}
       if (commit(next, '这道题已从当前浏览器删除。') && idInput.value === question.id) resetForm();
       return;
     }
-    if (action === 'search-public') {
-      const titleOnlyQuestion = { ...question, answer: '', source: '', tags: [] };
-      if (!publishSafety(titleOnlyQuestion, status)) {
+    if (action === 'open-submitted-issue') {
+      const submittedIssue = publicIssuesByTitle.get(publicTitleKey(question.title));
+      if (!submittedIssue) {
+        status.textContent = '暂时没有读取到对应公开补充，请稍后重试或刷新页面。';
+        void loadPublicIssueMatches();
         return;
       }
-      const warning = '查重会把完整题目标题作为网址参数发送给 GitHub，并可能留在浏览器历史中。确认标题不含隐私、公司机密或未授权内容，再继续吗？';
-      if (!window.confirm(warning)) return;
-      const opened = window.open(buildPublicQuestionSearchUrl(question), '_blank');
+      const opened = window.open(submittedIssue.url, '_blank');
       if (opened) opened.opener = null;
       status.textContent = opened
-        ? '已打开 GitHub 精确查重；确认没有相同题目后，再回到这里新建。'
+        ? `已打开公开补充 #${submittedIssue.number}；它尚未自动进入正式题库。`
         : '浏览器拦截了新窗口；请允许本站打开新标签页后重试。';
       return;
     }
@@ -695,24 +777,15 @@ ${JSON.stringify(question, null, 2)}
       const omittedNotice = launch.omittedFields.length
         ? `网址长度受限，${launch.omittedFields.join('、')}不会自动带入；请先复制公开内容，打开后补齐。`
         : '';
-      const warning = `打开时，预填内容会作为网址参数发送给 GitHub，并可能留在浏览器历史中；提交后题目、答案和你的 GitHub 用户名会公开。${omittedNotice}确认已经移除隐私、公司机密、NDA 和未授权题库内容，再继续吗？`;
+      const warning = `这是给没有仓库写权限的使用者准备的公开补充，不会自动进入正式题库。继续后，题目内容会作为网址参数发送给 GitHub；分类和难度已经带入，不需要再次选择。只有你在 GitHub 点击提交后才会创建公开 Issue，并公开内容和你的 GitHub 用户名。${omittedNotice}确认继续吗？`;
       if (!window.confirm(warning)) return;
       const opened = window.open(launch.url, '_blank');
       if (opened) opened.opener = null;
       status.textContent = opened
         ? (launch.omittedFields.length
           ? `${launch.omittedFields.join('、')}没有自动带入，请复制公开内容并在 GitHub 补齐；当前尚未提交。`
-          : '已打开 GitHub 最终确认页；只有在那里点击提交才会公开。')
+          : '已打开 GitHub 最终确认页；分类和难度已经带入，只需检查内容并完成最终公开确认。')
         : '浏览器拦截了新窗口；请允许本站打开新标签页后重试。';
-      return;
-    }
-    if (action === 'open-repository') {
-      if (!publishSafety(question, status)) {
-        event.preventDefault();
-        return;
-      }
-      const warning = '如果目标仓库是 Public，上传的文件即使 published: false 也会公开，提交历史也可能长期保留。打开后请进入 docs/_questions/ 再上传；放在仓库根目录不会生效。确认继续吗？';
-      if (!window.confirm(warning)) event.preventDefault();
       return;
     }
 
@@ -861,7 +934,24 @@ ${JSON.stringify(question, null, 2)}
     event.returnValue = '';
   });
 
+  let publicIssueRetryTimer = 0;
+  window.addEventListener('focus', () => {
+    void loadPublicIssueMatches();
+    window.clearTimeout(publicIssueRetryTimer);
+    publicIssueRetryTimer = window.setTimeout(() => { void loadPublicIssueMatches(); }, 12_000);
+  });
+
   readInitialState();
   resetForm();
   render();
+  const requestedEditId = new URL(window.location.href).searchParams.get('edit');
+  if (requestedEditId) {
+    const requestedQuestion = questionById(requestedEditId);
+    if (requestedQuestion) {
+      editQuestion(requestedQuestion);
+    } else {
+      formStatus.textContent = '没有在当前浏览器找到这道本机题目；它可能位于另一台设备、另一个浏览器或另一个题库副本中。';
+    }
+  }
+  void loadPublicIssueMatches();
 }

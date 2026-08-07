@@ -61,7 +61,7 @@ test('评论实现保留但站点默认关闭，题目页只在开关开启时�
   assert.doesNotMatch(csp, /utteranc\.es|frame-src https:;|connect-src[^;]+\shttps:\s/);
 });
 
-test('首页把未经整理的公开投稿放在正式题库之后，不再提供独立社区导航', async () => {
+test('首页把公开补充放在正式题库之前，并在返回页面时自动刷新', async () => {
   const [home, layout, script] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/_layouts/default.html'),
@@ -69,10 +69,11 @@ test('首页把未经整理的公开投稿放在正式题库之后，不再提�
   ]);
   const navigation = `${home}\n${layout}`;
 
-  assert.match(home, /大家最近增加的题目/);
-  assert.match(home, /尚未进入上方正式题库与学习分级/);
+  assert.match(home, /公开补充题目/);
+  assert.match(home, /已经提交 · 尚未正式收录/);
+  assert.match(home, /尚未进入下面的正式题库、分类统计和模拟面试/);
   assert.match(home, /data-public-questions/);
-  assert.ok(home.indexOf('data-public-questions') > home.indexOf('id="question-list"'), '未经整理的公开补充应在正式题库之后出现');
+  assert.ok(home.indexOf('data-public-questions') < home.indexOf('id="question-list-section"'), '公开补充应在正式题库之前出现');
   assert.match(home, /查看全部公开补充/);
   assert.match(home, /data-repository-nwo="{{\s*site\.github\.repository_nwo\s*\|\s*escape\s*}}"/);
   assert.match(navigation, /assets\/js\/public-questions\.js/);
@@ -86,6 +87,10 @@ test('首页把未经整理的公开投稿放在正式题库之后，不再提�
   assert.match(script, /createElement\(/);
   assert.match(script, /\.textContent\s*=/);
   assert.match(script, /replaceChildren\(/);
+  assert.match(script, /window\.addEventListener\('focus'/);
+  assert.match(script, /document\.addEventListener\('visibilitychange'/);
+  assert.match(script, /查看公开补充/);
+  assert.doesNotMatch(script, /回答或评论|条评论/);
   assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
   assert.doesNotMatch(script, /\bAuthorization\b|localStorage|sessionStorage/i);
 });
@@ -103,6 +108,8 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
   assert.equal(url.searchParams.get('labels'), 'public-question');
   assert.equal(url.searchParams.get('per_page'), '20');
   assert.equal(url.searchParams.get('page'), '2');
+  assert.equal(new URL(buildPublicQuestionsApiUrl('owner/repo', 100, 1, 'all')).searchParams.get('state'), 'all');
+  assert.throws(() => buildPublicQuestionsApiUrl('owner/repo', 30, 1, 'closed'), /open 或 all/);
 
   const payload = [
     {
@@ -115,7 +122,7 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
       created_at: '2026-07-22T08:00:00Z',
       updated_at: '2026-07-22T09:00:00Z',
       html_url: 'https://attacker.example/issues/31',
-      body: '<script>不应直接送入卡片 HTML</script>',
+      body: '### 分类\n\nLLM 基础\n\n<script>不应直接送入卡片 HTML</script>',
     },
     {
       number: 32,
@@ -137,15 +144,17 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
   assert.equal(questions[0].title, '为什么 KV Cache 能加速推理？');
   assert.equal(questions[0].author, 'alice');
   assert.equal(questions[0].comments, 3);
+  assert.equal(questions[0].category, 'LLM 基础');
   assert.equal(questions[0].url, 'https://github.com/example-owner/example-repo/issues/31');
   assert.equal(Object.hasOwn(questions[0], 'body'), false);
   const publicScript = await read('../docs/assets/js/public-questions.js');
   assert.doesNotMatch(publicScript, /已整理/);
 });
 
-test('公开补题保留可视化表单，站内评论不再创建 GitHub Issue', async () => {
-  const [questionForm, workflow] = await Promise.all([
+test('公开补题保留分类下拉，网页已填投稿只需最终确认', async () => {
+  const [questionForm, prefilledForm, workflow] = await Promise.all([
     read('../.github/ISSUE_TEMPLATE/public-question.yml'),
+    read('../.github/ISSUE_TEMPLATE/public-question-from-web.yml'),
     read('../.github/workflows/question-collaboration.yml'),
   ]);
 
@@ -159,6 +168,15 @@ test('公开补题保留可视化表单，站内评论不再创建 GitHub Issue'
   assert.match(questionForm, /提交后会公开/);
   assert.match(fieldSection(questionForm, 'compliance'), /required:\s*true/);
   assertNoCredentialField(questionForm);
+
+  assert.match(prefilledForm, /title:\s*["']?\[新增题目\]/);
+  assert.match(prefilledForm, /labels:\s*\[["']public-question["']\]/);
+  assert.match(fieldSection(prefilledForm, 'details'), /- type:\s*textarea/);
+  assert.match(fieldSection(prefilledForm, 'details'), /required:\s*true/);
+  assert.match(prefilledForm, /分类和难度已经由网站带入/);
+  assert.match(fieldSection(prefilledForm, 'compliance'), /required:\s*true/);
+  assert.doesNotMatch(prefilledForm, /\bid:\s*(?:category|difficulty)\b/);
+  assertNoCredentialField(prefilledForm);
 
   assert.match(workflow, /issues:\s*\n\s+types:\s*\[opened\]/);
   assert.match(workflow, /push:\s*\n\s+branches:\s*\[main\]/);

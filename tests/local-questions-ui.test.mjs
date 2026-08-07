@@ -1,0 +1,98 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+import {
+  addQuestionDraft,
+  createEmptyQuestionDrafts,
+  serializeQuestionDrafts,
+} from '../docs/assets/js/question-drafts-core.mjs';
+import { summarizeLocalQuestions } from '../docs/assets/js/local-questions-core.mjs';
+
+const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
+
+const add = (state, title, options = {}) => addQuestionDraft(state, {
+  title,
+  answer: options.answer || '',
+  answerStatus: options.answerStatus || 'pending',
+  category: options.category || 'LLM 基础',
+  difficulty: options.difficulty || '待评估',
+  tags: [],
+  source: '',
+  visibility: options.visibility || 'private',
+}, {
+  repositoryId: 'owner/repo',
+  now: options.now,
+  localDate: '2026-08-07',
+});
+
+test('首页本机题目摘要按更新时间展示，并明确区分私人题与准备公开', () => {
+  let state = createEmptyQuestionDrafts('owner/repo', '2026-08-07T00:00:00.000Z');
+  state = add(state, '较早的私人题', { now: '2026-08-07T01:00:00.000Z' });
+  state = add(state, '较新的公开准备题', {
+    now: '2026-08-07T02:00:00.000Z',
+    visibility: 'public',
+    answer: '回答',
+    answerStatus: 'complete',
+  });
+
+  const raw = serializeQuestionDrafts(state, { repositoryId: 'owner/repo' });
+  const summary = summarizeLocalQuestions(raw, { repositoryId: 'owner/repo' });
+
+  assert.equal(summary.total, 2);
+  assert.equal(summary.complete, 1);
+  assert.equal(summary.plannedPublic, 1);
+  assert.deepEqual(summary.questions.map((question) => question.title), [
+    '较新的公开准备题',
+    '较早的私人题',
+  ]);
+  assert.equal(summary.questions[0].visibility, 'public');
+});
+
+test('首页本机题目继续按仓库隔离，并限制首屏数量', () => {
+  let state = createEmptyQuestionDrafts('owner/repo', '2026-08-07T00:00:00.000Z');
+  for (let index = 0; index < 9; index += 1) {
+    state = add(state, `题目 ${index}`, { now: `2026-08-07T0${index}:00:00.000Z` });
+  }
+  const raw = serializeQuestionDrafts(state, { repositoryId: 'owner/repo' });
+
+  assert.equal(summarizeLocalQuestions(raw, { repositoryId: 'owner/repo' }).questions.length, 6);
+  assert.throws(
+    () => summarizeLocalQuestions(raw, { repositoryId: 'another/repo' }),
+    /属于另一个 GitHub 仓库/,
+  );
+});
+
+test('首页安全读取本机题目，不上传、不混入正式题库统计', async () => {
+  const [home, layout, script, capturePage, captureScript] = await Promise.all([
+    read('../docs/index.html'),
+    read('../docs/_layouts/default.html'),
+    read('../docs/assets/js/local-questions.js'),
+    read('../docs/capture.html'),
+    read('../docs/assets/js/question-capture.js'),
+  ]);
+
+  assert.match(home, /data-local-questions/);
+  assert.match(capturePage, /id="question-draft-library"/);
+  assert.match(home, /我的本机题目/);
+  assert.match(home, /只在当前浏览器/);
+  assert.match(home, /data-repository-id="{{ site\.github\.repository_nwo \| default: 'local\/llm-interview-notes'/);
+  assert.ok(home.indexOf('data-local-questions') < home.indexOf('id="question-list-section"'));
+  assert.match(layout, /assets\/js\/local-questions\.js/);
+
+  assert.match(script, /questionDraftsStorageKey\(repositoryId\)/);
+  assert.match(script, /window\.localStorage\.getItem\(storageKey\)/);
+  assert.match(script, /window\.addEventListener\('storage'/);
+  assert.match(script, /window\.addEventListener\('pageshow', render\)/);
+  assert.match(script, /window\.addEventListener\('focus', render\)/);
+  assert.match(script, /document\.addEventListener\('visibilitychange'/);
+  assert.match(script, /element\.textContent = text/);
+  assert.match(script, /list\.replaceChildren/);
+  assert.match(script, /url\.searchParams\.set\('edit', questionId\)/);
+  assert.doesNotMatch(script, /\bfetch\s*\(|XMLHttpRequest|Authorization|\.innerHTML\b|insertAdjacentHTML/);
+  assert.doesNotMatch(script, /setItem|removeItem|clear\s*\(/);
+
+  assert.match(captureScript, /searchParams\.get\('edit'\)/);
+  assert.match(captureScript, /editQuestion\(requestedQuestion\)/);
+  assert.match(captureScript, /没有在当前浏览器找到这道本机题目/);
+});

@@ -1,0 +1,26 @@
+name: 提交网页中已经填写的题目
+description: 题目、分类和难度已由网站带入，只需检查并确认公开
+title: "[新增题目] "
+labels: ["public-question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这是普通使用者向当前题库提交的**公开补充**，不是直接写入正式题库。下面的题目、分类和难度已经由网站带入，不需要重新选择。提交后 GitHub 用户名和内容都会公开；题库主人审核后，才可能收录进正式题库。
+
+  - type: textarea
+    id: details
+    attributes:
+      label: 已从网站带入的题目内容
+      description: 请检查内容是否正确即可；分类和难度已经包含在这里。
+      placeholder: 请先回到网站的“增加题目”页面填写，再使用题目卡中的公开补充按钮。
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: compliance
+    attributes:
+      label: 最终公开确认
+      options:
+        - label: 我明白这只是公开补充、不会自动进入正式题库；内容和 GitHub 用户名提交后会公开，并确认已经移除个人隐私、公司机密、内部题库和 NDA 内容，也有权公开这道题。
+          required: true

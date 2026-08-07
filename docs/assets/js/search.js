@@ -262,6 +262,9 @@
 
   const syncRouteUrl = () => {
     const url = new URL(window.location.href);
+    const keyword = search.value.trim().slice(0, 160);
+    if (keyword) url.searchParams.set('q', keyword);
+    else url.searchParams.delete('q');
     if (track?.value) url.searchParams.set('track', track.value);
     else url.searchParams.delete('track');
     if (studyTier?.value && (studyTier.value !== defaultStudyTier || track?.value)) {
@@ -274,6 +277,8 @@
 
   const applyInitialRoute = () => {
     const params = new URLSearchParams(window.location.search);
+    const requestedKeyword = params.get('q');
+    if (requestedKeyword) search.value = requestedKeyword.slice(0, 160);
     let storedTrack = '';
     try {
       storedTrack = JSON.parse(window.localStorage.getItem(preferenceStorageKey) || '{}').trackId || '';
@@ -298,6 +303,7 @@
 
   search.addEventListener('input', () => {
     visibleLimit = pageSize;
+    syncRouteUrl();
     update();
     if (normalize(search.value)) void loadAnswerIndex();
   });
@@ -305,6 +311,7 @@
     if (event.key === 'Escape' && search.value) {
       search.value = '';
       visibleLimit = pageSize;
+      syncRouteUrl();
       update();
     }
   });

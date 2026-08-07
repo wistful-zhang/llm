@@ -37,6 +37,9 @@ test('岗位预设会自动启用“核心加专项”，并在首页与模拟�
   assert.match(search, /llm-interview-practice:\$\{repositoryId\}:preferences:v1/);
   assert.match(search, /applyInitialRoute\(\)/);
   assert.match(search, /new URLSearchParams\(window\.location\.search\)/);
+  assert.match(search, /const requestedKeyword = params\.get\('q'\)/);
+  assert.match(search, /search\.value = requestedKeyword\.slice\(0, 160\)/);
+  assert.match(search, /url\.searchParams\.set\('q', keyword\)/);
   assert.match(search, /params\.has\('track'\)[\s\S]*?writeTrackPreference\(\)/);
 
   assert.match(practiceScript, /trackSelect\.value \? 'recommended' : defaultStudyTier/);
