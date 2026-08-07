@@ -63,13 +63,13 @@
   const difficulty = document.querySelector('#question-difficulty');
   const reviewState = document.querySelector('#question-review-state');
   const questionList = document.querySelector('#question-list');
-  const cards = [...document.querySelectorAll('.question-card')];
   const filters = [...document.querySelectorAll('.filter[data-filter-all], .filter[data-category]')];
   const clearFilters = document.querySelector('#question-clear-filters');
   const empty = document.querySelector('#empty-state');
   const status = document.querySelector('#result-status');
   const summary = document.querySelector('#library-result-summary');
   const loadMore = document.querySelector('#question-load-more');
+  const total = document.querySelector('[data-question-total]');
 
   if (!search || !empty) return;
 
@@ -86,6 +86,9 @@
   const preferenceStorageKey = `llm-interview-practice:${repositoryId}:preferences:v1`;
 
   const normalize = (value) => String(value || '').trim().toLocaleLowerCase();
+  const currentCards = () => (
+    questionList ? [...questionList.querySelectorAll('.question-card')] : []
+  );
 
   const setIndexEntries = (entries) => {
     if (!Array.isArray(entries)) throw new Error('答案搜索索引格式无效');
@@ -103,6 +106,7 @@
   );
 
   const update = () => {
+    const cards = currentCards();
     const keyword = normalize(search.value);
     const activeStudyTier = studyTier?.value || '';
     const activeDifficulty = difficulty?.value || '';
@@ -165,8 +169,14 @@
       button.disabled = count === 0 && button.dataset.category !== activeCategory;
     });
 
+    cards.forEach((card, index) => {
+      const number = card.querySelector('.card-number');
+      if (number) number.textContent = String(index + 1).padStart(2, '0');
+    });
+    if (total) total.textContent = String(cards.length);
+
     if (cards.length === 0) {
-      empty.textContent = '题库还没有正式内容；“＋题目”可以保存草稿，也可以立即发布到当前浏览器的“我的题目”，之后再同步 GitHub。';
+      empty.textContent = '题库还没有内容；点击“＋增加题目”即可添加公开题或私人题。';
     } else if (answerIndexState === 'failed' && keyword) {
       empty.textContent = '题目、分类和标签中没有匹配项；答案全文暂时无法搜索，请稍后重试。';
     } else if (activeStudyTier === 'recommended' && !track?.value) {
@@ -368,8 +378,13 @@
     const previouslyVisible = visibleLimit;
     visibleLimit += pageSize;
     update();
-    const firstNewCard = cards.filter((card) => !card.hidden)[previouslyVisible];
+    const firstNewCard = currentCards().filter((card) => !card.hidden)[previouslyVisible];
     firstNewCard?.focus();
+  });
+
+  document.addEventListener('question-library:changed', () => {
+    visibleLimit = pageSize;
+    update();
   });
 
   applyInitialRoute();

@@ -1,12 +1,12 @@
-name: 公开增加一道题
-description: 用普通表单增加问题，答案可以留空，不需要 Markdown
+name: 公开发布一道题
+description: 用普通表单发布到统一题库，答案可以留空，不需要 Markdown
 title: "[新增题目] "
 labels: ["public-question"]
 body:
   - type: markdown
     attributes:
       value: |
-        提交后会立即显示在网站的公开补充区，不用等待审核；其他人可以查看并在对应 Issue 中讨论，你的 GitHub 用户名也会显示。它不会自动进入正式题库、统计或模拟面试。请保留标题开头的 `[新增题目]`，否则题目不会出现在网站列表。请勿填写真实姓名、联系方式、公司机密、内部题库或受保密协议约束的内容。想只留给自己时，请返回网站并选择“只留给自己”，不要提交此表单。隐私或安全问题请改用仓库的 **Security** 页面私密报告。
+        这是“公开”题目的最后提交页。点击提交后，这条 Issue 会立即作为公开题目显示在统一题库中，不经过人工审核或二次收录。题目内容、对应 Issue 和你的 GitHub 用户名都会公开。请勿填写真实姓名、联系方式、公司机密、内部题库或受保密协议约束的内容。想只留给自己时，请返回网站并选择“私人”，不要提交此表单。隐私或安全问题请改用仓库的 **Security** 页面私密报告。
 
   - type: input
     id: question
@@ -21,7 +21,7 @@ body:
     id: category
     attributes:
       label: 分类
-      description: 从当前正式题库已有分类中选择；不确定时选择“待整理”。
+      description: 从当前题库已有分类中选择最接近的一项。
       options:
         - 待整理
         - Agent
@@ -54,7 +54,7 @@ body:
     id: answer
     attributes:
       label: 你的答案或思路（可选）
-      description: 直接写正常文字即可。不会也没关系，可以先只发布问题，之后再由维护者补充。
+      description: 直接写正常文字即可。不会也没关系，可以先只发布问题，之后编辑这条 Issue 补充。
       placeholder: 我会先从……回答，然后说明……
 
   - type: textarea
@@ -83,5 +83,5 @@ body:
     attributes:
       label: 公开确认
       options:
-        - label: 我明白内容和 GitHub 用户名提交后会公开，并确认已经移除个人隐私、公司机密、内部题库和 NDA 内容，也有权公开这道题。
+        - label: 我明白提交后题目和 GitHub 用户名会公开到统一题库，并确认已经移除个人隐私、公司机密、内部题库和 NDA 内容，也有权公开这道题。
           required: true

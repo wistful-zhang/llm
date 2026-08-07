@@ -61,7 +61,7 @@ test('评论实现保留但站点默认关闭，题目页只在开关开启时�
   assert.doesNotMatch(csp, /utteranc\.es|frame-src https:;|connect-src[^;]+\shttps:\s/);
 });
 
-test('公开补充提交后立即展示，站主管理页提供明确处理入口', async () => {
+test('公开 Issue 直接显示为统一题库卡片，站点没有审核分区', async () => {
   const [home, layout, script, manage] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/_layouts/default.html'),
@@ -70,26 +70,31 @@ test('公开补充提交后立即展示，站主管理页提供明确处理入�
   ]);
   const navigation = `${home}\n${layout}`;
 
-  assert.match(home, /访客公开补充/);
-  assert.match(home, /提交后立即公开 · 内容未核验/);
-  assert.match(home, /提交后不用等待审核/);
-  assert.match(home, /正式题库、搜索、分类统计和模拟面试/);
+  const listStart = home.indexOf('<div id="question-list"');
+  const listEnd = home.indexOf('<div class="library-results-bar">', listStart);
+  assert.ok(listStart >= 0 && listEnd > listStart, '首页应有统一 #question-list');
+  const questionList = home.slice(listStart, listEnd);
+
+  assert.equal(home.match(/id="question-list"/g)?.length, 1);
   assert.match(home, /data-public-questions/);
-  assert.ok(home.indexOf('data-public-questions') < home.indexOf('id="question-list-section"'), '公开补充应在正式题库之前出现');
-  assert.match(home, /查看 \/ 处理全部补充/);
+  assert.match(questionList, /data-public-questions-list/);
+  assert.match(questionList, /data-local-questions-list/);
+  assert.match(questionList, /<a class="question-card"/);
+  assert.match(home, /直接出现在这里，不需要审核/);
+  assert.doesNotMatch(home, /访客公开补充|正式收录|待审核|审核通过/);
   assert.match(home, /data-repository-nwo="{{\s*site\.github\.repository_nwo\s*\|\s*escape\s*}}"/);
-  assert.match(layout, /page\.url == '\/manage\/'[\s\S]*assets\/js\/public-questions\.js/);
+  assert.match(layout, /page\.url == '\/'[\s\S]*assets\/js\/public-questions\.js/);
+  assert.doesNotMatch(
+    layout,
+    /\{%\s*if page\.url == '\/manage\/'\s*%\}<script[^>]+assets\/js\/public-questions\.js/,
+  );
   assert.doesNotMatch(navigation, /href="{{\s*['"]\/community\//);
   assert.doesNotMatch(layout, />\s*(?:面经)?社区\s*</);
 
-  assert.match(manage, /id="public-question-review"/);
-  assert.match(manage, /data-public-questions-view="manage"/);
-  assert.match(manage, /公开补充在这里处理/);
-  assert.match(manage, /提交后会立即显示在首页/);
-  assert.match(manage, /is%3Aissue\+is%3Aopen\+label%3Apublic-question/);
-  assert.match(manage, /is%3Aissue\+is%3Aclosed\+label%3Apublic-question/);
-  assert.match(manage, /自己的题：直接入库/);
-  assert.match(manage, /不让所有投稿直接混入正式题库/);
+  assert.doesNotMatch(manage, /id="public-question-review"|data-public-questions-view="manage"/);
+  assert.match(manage, /公开题自动发布/);
+  assert.match(manage, /不需要站主查重、批准或再次收录/);
+  assert.match(manage, /管理公开题/);
 
   assert.match(script, /buildPublicQuestionsApiUrl/);
   assert.match(script, /normalizePublicQuestions/);
@@ -100,15 +105,15 @@ test('公开补充提交后立即展示，站主管理页提供明确处理入�
   assert.match(script, /replaceChildren\(/);
   assert.match(script, /window\.addEventListener\('focus'/);
   assert.match(script, /document\.addEventListener\('visibilitychange'/);
-  assert.match(script, /查看公开补充/);
-  assert.match(script, /打开 Issue 处理/);
-  assert.match(script, /目前没有待处理公开补充/);
-  assert.doesNotMatch(script, /回答或评论|条评论/);
+  assert.match(script, /makeElement\('a', 'question-card question-card-public'\)/);
+  assert.match(script, /question-visibility-public', '公开'/);
+  assert.match(script, /直接发布的公开题目/);
+  assert.doesNotMatch(script, /待处理|审核|正式收录/);
   assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
   assert.doesNotMatch(script, /\bAuthorization\b|localStorage|sessionStorage/i);
 });
 
-test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR 和普通 Issue', async () => {
+test('公开题 API 只接收带标签、勾选公开确认且仍为 open 的 Issue', async () => {
   const {
     buildPublicQuestionsApiUrl,
     normalizePublicQuestions,
@@ -137,7 +142,27 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
       created_at: '2026-07-22T08:00:00Z',
       updated_at: '2026-07-22T09:00:00Z',
       html_url: 'https://attacker.example/issues/31',
-      body: '### 分类\n\nLLM 基础\n\n<script>不应直接送入卡片 HTML</script>',
+      body: [
+        '### 已从网站带入的题目内容',
+        '',
+        '题目：为什么 KV Cache 能加速推理？',
+        '站内题目编号：local-question-31',
+        '可见性：公开',
+        '答案状态：已完成',
+        '分类：LLM 基础',
+        '难度：中等',
+        '标签：推理、缓存',
+        '',
+        '参考答案 / 当前思路：',
+        '缓存历史 token 的 K/V，避免每步重复计算。<script>只能作为文本</script>',
+        '',
+        '追问记录（每行一条）：',
+        '缓存何时失效？',
+        '',
+        '### 最终公开确认',
+        '',
+        '- [x] 我确认公开',
+      ].join('\n'),
     },
     {
       number: 32,
@@ -147,8 +172,24 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
     },
     {
       number: 33,
-      title: '普通维护 Issue',
+      title: '[新增题目] 只有标题像投稿',
       labels: [{ name: 'enhancement' }],
+      state: 'open',
+      body: '### 公开确认\n\n- [x] 我确认公开',
+    },
+    {
+      number: 34,
+      title: '[新增题目] 没有勾选公开确认',
+      labels: [{ name: 'public-question' }],
+      state: 'open',
+      body: '### 公开确认\n\n- [ ] 我确认公开',
+    },
+    {
+      number: 35,
+      title: '[新增题目] 已关闭的公开题',
+      labels: [{ name: 'public-question' }],
+      state: 'closed',
+      body: '### 公开确认\n\n- [x] 我确认公开',
     },
   ];
 
@@ -160,17 +201,23 @@ test('公开题 API 使用不可由投稿者修改的标签过滤，并排除 PR
   assert.equal(questions[0].author, 'alice');
   assert.equal(questions[0].comments, 3);
   assert.equal(questions[0].category, 'LLM 基础');
+  assert.equal(questions[0].difficulty, '中等');
+  assert.equal(questions[0].answerStatus, 'complete');
+  assert.equal(questions[0].followUps[0], '缓存何时失效？');
+  assert.deepEqual(questions[0].tags, ['推理', '缓存']);
+  assert.equal(questions[0].localId, 'local-question-31');
   assert.equal(questions[0].url, 'https://github.com/example-owner/example-repo/issues/31');
   assert.equal(Object.hasOwn(questions[0], 'body'), false);
   const publicScript = await read('../docs/assets/js/public-questions.js');
   assert.doesNotMatch(publicScript, /已整理/);
 });
 
-test('公开补题保留分类下拉，网页已填投稿只需最终确认', async () => {
-  const [questionForm, prefilledForm, workflow] = await Promise.all([
+test('公开表单直接发布并携带本机 ID，工作流不再按标题自动贴标签', async () => {
+  const [questionForm, prefilledForm, workflow, captureScript] = await Promise.all([
     read('../.github/ISSUE_TEMPLATE/public-question.yml'),
     read('../.github/ISSUE_TEMPLATE/public-question-from-web.yml'),
     read('../.github/workflows/question-collaboration.yml'),
+    read('../docs/assets/js/question-capture.js'),
   ]);
 
   assert.match(questionForm, /title:\s*["']?\[新增题目\]/);
@@ -180,8 +227,9 @@ test('公开补题保留分类下拉，网页已填投稿只需最终确认', as
   assert.match(fieldSection(questionForm, 'category'), /- type:\s*dropdown/);
   assert.match(fieldSection(questionForm, 'difficulty'), /- type:\s*input/);
 
-  assert.match(questionForm, /提交后会立即显示在网站的公开补充区/);
+  assert.match(questionForm, /立即作为公开题目显示在统一题库中，不经过人工审核/);
   assert.match(fieldSection(questionForm, 'compliance'), /required:\s*true/);
+  assert.match(fieldSection(questionForm, 'compliance'), /题目和 GitHub 用户名会公开到统一题库/);
   assertNoCredentialField(questionForm);
 
   assert.match(prefilledForm, /title:\s*["']?\[新增题目\]/);
@@ -189,19 +237,24 @@ test('公开补题保留分类下拉，网页已填投稿只需最终确认', as
   assert.match(fieldSection(prefilledForm, 'details'), /- type:\s*textarea/);
   assert.match(fieldSection(prefilledForm, 'details'), /required:\s*true/);
   assert.match(prefilledForm, /分类和难度已经由网站带入/);
-  assert.match(prefilledForm, /立即显示在网站的公开补充区，不用等待审核/);
+  assert.match(prefilledForm, /立即作为公开题目显示在统一题库中，不经过人工审核/);
   assert.match(fieldSection(prefilledForm, 'compliance'), /required:\s*true/);
+  assert.match(fieldSection(prefilledForm, 'compliance'), /题目和 GitHub 用户名提交后会公开到统一题库/);
   assert.doesNotMatch(prefilledForm, /\bid:\s*(?:category|difficulty)\b/);
   assertNoCredentialField(prefilledForm);
 
-  assert.match(workflow, /issues:\s*\n\s+types:\s*\[opened\]/);
+  assert.match(captureScript, /`站内题目编号：\$\{question\.id\}`/);
+  assert.match(captureScript, /template: 'public-question-from-web\.yml'/);
+  assert.match(captureScript, /params\.set\('details', contributionText\(question, included\)\)/);
+  assert.doesNotMatch(captureScript, /\bAuthorization\b|\.innerHTML\b|insertAdjacentHTML/);
+
   assert.match(workflow, /push:\s*\n\s+branches:\s*\[main\]/);
-  assert.match(workflow, /github\.event_name == 'push'/);
   assert.match(workflow, /issues:\s*write/);
   assert.match(workflow, /gh label create public-question/);
-  assert.match(workflow, /gh label create duplicate/);
-  assert.match(workflow, /gh issue edit "\$ISSUE_NUMBER" --add-label "\$LABEL"/);
   assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /queue:\s*max/);
+  assert.doesNotMatch(workflow, /github\.event\.issue\.title|github\.event\.issue\.body/);
+  assert.doesNotMatch(workflow, /gh issue edit[^\n]*--add-label|--add-label[^\n]*\[新增题目\]/);
+  assert.doesNotMatch(workflow, /gh label create duplicate/);
   assert.doesNotMatch(workflow, /question-comments|\[题目评论\]|gh issue comment/);
 });

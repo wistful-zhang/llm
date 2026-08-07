@@ -64,7 +64,7 @@ test('首页本机题目继续按仓库隔离，并限制首屏数量', () => {
   );
 });
 
-test('首页先按可见性拆分本机题目，再限制每个分区的首屏数量', () => {
+test('首页把公开与私人本机题目放进同一个选择结果', () => {
   const questions = [
     ...Array.from({ length: 8 }, (_, index) => ({
       id: `private-${index}`,
@@ -84,63 +84,92 @@ test('首页先按可见性拆分本机题目，再限制每个分区的首屏�
     },
   ];
 
-  const published = selectLocalQuestions(questions, { visibility: 'public', limit: 6 });
-  const drafts = selectLocalQuestions(questions, { visibility: 'private', limit: 6 });
+  const unified = selectLocalQuestions(questions, { all: true });
 
-  assert.equal(published.total, 1);
-  assert.equal(published.complete, 1);
-  assert.equal(published.questions[0].id, 'public-with-follow-ups');
-  assert.equal(published.questions[0].followUps.length, 2);
-  assert.equal(drafts.total, 8);
-  assert.equal(drafts.questions.length, 6);
-  assert.ok(drafts.questions.every((question) => question.visibility === 'private'));
+  assert.equal(unified.total, 9);
+  assert.equal(unified.complete, 1);
+  assert.equal(unified.questions.length, 9);
+  assert.deepEqual(new Set(unified.questions.map((question) => question.visibility)), new Set([
+    'private',
+    'public',
+  ]));
+  assert.equal(
+    unified.questions.find((question) => question.id === 'public-with-follow-ups')?.followUps.length,
+    2,
+  );
 });
 
-test('首页安全读取本机题目，不上传、不混入正式题库统计', async () => {
-  const [home, layout, script, capturePage, captureScript] = await Promise.all([
+test('仓库题、本机题和公开 Issue 共用一个题目列表与同类卡片', async () => {
+  const [
+    home,
+    layout,
+    localScript,
+    publicScript,
+    searchScript,
+    capturePage,
+    captureScript,
+  ] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/_layouts/default.html'),
     read('../docs/assets/js/local-questions.js'),
+    read('../docs/assets/js/public-questions.js'),
+    read('../docs/assets/js/search.js'),
     read('../docs/capture.html'),
     read('../docs/assets/js/question-capture.js'),
   ]);
 
-  assert.equal(home.match(/\sdata-local-questions(?:\s|>)/g)?.length, 2);
-  assert.match(capturePage, /id="question-draft-library"/);
-  assert.match(home, /data-visibility="private"/);
-  assert.match(home, /我的未发布草稿/);
-  assert.match(home, /仅我可见 · 尚未发布/);
-  assert.match(home, /data-visibility="public"/);
-  assert.match(home, /id="my-published-questions"/);
-  assert.match(home, /我的题目/);
-  assert.match(home, /当前浏览器的题目区/);
-  assert.match(home, /同步到 GitHub 后，其他人才能看见/);
-  assert.match(home, /data-repository-id="{{ site\.github\.repository_nwo \| default: 'local\/llm-interview-notes'/);
-  const libraryStart = home.indexOf('id="question-list-section"');
-  assert.ok(home.indexOf('data-visibility="private"') < libraryStart);
-  assert.ok(home.indexOf('data-visibility="public"') > libraryStart);
-  assert.ok(home.indexOf('data-visibility="public"') < home.indexOf('{% if published_questions.size == 0 %}'));
-  assert.match(layout, /assets\/js\/local-questions\.js/);
+  const listStart = home.indexOf('<div id="question-list"');
+  const listEnd = home.indexOf('<div class="library-results-bar">', listStart);
+  assert.ok(listStart >= 0 && listEnd > listStart, '首页应包含唯一、完整的 #question-list');
+  const questionList = home.slice(listStart, listEnd);
 
-  assert.match(script, /document\.querySelectorAll\('\[data-local-questions\]'\)/);
-  assert.match(script, /questionDraftsStorageKey\(repositoryId\)/);
-  assert.match(script, /window\.localStorage\.getItem\(context\.storageKey\)/);
-  assert.match(script, /parseQuestionDraftsJson\(raw, \{ repositoryId: context\.repositoryId \}\)/);
-  assert.ok(script.indexOf(".filter((question) => !visibility || question.visibility === visibility)")
-    < script.indexOf('questions: filtered.slice(0, limit)'));
-  assert.match(script, /Array\.isArray\(question\.followUps\) \? question\.followUps\.length : 0/);
-  assert.match(script, /`\$\{followUpCount\} 个追问`/);
-  assert.match(script, /打开、补追问或同步 →/);
-  assert.match(script, /window\.addEventListener\('storage'/);
-  assert.match(script, /window\.addEventListener\('pageshow', renderAll\)/);
-  assert.match(script, /window\.addEventListener\('focus', renderAll\)/);
-  assert.match(script, /document\.addEventListener\('visibilitychange'/);
-  assert.match(script, /element\.textContent = text/);
-  assert.match(script, /context\.list\.replaceChildren/);
-  assert.match(script, /url\.searchParams\.set\('edit', questionId\)/);
-  assert.match(script, /url\.hash = 'question-draft-form'/);
-  assert.doesNotMatch(script, /\bfetch\s*\(|XMLHttpRequest|Authorization|\.innerHTML\b|insertAdjacentHTML/);
-  assert.doesNotMatch(script, /setItem|removeItem|clear\s*\(/);
+  assert.equal(home.match(/id="question-list"/g)?.length, 1);
+  assert.equal(home.match(/\sdata-local-questions(?:\s|>)/g)?.length, 1);
+  assert.equal(home.match(/\sdata-public-questions(?:\s|>)/g)?.length, 1);
+  assert.match(questionList, /data-local-questions-list/);
+  assert.match(questionList, /data-public-questions-list/);
+  assert.match(questionList, /<a class="question-card"/);
+  assert.doesNotMatch(home, /data-visibility="(?:private|public)"/);
+  assert.doesNotMatch(home, /id="my-published-questions"|我的未发布草稿|访客公开补充/);
+  assert.match(home, /一个题库 · 两种可见性/);
+  assert.match(home, /公开题和私人题|公开题所有人都能看到/);
+  assert.match(capturePage, /id="question-draft-library"/);
+  assert.match(capturePage, /公开题和私人题都会进入首页的同一个题库/);
+  assert.match(capturePage, /提交成功即进入题库，不经过审核/);
+  assert.match(home, /data-repository-id="{{ site\.github\.repository_nwo \| default: 'local\/llm-interview-notes'/);
+  assert.match(layout, /assets\/js\/local-questions\.js/);
+  assert.match(layout, /assets\/js\/public-questions\.js/);
+
+  assert.match(localScript, /makeElement\('a', 'question-card question-card-local'\)/);
+  assert.match(localScript, /私人 · 仅此浏览器/);
+  assert.match(localScript, /question\.visibility === 'private' \|\| !publishedLocalIds\.has\(question\.id\)/);
+  assert.match(localScript, /question-library:public-loaded/);
+  assert.match(localScript, /event\.detail\?\.localIds/);
+  assert.match(localScript, /window\.localStorage\.getItem\(context\.storageKey\)/);
+  assert.match(localScript, /parseQuestionDraftsJson\(raw, \{ repositoryId: context\.repositoryId \}\)/);
+  assert.match(localScript, /context\.list\.replaceChildren/);
+  assert.match(localScript, /url\.searchParams\.set\('edit', questionId\)/);
+  assert.match(localScript, /url\.hash = 'question-draft-form'/);
+
+  assert.match(publicScript, /makeElement\('a', 'question-card question-card-public'\)/);
+  assert.match(publicScript, /question-visibility-public', '公开'/);
+  assert.match(publicScript, /if \(question\.localId\) link\.dataset\.localId = question\.localId/);
+  assert.match(publicScript, /detail: \{ localIds: questions\.map\(\(question\) => question\.localId\)\.filter\(Boolean\) \}/);
+  assert.match(publicScript, /list\.replaceChildren\(\.\.\.questions\.map\(createQuestion\)\)/);
+
+  assert.match(searchScript, /questionList \? \[\.\.\.questionList\.querySelectorAll\('\.question-card'\)\] : \[\]/);
+  assert.match(searchScript, /document\.addEventListener\('question-library:changed'/);
+
+  for (const script of [localScript, publicScript]) {
+    assert.match(script, /\.textContent\s*=/);
+    assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
+    assert.doesNotMatch(script, /\bAuthorization\b/);
+  }
+  assert.doesNotMatch(localScript, /\bfetch\s*\(|XMLHttpRequest/);
+  assert.doesNotMatch(localScript, /localStorage\.(?:setItem|removeItem|clear)\s*\(/);
+  assert.doesNotMatch(publicScript, /localStorage|sessionStorage/i);
+  assert.doesNotMatch(capturePage, /type=["']password["']|name=["'][^"']*(?:token|password|secret|pat)[^"']*["']/i);
+  assert.doesNotMatch(captureScript, /\bAuthorization\b|\.innerHTML\b|insertAdjacentHTML/);
 
   assert.match(captureScript, /searchParams\.get\('edit'\)/);
   assert.match(captureScript, /editQuestion\(requestedQuestion\)/);

@@ -46,7 +46,7 @@ title: 题库
         {% if published_questions.size > 0 %}
           <a class="primary-button" href="{{ '/practice/' | relative_url }}">开始随机模拟面试</a>
           <a class="secondary-button" href="{{ '/capture/' | relative_url }}">增加题目</a>
-          <a class="secondary-button" href="#question-list-section">浏览 {{ core_count }} 道核心题</a>
+          <a class="secondary-button" href="#question-list-section">浏览全部题目</a>
         {% else %}
           <a class="primary-button" href="{{ '/capture/' | relative_url }}">直接添加第一题</a>
           <a class="secondary-button" href="{{ '/start/' | relative_url }}">查看首次配置</a>
@@ -56,101 +56,42 @@ title: 题库
       <div class="hero-support-links">
         <a href="{{ '/interviews/' | relative_url }}">刚面试完？记录公司和结果 →</a>
         <a href="{{ '/experiences/' | relative_url }}">查看匿名公开面经 →</a>
-        <a href="{{ '/capture/' | relative_url }}">增加题目：可保存草稿，也可立即发布到我的题目 →</a>
+        <a href="{{ '/capture/' | relative_url }}">增加题目：公开或私人，只选一次 →</a>
         <a href="{{ '/start/' | relative_url }}">第一次使用？创建自己的题库 →</a>
       </div>
     </div>
     <div class="stat-card" role="region" aria-label="题库统计">
-      <strong>{{ published_questions | size }}</strong>
-      <span>道已发布题目</span>
+      <strong data-question-total data-base-count="{{ published_questions | size }}">{{ published_questions | size }}</strong>
+      <span>道当前可见题目</span>
       <div class="stat-line"></div>
       <small>{{ core_count }} 道核心必会 · {{ role_count }} 道岗位专项 · {{ answered_count }} 道已有解答{% if unanswered_count > 0 %} · {{ unanswered_count }} 道待解答{% endif %}</small>
     </div>
   </div>
 </section>
 
-<section class="container local-questions-section"
+<section id="question-list-section"
+         class="container library"
          data-local-questions
-         data-visibility="private"
-         data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
-         data-capture-url="{{ '/capture/' | relative_url }}"
-         aria-labelledby="local-drafts-title"
-         hidden>
-  <div class="local-questions-heading">
-    <div>
-      <span class="eyebrow">仅我可见 · 尚未发布</span>
-      <h2 id="local-drafts-title">我的未发布草稿</h2>
-      <p data-local-questions-status role="status" aria-live="polite"></p>
-    </div>
-    <a class="secondary-button" href="{{ '/capture/' | relative_url }}#question-draft-library">查看和编辑全部</a>
-  </div>
-  <div class="local-question-list" data-local-questions-list></div>
-  <p class="local-questions-error" data-local-questions-error role="alert" hidden></p>
-</section>
-
-<section id="public-questions"
-         class="container public-questions-section public-questions-section-prominent"
          data-public-questions
+         data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
          data-repository-nwo="{{ site.github.repository_nwo | escape }}"
-         aria-labelledby="public-questions-title">
-  <div class="public-questions-heading">
-    <div>
-      <span class="eyebrow">提交后立即公开 · 内容未核验</span>
-      <h2 id="public-questions-title">访客公开补充</h2>
-      <p>提交后不用等待审核，就会显示在这里。只有题库主人完成查重和整理收录后，题目才会进入下面的正式题库、搜索、分类统计和模拟面试。</p>
-    </div>
-    <div class="public-questions-heading-actions">
-      <a class="secondary-button" href="{{ '/capture/' | relative_url }}">＋ 增加一道题</a>
-      {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aopen+label%3Apublic-question" target="_blank" rel="noopener noreferrer">查看 / 处理全部补充 ↗</a>{% endif %}
-    </div>
-  </div>
-  <p class="public-questions-status" data-public-questions-status role="status" aria-live="polite">正在读取公开补充…</p>
-  <div class="public-questions-list" data-public-questions-list hidden></div>
-  <p data-public-questions-fallback hidden>
-    {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aopen+label%3Apublic-question" target="_blank" rel="noopener noreferrer">前往 GitHub 查看 / 处理全部补充 ↗</a>{% endif %}
-  </p>
-  <noscript><p>公开补充列表需要 JavaScript；你仍可浏览下方正式题库，或使用“查看 / 处理全部补充”。</p></noscript>
-</section>
-
-<section id="question-list-section" class="container library">
-  <section id="my-published-questions"
-           class="local-questions-section"
-           data-local-questions
-           data-visibility="public"
-           data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
-           data-capture-url="{{ '/capture/' | relative_url }}"
-           aria-labelledby="local-published-questions-title"
-           hidden>
-    <div class="local-questions-heading">
-      <div>
-        <span class="eyebrow">选择发布后立即加入</span>
-        <h2 id="local-published-questions-title">我的题目</h2>
-        <p>这些题目会立即出现在当前浏览器的题目区；同步到 GitHub 后，其他人才能看见。</p>
-        <p data-local-questions-status role="status" aria-live="polite"></p>
-      </div>
-      <a class="secondary-button" href="{{ '/capture/' | relative_url }}#question-draft-library">查看和编辑全部</a>
-    </div>
-    <div class="local-question-list" data-local-questions-list></div>
-    <p class="local-questions-error" data-local-questions-error role="alert" hidden></p>
-  </section>
-
-  {% if published_questions.size == 0 %}
-  <section class="experience-empty" role="status">
-    <span class="empty-number" aria-hidden="true">01</span>
-    <h2>还没有发布题目</h2>
-    <p>可以先在站内表单只记录一道问题，默认只保存到当前浏览器；答案、分类和难度都可以稍后补。主动发布到 Public 仓库后，源文件才会公开。</p>
-    <a class="primary-button" href="{{ '/capture/' | relative_url }}">添加第一道题</a>
-    <a class="secondary-button" href="{{ '/start/' | relative_url }}">查看新手指南</a>
-  </section>
-  {% else %}
+         data-capture-url="{{ '/capture/' | relative_url }}">
   <section class="study-tier-intro" aria-labelledby="study-tier-intro-title">
     <div>
-      <span class="eyebrow">先学真正重要的</span>
-      <h2 id="study-tier-intro-title">{{ published_questions.size }} 道是覆盖面，不是每道都要背</h2>
-      <p>{% if review_count == 0 and unanswered_count == 0 %}当前正式题库只保留资料已核验内容。{% endif %}默认显示 {{ core_count }} 道“核心必会”{% if role_count > 0 %}，准备专项岗位时再看 {{ role_count }} 道“岗位专项”{% endif %}{% if extended_count > 0 %}；{{ extended_count }} 道扩展知识点用于查漏补缺{% endif %}{% if archive_count > 0 %}，{{ archive_count }} 道题仍待重整{% endif %}。</p>
+      <span class="eyebrow">一个题库 · 两种可见性</span>
+      <h2 id="study-tier-intro-title">全部题目</h2>
+      <p>公开题所有人都能看到；标有“私人”的题只保存在当前浏览器。选择公开并在 GitHub 完成提交后，题目会直接出现在这里，不需要审核。</p>
     </div>
-    <a class="text-link" href="{{ '/study-tiers/' | relative_url }}">分级依据与使用方法 →</a>
+    <a class="secondary-button" href="{{ '/capture/' | relative_url }}">＋ 增加题目</a>
   </section>
+  <div class="question-source-statuses" aria-label="题目读取状态">
+    <p data-local-questions-status role="status" aria-live="polite">私人题只在当前浏览器显示。</p>
+    <p data-public-questions-status role="status" aria-live="polite">正在读取大家发布的公开题目…</p>
+    <p class="local-questions-error" data-local-questions-error role="alert" hidden></p>
+    <p data-public-questions-fallback hidden>
+      {% if site.github.repository_url %}<a class="text-link" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aopen+label%3Apublic-question" target="_blank" rel="noopener noreferrer">暂时无法读取，前往 GitHub 查看公开题目 ↗</a>{% endif %}
+    </p>
+  </div>
   <div class="toolbar">
     <label class="search-box">
       <span aria-hidden="true">⌕</span>
@@ -169,14 +110,14 @@ title: 题库
     <label class="library-select">
       <span>备考层级</span>
       <select id="question-study-tier"
-              data-default-tier="{% if core_count > 0 %}core{% endif %}"
+              data-default-tier=""
               aria-label="按备考层级筛选题目">
         <option value="recommended">核心＋所选方向专项</option>
-        <option value="core"{% if core_count > 0 %} selected{% endif %}>核心必会（{{ core_count }}）</option>
+        <option value="core">核心必会（{{ core_count }}）</option>
         {% if role_count > 0 %}<option value="role">岗位专项（{{ role_count }}）</option>{% endif %}
         {% if extended_count > 0 %}<option value="extended">扩展知识点（{{ extended_count }}）</option>{% endif %}
         {% if archive_count > 0 %}<option value="archive">待重整（{{ archive_count }}）</option>{% endif %}
-        <option value=""{% if core_count == 0 %} selected{% endif %}>全部（{{ published_questions.size }}）</option>
+        <option value="" selected>全部（当前可见）</option>
       </select>
     </label>
     <label class="library-select">
@@ -192,9 +133,9 @@ title: 题库
       <span>答案状态</span>
       <select id="question-review-state" aria-label="按答案核验状态筛选题目">
         <option value="">全部状态</option>
-        {% if verified_count > 0 %}<option value="verified">资料已核验（{{ verified_count }}）</option>{% endif %}
-        {% if review_count > 0 %}<option value="review">参考答案待校对（{{ review_count }}）</option>{% endif %}
-        {% if unanswered_count > 0 %}<option value="pending">待解答（{{ unanswered_count }}）</option>{% endif %}
+        <option value="verified">资料已核验</option>
+        <option value="review">参考答案</option>
+        <option value="pending">待解答</option>
       </select>
     </label>
     <div class="filters" role="group" aria-label="按分类筛选">
@@ -203,6 +144,7 @@ title: 题库
         {% if category == '待整理' %}{% assign category_label = '未分类' %}{% else %}{% assign category_label = category %}{% endif %}
         <button class="filter" type="button" data-category="{{ category | escape }}" data-label="{{ category_label | escape }}" aria-pressed="false">{{ category_label | escape }}</button>
       {% endfor %}
+      {% unless published_categories contains '待整理' %}<button class="filter" type="button" data-category="待整理" data-label="未分类" aria-pressed="false">未分类</button>{% endunless %}
       <button id="question-clear-filters" class="filter filter-reset" type="button">恢复默认</button>
     </div>
   </div>
@@ -214,6 +156,8 @@ title: 题库
        class="question-list"
        data-search-index-url="{{ '/search-index.json' | relative_url }}"
        data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}">
+    <div class="dynamic-question-cards" data-local-questions-list></div>
+    <div class="dynamic-question-cards" data-public-questions-list></div>
     {% assign questions = published_questions | sort: 'date' | reverse %}
     {% for question in questions %}
       {% assign search_tags = question.tags | join: ' ' %}
@@ -261,10 +205,9 @@ title: 题库
     {% endfor %}
   </div>
   <div class="library-results-bar">
-    <p id="library-result-summary">默认显示 {{ core_count }} 道核心必会题</p>
+    <p id="library-result-summary">正在整理当前可见题目…</p>
     <button id="question-load-more" class="secondary-button" type="button" hidden>再显示 60 道</button>
   </div>
   <div id="result-status" class="sr-only" role="status" aria-live="polite"></div>
   <div id="empty-state" class="empty-state" role="status" hidden>没有找到匹配的题目，换个关键词试试。</div>
-  {% endif %}
 </section>

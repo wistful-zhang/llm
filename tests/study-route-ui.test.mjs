@@ -57,20 +57,23 @@ test('默认模拟只抽资料已核验题，并说明按分类分散抽题', ()
   assert.match(practiceScript, /优先覆盖不同分类/);
 });
 
-test('首页会显示当前范围的分类计数、禁用空分类，并能一键恢复默认', () => {
+test('首页会显示当前范围的分类计数、禁用空分类，并一键恢复到全部题目', () => {
   assert.match(home, /id="question-clear-filters"/);
   assert.match(home, /data-label="{{ category_label \| escape }}"/);
   assert.match(search, /const categoryCounts = new Map/);
   assert.match(search, /button\.textContent = `\$\{label\}（\$\{count\}）`/);
   assert.match(search, /button\.disabled = count === 0/);
   assert.match(search, /clearFilters\?\.addEventListener\('click'/);
-  assert.match(home, /data-default-tier="\{% if core_count > 0 %\}core\{% endif %\}"/);
+  assert.match(home, /data-default-tier=""/);
+  assert.match(home, /<option value="" selected>全部（当前可见）<\/option>/);
+  assert.match(search, /if \(studyTier\) studyTier\.value = defaultStudyTier/);
   assert.match(practice, /data-default-tier="\{% if core_questions\.size > 0 %\}core\{% endif %\}"/);
   assert.match(stylesheet, /\.filter:disabled/);
 });
 
-test('可复用页面使用真实公开题数和核验数，不把后来新增的题目冒充为已核验', () => {
-  assert.match(home, /{{ published_questions\.size }} 道是覆盖面/);
+test('首页动态可见题数以仓库公开题数为基数，不把新题冒充为已核验', () => {
+  assert.match(home, /data-question-total data-base-count="\{\{ published_questions \| size \}\}"/);
+  assert.match(home, /道当前可见题目/);
   assert.match(guide, /published_questions = site\.questions \| where: 'published', true/);
   assert.match(guide, /verified_question_count = published_questions \| where: 'verified', true \| size/);
   assert.match(about, /published_questions = site\.questions \| where: 'published', true/);

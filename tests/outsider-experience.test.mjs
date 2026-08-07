@@ -74,9 +74,12 @@ test('公开 Issue 表单明确提醒内容会公开，隐私问题走私密报�
   ]);
 
   forms.forEach((form) => {
-    assert.match(form, /提交后会公开/);
+    assert.match(form, /提交后[\s\S]{0,100}公开/);
     assert.match(form, /Security/);
   });
+  assert.match(forms[2], /统一题库/);
+  assert.match(forms[2], /不经过人工审核/);
+  assert.doesNotMatch(forms[2], /待审核|正式收录|公开补充/);
 });
 
 test('隐私说明准确描述浏览器存储而不是账号级私有', async () => {
@@ -129,11 +132,14 @@ test('公开仓库配置自检不收集 Token，并提供可执行修复入口',
   assert.match(script, /safeHttpUrl\(repo\.homepage\)/);
 });
 
-test('空题库会给新手无需后台的第一题入口', async () => {
+test('统一题库不依赖静态题目数量，始终接纳公开题和私人题', async () => {
   const home = await read('../docs/index.html');
-  assert.match(home, /published_questions\.size == 0/);
-  assert.match(home, /还没有发布题目/);
-  assert.match(home, /添加第一道题/);
+  assert.match(home, /id="question-list-section"[\s\S]*data-local-questions[\s\S]*data-public-questions/);
+  assert.match(home, /一个题库 · 两种可见性/);
+  assert.match(home, /公开题所有人都能看到[\s\S]*“私人”的题只保存在当前浏览器/);
+  assert.match(home, /data-local-questions-list/);
+  assert.match(home, /data-public-questions-list/);
+  assert.doesNotMatch(home, /还没有发布题目/);
+  assert.match(home, /＋ 增加题目/);
   assert.match(home, /href="{{ '\/capture\/' \| relative_url }}"/);
-  assert.match(home, /默认只保存到当前浏览器/);
 });

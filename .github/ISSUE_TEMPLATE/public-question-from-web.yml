@@ -1,19 +1,19 @@
 name: 提交网页中已经填写的题目
-description: 题目、分类和难度已由网站带入，只需检查并确认公开
+description: 题目、分类和难度已由网站带入，确认后直接发布到统一题库
 title: "[新增题目] "
 labels: ["public-question"]
 body:
   - type: markdown
     attributes:
       value: |
-        这是普通使用者向当前题库提交的**公开补充**。下面的题目、分类和难度已经由网站带入，不需要重新选择。提交后 GitHub 用户名和内容都会公开，并会立即显示在网站的公开补充区，不用等待审核；题库主人完成查重和整理后，才可能收录进正式题库、统计和模拟面试。
+        这是“公开”题目的最后提交页。下面的题目、分类和难度已经由网站带入，不需要重新选择。点击提交后，这条 Issue 会立即作为公开题目显示在统一题库中，不经过人工审核或二次收录；GitHub 用户名、Issue 和题目内容都会公开。
 
   - type: textarea
     id: details
     attributes:
       label: 已从网站带入的题目内容
       description: 请检查内容是否正确即可；分类和难度已经包含在这里。
-      placeholder: 请先回到网站的“增加题目”页面填写，再使用题目卡中的公开补充按钮。
+      placeholder: 请先回到网站的“增加题目”页面填写，选择“公开”后再来到这里确认。
     validations:
       required: true
 
@@ -22,5 +22,5 @@ body:
     attributes:
       label: 最终公开确认
       options:
-        - label: 我明白内容和 GitHub 用户名提交后会立即公开显示，但不会自动进入正式题库、统计或模拟面试；并确认已经移除个人隐私、公司机密、内部题库和 NDA 内容，也有权公开这道题。
+        - label: 我明白题目和 GitHub 用户名提交后会公开到统一题库，并确认已经移除个人隐私、公司机密、内部题库和 NDA 内容，也有权公开这道题。
           required: true

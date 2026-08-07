@@ -11,12 +11,12 @@ permalink: /start/
 
 # 建立自己的大模型面经
 
-只想先记题或练习时，直接使用网站表单，不需要 GitHub 账号、后台或 Markdown。要把内容长期同步到自己的 GitHub、公开给别人看或多人维护时，再创建仓库、选择公开或私有，并连接 Pages CMS。
+只想先记题或练习时，直接使用网站表单，不需要后台或 Markdown。选择“私人”不需要 GitHub 账号，题目会在同一题库中标注“私人”，只存在当前浏览器。选择“公开”需要登录 GitHub 完成最终确认，之后会自动发布，不经过人工审核。要建立自己的站点或多人维护时，再创建仓库并连接 Pages CMS。
 
 </div>
 
 <nav class="journey-grid" aria-label="选择当前目标">
-  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>我想马上增加题目</strong><span>普通文字填写，可保存草稿或发布到我的题目，答案和追问都可以留空。</span><b>打开增加题目 →</b></a>
+  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>我想马上增加题目</strong><span>普通文字填写，选择私人或公开，答案和追问都可以留空。</span><b>打开增加题目 →</b></a>
   <a class="journey-card" href="{{ '/practice/' | relative_url }}"><strong>我只想先练习</strong><span>先练“核心必会”，再按目标岗位和分类随机抽题；不需要 GitHub 账号。</span><b>开始模拟面试 →</b></a>
   <a class="journey-card" href="{{ '/interviews/' | relative_url }}"><strong>我想记录真实面试</strong><span>不需要 GitHub 登录，记录只保存在自己的浏览器。</span><b>记录公司与进度 →</b></a>
   <a class="journey-card" href="#mode-choice"><strong>我是第一次创建</strong><span>继续下面 5 步，先决定公开还是私有。</span><b>开始首次配置 ↓</b></a>
@@ -24,13 +24,13 @@ permalink: /start/
 
 <div class="guide-alert" role="note" markdown="1">
 
-**先记录、以后再创建自己的站点？** “只保存草稿”的题目和面试记录都按网站、仓库标识和浏览器分别保存。切换到自己的公开站点前，先分别导出两份 JSON，再到新站点恢复。Private 仓库不会部署这些浏览器页面；可以继续使用当前公开站点，或在自己的电脑上本地预览，但本机数据不会自动写入 Private 仓库。
+**先记录、以后再创建自己的站点？** 选择“私人”的题目和面试记录都按网站、仓库标识和浏览器分别保存。切换到自己的公开站点前，先分别导出两份 JSON，再到新站点恢复。Private 仓库不会部署这些浏览器页面；可以继续使用当前公开站点，或在自己的电脑上本地预览，但本机数据不会自动写入 Private 仓库。
 
 </div>
 
 <div class="guide-alert" role="note" markdown="1">
 
-**公开 / 私有不在题库后台设置。** 它位于 GitHub 的“Create a new repository”页面。Pages CMS 负责编辑内容，不能修改仓库可见性。
+**不要把两种“公开 / 私有”混在一起。** 增加单道题时，在网站表单里选择“公开 / 私人”；创建整个仓库时，才在 GitHub 的“Create a new repository”页面选择 Public / Private。Pages CMS 不能修改仓库可见性。
 
 </div>
 
@@ -94,12 +94,12 @@ permalink: /start/
   <summary><span class="status-badge status-public">Public</span><strong>公开题库：启用阅读网页</strong><span class="summary-hint">展开步骤</span></summary>
   <div class="mode-details-body">
     <ol>
-      <li>先在 <strong>Settings → General → Features</strong> 确认 <strong>Issues</strong> 已开启；它用于“公开增加题目”和对应讨论。</li>
+      <li>先在 <strong>Settings → General → Features</strong> 确认 <strong>Issues</strong> 已开启；它用于访客公开发布题目和对应讨论。</li>
       <li>打开新仓库的 <strong>Settings → Pages</strong>。</li>
       <li>在 <strong>Build and deployment → Source</strong> 选择 <strong>GitHub Actions</strong>。项目已经包含工作流，不要再点击 Jekyll 或 Static HTML 的 Configure。</li>
       <li>进入 <strong>Actions → 内容检查与网站发布 → Run workflow</strong>，Branch 选择仓库默认分支（通常是 <code>main</code>），手动运行第一次部署。</li>
       <li>工作流变为绿色后，回到 <strong>Settings → Pages</strong> 点击 <strong>Visit site</strong>。</li>
-      <li>题目评论默认关闭，不需要额外配置；建题、补答案、公开补题和模拟面试都可以直接使用。</li>
+      <li>题目评论默认关闭，不需要额外配置；建题、补答案、公开发布和模拟面试都可以直接使用。</li>
     </ol>
     <figure class="guide-figure guide-wide">
       <a href="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 GitHub Pages 设置示意图（在新窗口打开）"><img src="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" loading="lazy" alt="GitHub Settings Pages 中选择 GitHub Actions 的操作示意图"></a>
@@ -174,7 +174,7 @@ permalink: /start/
 <section class="capture-panel">
   <span class="status-badge">配置完成后</span>
   <h2>以后按需要走五条日常路径</h2>
-  <p><strong>现场记题：</strong>在“＋题目”只填问题或继续记录追问，默认选择“只保存草稿”。<strong>放进自己的题目区：</strong>改选“发布到我的题目”，保存后会立即回到首页题目区域。<strong>让别人也能看：</strong>再从题目卡查重并同步 GitHub。<strong>内容纠错：</strong>使用题目页底部的反馈入口，题库主人通过网页管理入口直接修改。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>个人仓库速记：</strong>使用 Private 仓库。<strong>准备复习：</strong>先看<a href="{{ '/study-tiers/' | relative_url }}">学习分级说明</a>，从“核心必会”开始，再按目标岗位和分类随机抽题。</p>
+  <p><strong>现场记题：</strong>在“＋题目”只填问题或继续记录追问，保存前选择“私人”或“公开”。<strong>只留给自己：</strong>私人题会在同一题库中标注“私人”，只存在当前浏览器。<strong>让别人也能看：</strong>选择“公开”后登录 GitHub 完成最终确认，题目会自动发布。<strong>内容纠错：</strong>使用题目页底部的反馈入口，题库主人通过网页管理入口直接修改。<strong>真实面试：</strong>记录公司、轮次、结果和复盘，需要分享时再做匿名检查。<strong>个人仓库速记：</strong>使用 Private 仓库。<strong>准备复习：</strong>先看<a href="{{ '/study-tiers/' | relative_url }}">学习分级说明</a>，从“核心必会”开始，再按目标岗位和分类随机抽题。</p>
   <a class="primary-button" href="{{ '/capture/' | relative_url }}">直接在网页记题</a>
   <a class="secondary-button" href="{{ '/interviews/' | relative_url }}">记录一次真实面试</a>
   <a class="secondary-button" href="{{ '/experiences/manage/' | relative_url }}">查看匿名面经发布步骤</a>
@@ -231,11 +231,11 @@ permalink: /start/
 </div>
 
 - **Pages CMS 看不到仓库**：点击账号旁的齿轮或 **Manage GitHub App**，补选仓库并保存。
-- **在“＋题目”保存后，在哪里看**：选择“只保存草稿”后到首页“我的未发布草稿”查看；选择“发布到我的题目”后会直接回到首页题目区。它们起初都只在当前浏览器中，不计入正式题库数量或模拟面试；同步 GitHub 并整理进 `docs/_questions/` 后才会成为正式题目。
+- **在“＋题目”保存后，在哪里看**：公开题和私人题都在首页同一个题库列表中。私人题标注“私人”，只对当前浏览器可见；公开题需在 GitHub 完成最终提交，网站自动更新后对所有人可见。
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。
-- **题目下方为什么没有评论入口**：本站当前默认关闭题目评论。增加题目、补答案、公开补题和模拟面试不受影响；发现内容错误时，请使用题目页底部的反馈入口。
+- **题目下方为什么没有评论入口**：本站当前默认关闭题目评论。增加题目、补答案、公开发布和模拟面试不受影响；发现内容错误时，请使用题目页底部的反馈入口。
 - **私有题库没有阅读网址或随机模拟**：这是当前模式的明确限制；请收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。在线浏览和模拟只能使用可公开的 Public 题库内容。
 - **组织账号没有某个按钮**：可能被组织策略限制，需要组织管理员批准。
 - **模板副本会自动收到更新吗**：不会。模板创建的是独立仓库；升级前请先阅读仓库中的 `UPGRADING.md`，保护自己的题目、公开面经和站点设置。
