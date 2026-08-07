@@ -639,13 +639,13 @@ ${JSON.stringify(question, null, 2)}
     card.append(actions);
 
     const more = makeElement('details', 'question-draft-card-more');
-    more.append(makeElement('summary', '', '同步 GitHub 与删除'));
+    more.append(makeElement('summary', '', '公开给别人 / 同步 GitHub / 删除'));
     const note = makeElement(
       'p',
       'question-draft-publish-note',
       question.visibility === 'public'
         ? (submittedIssue
-          ? `这道题已经作为公开补充 #${submittedIssue.number} 提交，别人可以看到；它尚未进入正式题库、分类统计和模拟面试。题库主人审核后再决定是否正式收录。`
+          ? `这道题已经作为公开补充 #${submittedIssue.number} 提交，并会立即显示在首页公开补充区；它尚未进入正式题库、分类统计和模拟面试。题库主人查重、整理后再决定是否正式收录。`
           : '这道题已经发布到首页“我的题目”，当前只有这个浏览器能看到。同步到 GitHub 并完成网站发布后，其他人才可以看到。')
         : '这道题当前只留在浏览器。若它以前已提交到 GitHub，改成“只保存草稿”不会撤回公开内容，仍需到原 Issue 处理。',
     );
@@ -684,7 +684,7 @@ ${JSON.stringify(question, null, 2)}
       }
       publishActions.append(submittedIssue
         ? button(`查看已提交的公开补充 #${submittedIssue.number} ↗`, 'open-submitted-issue', 'secondary-button', question.id)
-        : button('其他使用者：提交公开补充（会创建 Issue） ↗', 'open-issue', 'secondary-button', question.id));
+        : button('提交到本站公开补充区（需 GitHub 登录） ↗', 'open-issue', 'secondary-button', question.id));
     }
     publishActions.append(button('删除这道本机题目', 'delete', 'text-button interview-danger-button', question.id));
     const status = makeElement('p', 'question-draft-card-status');
@@ -948,7 +948,7 @@ ${JSON.stringify(question, null, 2)}
       const omittedNotice = launch.omittedFields.length
         ? `网址长度受限，${launch.omittedFields.join('、')}不会自动带入；请先复制公开内容，打开后补齐。`
         : '';
-      const warning = `这是给没有仓库写权限的使用者准备的公开补充，不会自动进入正式题库。继续后，题目内容会作为网址参数发送给 GitHub；分类和难度已经带入，不需要再次选择。只有你在 GitHub 点击提交后才会创建公开 Issue，并公开内容和你的 GitHub 用户名。${omittedNotice}确认继续吗？`;
+      const warning = `这是给没有仓库写权限的使用者准备的公开补充。只有你在 GitHub 点击提交后才会创建公开 Issue；提交后会立即显示在本站公开补充区，不用等待审核，但不会自动进入正式题库、统计或模拟面试。继续后，题目内容会作为网址参数发送给 GitHub，分类和难度已经带入，不需要再次选择；内容和你的 GitHub 用户名都会公开。${omittedNotice}确认继续吗？`;
       if (!window.confirm(warning)) return;
       const opened = window.open(launch.url, '_blank');
       if (opened) opened.opener = null;

@@ -27,7 +27,35 @@ Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和�
   <a class="journey-card" href="#question-only-workflow"><strong>记录一道题</strong><span>Private 仓库可个人速记；Public 仓库可先公开问题、以后再补答案。</span><b>查看记题流程 →</b></a>
   <a class="journey-card" href="{{ '/start/' | relative_url }}"><strong>第一次使用</strong><span>先完成仓库可见性、Pages 和后台授权设置。</span><b>查看完整图解 →</b></a>
   <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>增加一道题</strong><span>答案和追问可以留空；保存前选择草稿或发布到我的题目。</span><b>打开增加题目 →</b></a>
+  {% if site.github.repository_url %}<a class="journey-card" href="#public-question-review"><strong>处理公开补充</strong><span>访客投稿已经立即公开；在这里查重并决定是否收录进正式题库。</span><b>查看待处理投稿 →</b></a>{% endif %}
 </nav>
+
+{% if site.github.repository_url %}
+<section id="public-question-review"
+         class="capture-panel public-question-review-panel"
+         data-public-questions
+         data-public-questions-view="manage"
+         data-repository-nwo="{{ site.github.repository_nwo | escape }}"
+         aria-labelledby="public-question-review-title">
+  <span class="status-badge">站主入口 · 投稿已经公开</span>
+  <h2 id="public-question-review-title">公开补充在这里处理</h2>
+  <p>访客提交后会立即显示在首页“访客公开补充”，不需要先审核。这里的处理只决定它是否进入正式题库、搜索、统计和模拟面试。</p>
+  <ol class="capture-steps public-question-review-steps">
+    <li><strong>先查重</strong><span>打开投稿并搜索正式题库；重复题标记为 duplicate 后关闭，不要再建一份。</span></li>
+    <li><strong>再决定收录</strong><span>确认内容有权公开、不含隐私或 NDA 材料，并核对分类、答案和资料来源。</span></li>
+    <li><strong>正式入库</strong><span>题库主人用 Codex 或 Pages CMS 建题；收录完成后关闭原 Issue，它就会离开待处理列表。</span></li>
+  </ol>
+  <p class="public-questions-status" data-public-questions-status role="status" aria-live="polite">正在读取待处理公开补充…</p>
+  <div class="public-questions-list" data-public-questions-list hidden></div>
+  <p data-public-questions-fallback hidden>暂时无法读取列表，请使用下方“打开待处理列表”。</p>
+  <div class="manage-actions public-question-review-actions">
+    <a class="primary-button" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aopen+label%3Apublic-question" target="_blank" rel="noopener noreferrer">打开待处理列表 ↗</a>
+    <a class="secondary-button" href="{{ site.github.repository_url }}/issues?q=is%3Aissue+is%3Aclosed+label%3Apublic-question" target="_blank" rel="noopener noreferrer">查看已处理投稿 ↗</a>
+    <a class="secondary-button cms-button" href="https://app.pagescms.org/{{ site.github.repository_nwo | escape }}/{{ site.github.source.branch | default: 'main' | url_encode }}/collection/questions" target="_blank" rel="noopener noreferrer">自己的题：直接入库 ↗</a>
+  </div>
+  <p class="privacy-warning"><strong>为什么不让所有投稿直接混入正式题库：</strong>自动化无法可靠判断语义重复、错误答案、个人隐私、内部题库或版权边界。公开展示可以即时完成；正式收录仍保留一次站主判断。你自己或可信编辑拥有仓库写权限时，不必创建公开补充 Issue，可直接使用 Pages CMS 或 Codex 写入题库。</p>
+</section>
+{% endif %}
 
 <section id="question-only-workflow" class="capture-panel question-only-workflow">
   <span class="status-badge">可以：先发问题，再让 Codex 补答</span>

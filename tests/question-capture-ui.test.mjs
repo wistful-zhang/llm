@@ -335,7 +335,8 @@ test('发布立即进入我的题目，GitHub 同步作为后续操作且分类�
   assert.match(page, /让其他人也能看[\s\S]*同步到 GitHub/);
   assert.match(script, /题库主人：复制给 Codex 整理入库/);
   assert.match(script, /Pages CMS 手工收录（需重新填写）/);
-  assert.match(script, /其他使用者：提交公开补充（会创建 Issue）/);
+  assert.match(script, /提交到本站公开补充区（需 GitHub 登录）/);
+  assert.match(script, /公开给别人 \/ 同步 GitHub \/ 删除/);
   assert.match(script, /const librarySearchTerm =/);
   assert.match(script, /title\.match\(\/\[A-Za-z\]/);
   assert.match(script, /url\.searchParams\.set\('q', librarySearchTerm\(question\.title\)\)/);
@@ -367,6 +368,7 @@ test('发布立即进入我的题目，GitHub 同步作为后续操作且分类�
   assert.match(script, /分类和难度已经带入，不需要再次选择/);
   assert.match(script, /题目内容会作为网址参数发送给 GitHub/);
   assert.match(script, /只有你在 GitHub 点击提交后才会创建公开 Issue/);
+  assert.match(script, /提交后会立即显示在本站公开补充区，不用等待审核/);
   assert.match(script, /loadPublicIssueMatches/);
   assert.match(script, /已同步 GitHub #\$\{submittedIssue\.number\}/);
   assert.match(script, /if \(action === 'open-submitted-issue'\)/);

@@ -7,6 +7,7 @@ const root = document.querySelector('[data-public-questions]');
 
 if (root) {
   const repositoryNwo = root.dataset.repositoryNwo || '';
+  const manageView = root.dataset.publicQuestionsView === 'manage';
   const status = root.querySelector('[data-public-questions-status]');
   const list = root.querySelector('[data-public-questions-list]');
   const fallback = root.querySelector('[data-public-questions-fallback]');
@@ -38,7 +39,7 @@ if (root) {
     meta.className = 'public-question-meta';
     const badge = document.createElement('span');
     badge.className = 'public-question-badge';
-    badge.textContent = '公开补充';
+    badge.textContent = manageView ? '待处理补充' : '公开补充';
     if (question.category) {
       const category = document.createElement('span');
       category.textContent = question.category;
@@ -54,7 +55,7 @@ if (root) {
     title.textContent = question.title;
     const action = document.createElement('span');
     action.className = 'public-question-action';
-    action.textContent = '查看公开补充 ↗';
+    action.textContent = manageView ? '打开 Issue 处理 ↗' : '查看公开补充 ↗';
 
     link.append(meta, title, action);
     return link;
@@ -62,7 +63,9 @@ if (root) {
 
   const loadPublicQuestions = async ({ force = false } = {}) => {
     if (!repositoryNwo || !list) {
-      setStatus('当前预览没有连接可用的 GitHub 仓库。');
+      setStatus(manageView
+        ? '当前预览没有连接可用的 GitHub 仓库，无法读取待处理投稿。'
+        : '当前预览没有连接可用的 GitHub 仓库。');
       if (fallback) fallback.hidden = false;
       return;
     }
@@ -82,14 +85,22 @@ if (root) {
         list.replaceChildren(...questions.map(createQuestion));
         list.hidden = questions.length === 0;
         if (fallback) fallback.hidden = true;
-        setStatus(questions.length > 0
-          ? `最近 ${questions.length} 道已经公开提交的补充题目；点击可查看内容和处理状态。`
-          : '还没有使用者公开增加题目。你可以只发布问题，答案以后再补。');
+        if (manageView) {
+          setStatus(questions.length > 0
+            ? `当前读取到 ${questions.length} 道待处理公开补充；它们已经在首页公开显示。`
+            : '目前没有待处理公开补充。');
+        } else {
+          setStatus(questions.length > 0
+            ? `最近 ${questions.length} 道已经公开提交的补充题目；点击可查看内容和处理状态。`
+            : '还没有使用者公开增加题目。你可以只发布问题，答案以后再补。');
+        }
         lastLoadedAt = Date.now();
       } catch {
         list.replaceChildren();
         list.hidden = true;
-        setStatus('暂时无法读取使用者公开补充，可能是网络异常或 GitHub API 限流。');
+        setStatus(manageView
+          ? '暂时无法读取待处理公开补充，请使用下方 GitHub 列表入口。'
+          : '暂时无法读取使用者公开补充，可能是网络异常或 GitHub API 限流。');
         if (fallback) fallback.hidden = false;
       } finally {
         window.clearTimeout(timeoutId);

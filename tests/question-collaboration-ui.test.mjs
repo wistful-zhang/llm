@@ -61,24 +61,35 @@ test('评论实现保留但站点默认关闭，题目页只在开关开启时�
   assert.doesNotMatch(csp, /utteranc\.es|frame-src https:;|connect-src[^;]+\shttps:\s/);
 });
 
-test('首页把公开补充放在正式题库之前，并在返回页面时自动刷新', async () => {
-  const [home, layout, script] = await Promise.all([
+test('公开补充提交后立即展示，站主管理页提供明确处理入口', async () => {
+  const [home, layout, script, manage] = await Promise.all([
     read('../docs/index.html'),
     read('../docs/_layouts/default.html'),
     read('../docs/assets/js/public-questions.js'),
+    read('../docs/manage.md'),
   ]);
   const navigation = `${home}\n${layout}`;
 
-  assert.match(home, /公开补充题目/);
-  assert.match(home, /已经提交 · 尚未正式收录/);
-  assert.match(home, /尚未进入下面的正式题库、分类统计和模拟面试/);
+  assert.match(home, /访客公开补充/);
+  assert.match(home, /提交后立即公开 · 内容未核验/);
+  assert.match(home, /提交后不用等待审核/);
+  assert.match(home, /正式题库、搜索、分类统计和模拟面试/);
   assert.match(home, /data-public-questions/);
   assert.ok(home.indexOf('data-public-questions') < home.indexOf('id="question-list-section"'), '公开补充应在正式题库之前出现');
-  assert.match(home, /查看全部公开补充/);
+  assert.match(home, /查看 \/ 处理全部补充/);
   assert.match(home, /data-repository-nwo="{{\s*site\.github\.repository_nwo\s*\|\s*escape\s*}}"/);
-  assert.match(navigation, /assets\/js\/public-questions\.js/);
+  assert.match(layout, /page\.url == '\/manage\/'[\s\S]*assets\/js\/public-questions\.js/);
   assert.doesNotMatch(navigation, /href="{{\s*['"]\/community\//);
   assert.doesNotMatch(layout, />\s*(?:面经)?社区\s*</);
+
+  assert.match(manage, /id="public-question-review"/);
+  assert.match(manage, /data-public-questions-view="manage"/);
+  assert.match(manage, /公开补充在这里处理/);
+  assert.match(manage, /提交后会立即显示在首页/);
+  assert.match(manage, /is%3Aissue\+is%3Aopen\+label%3Apublic-question/);
+  assert.match(manage, /is%3Aissue\+is%3Aclosed\+label%3Apublic-question/);
+  assert.match(manage, /自己的题：直接入库/);
+  assert.match(manage, /不让所有投稿直接混入正式题库/);
 
   assert.match(script, /buildPublicQuestionsApiUrl/);
   assert.match(script, /normalizePublicQuestions/);
@@ -90,6 +101,8 @@ test('首页把公开补充放在正式题库之前，并在返回页面时自�
   assert.match(script, /window\.addEventListener\('focus'/);
   assert.match(script, /document\.addEventListener\('visibilitychange'/);
   assert.match(script, /查看公开补充/);
+  assert.match(script, /打开 Issue 处理/);
+  assert.match(script, /目前没有待处理公开补充/);
   assert.doesNotMatch(script, /回答或评论|条评论/);
   assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
   assert.doesNotMatch(script, /\bAuthorization\b|localStorage|sessionStorage/i);
@@ -165,7 +178,7 @@ test('公开补题保留分类下拉，网页已填投稿只需最终确认', as
   assert.match(fieldSection(questionForm, 'category'), /- type:\s*dropdown/);
   assert.match(fieldSection(questionForm, 'difficulty'), /- type:\s*input/);
 
-  assert.match(questionForm, /提交后会公开/);
+  assert.match(questionForm, /提交后会立即显示在网站的公开补充区/);
   assert.match(fieldSection(questionForm, 'compliance'), /required:\s*true/);
   assertNoCredentialField(questionForm);
 
@@ -174,6 +187,7 @@ test('公开补题保留分类下拉，网页已填投稿只需最终确认', as
   assert.match(fieldSection(prefilledForm, 'details'), /- type:\s*textarea/);
   assert.match(fieldSection(prefilledForm, 'details'), /required:\s*true/);
   assert.match(prefilledForm, /分类和难度已经由网站带入/);
+  assert.match(prefilledForm, /立即显示在网站的公开补充区，不用等待审核/);
   assert.match(fieldSection(prefilledForm, 'compliance'), /required:\s*true/);
   assert.doesNotMatch(prefilledForm, /\bid:\s*(?:category|difficulty)\b/);
   assertNoCredentialField(prefilledForm);
