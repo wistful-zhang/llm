@@ -56,7 +56,7 @@ title: 题库
       <div class="hero-support-links">
         <a href="{{ '/interviews/' | relative_url }}">刚面试完？记录公司和结果 →</a>
         <a href="{{ '/experiences/' | relative_url }}">查看匿名公开面经 →</a>
-        <a href="{{ '/capture/' | relative_url }}">增加题目：可只留给自己，也可公开给大家 →</a>
+        <a href="{{ '/capture/' | relative_url }}">增加题目：可保存草稿，也可立即发布到我的题目 →</a>
         <a href="{{ '/start/' | relative_url }}">第一次使用？创建自己的题库 →</a>
       </div>
     </div>
@@ -71,14 +71,15 @@ title: 题库
 
 <section class="container local-questions-section"
          data-local-questions
+         data-visibility="private"
          data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
          data-capture-url="{{ '/capture/' | relative_url }}"
-         aria-labelledby="local-questions-title"
+         aria-labelledby="local-drafts-title"
          hidden>
   <div class="local-questions-heading">
     <div>
-      <span class="eyebrow">只在当前浏览器</span>
-      <h2 id="local-questions-title">我的本机题目</h2>
+      <span class="eyebrow">仅我可见 · 尚未发布</span>
+      <h2 id="local-drafts-title">我的未发布草稿</h2>
       <p data-local-questions-status role="status" aria-live="polite"></p>
     </div>
     <a class="secondary-button" href="{{ '/capture/' | relative_url }}#question-draft-library">查看和编辑全部</a>
@@ -112,6 +113,27 @@ title: 题库
 </section>
 
 <section id="question-list-section" class="container library">
+  <section id="my-published-questions"
+           class="local-questions-section"
+           data-local-questions
+           data-visibility="public"
+           data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
+           data-capture-url="{{ '/capture/' | relative_url }}"
+           aria-labelledby="local-published-questions-title"
+           hidden>
+    <div class="local-questions-heading">
+      <div>
+        <span class="eyebrow">选择发布后立即加入</span>
+        <h2 id="local-published-questions-title">我的题目</h2>
+        <p>这些题目会立即出现在当前浏览器的题目区；同步到 GitHub 后，其他人才能看见。</p>
+        <p data-local-questions-status role="status" aria-live="polite"></p>
+      </div>
+      <a class="secondary-button" href="{{ '/capture/' | relative_url }}#question-draft-library">查看和编辑全部</a>
+    </div>
+    <div class="local-question-list" data-local-questions-list></div>
+    <p class="local-questions-error" data-local-questions-error role="alert" hidden></p>
+  </section>
+
   {% if published_questions.size == 0 %}
   <section class="experience-empty" role="status">
     <span class="empty-number" aria-hidden="true">01</span>

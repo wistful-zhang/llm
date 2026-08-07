@@ -14,7 +14,7 @@ permalink: /manage/
   <span>只有拥有目标仓库写入权限的 GitHub 用户才能保存；其他访客仍可使用“增加题目”公开补题。本站当前关闭题目评论，专注于个人建题、补答案和复习。</span>
 </div>
 
-只想快速记下一道题时，不必进入这里：使用[增加题目]({{ '/capture/' | relative_url }})，直接选择只留给自己或公开给大家。本页更适合批量管理已经进入 GitHub 仓库的正式题目。
+只想快速记下一道题时，不必进入这里：使用[增加题目]({{ '/capture/' | relative_url }})，直接选择只保存草稿或发布到我的题目；还可以逐行记录面试官追问。本页更适合批量管理已经进入 GitHub 仓库的正式题目。
 
 Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和发布不需要打开源码，也不需要 Git 命令。
 
@@ -26,7 +26,7 @@ Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和�
   <a class="journey-card" href="{{ '/interviews/' | relative_url }}"><strong>记录一次面试</strong><span>保存公司代号、岗位、轮次、结果和复盘，自动统计公司数。</span><b>打开本地记录 →</b></a>
   <a class="journey-card" href="#question-only-workflow"><strong>记录一道题</strong><span>Private 仓库可个人速记；Public 仓库可先公开问题、以后再补答案。</span><b>查看记题流程 →</b></a>
   <a class="journey-card" href="{{ '/start/' | relative_url }}"><strong>第一次使用</strong><span>先完成仓库可见性、Pages 和后台授权设置。</span><b>查看完整图解 →</b></a>
-  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>增加一道题</strong><span>答案可以留空；保存前选择只留给自己或公开给大家。</span><b>打开增加题目 →</b></a>
+  <a class="journey-card" href="{{ '/capture/' | relative_url }}"><strong>增加一道题</strong><span>答案和追问可以留空；保存前选择草稿或发布到我的题目。</span><b>打开增加题目 →</b></a>
 </nav>
 
 <section id="question-only-workflow" class="capture-panel question-only-workflow">
@@ -48,7 +48,7 @@ Pages CMS 会把所有内容显示成中文表单。日常记题、补答案和�
   <p>不要等答案写完整。趁记忆还清楚，先保存问题原貌和现场思路。</p>
   <ol class="capture-steps">
     <li>打开“面试题与解答”，点击 <strong>Add an entry</strong>（手机端是 <code>+</code>）。</li>
-    <li>只需先填写<strong>面试题目</strong>；“解答草稿区”可以留空，也可以写关键词、自己的回答和追问。</li>
+    <li>只需先填写<strong>面试题目</strong>；“解答草稿区”可以留空，也可以写关键词或自己的回答；面试官继续问的问题逐项填在独立的<strong>现场追问</strong>字段中。</li>
     <li>“整理 / 复习状态”保持<strong>待整理</strong>，“在阅读网站显示这道题”保持关闭；答案状态保持<strong>待解答</strong>，分类和难度可先用<strong>待整理 / 待评估</strong>。</li>
     <li>点击 <strong>Save</strong>。面试 / 记录日期会自动使用本地当天日期。</li>
   </ol>

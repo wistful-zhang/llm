@@ -14,6 +14,9 @@ permalink: /search-index.json
   {% endif %}
   {% assign search_body = '' %}
   {% if answer_ready %}{% assign search_body = answer_text %}{% endif %}
-  {"id": {{ question.url | jsonify }}, "search": {{ search_body | downcase | jsonify }}}{% unless forloop.last %},{% endunless %}
+  {% assign followup_text = '' %}
+  {% if question.followups %}{% assign followup_text = question.followups | join: ' ' | strip_html | strip_newlines | strip %}{% endif %}
+  {% assign search_text = search_body | append: ' ' | append: followup_text | strip %}
+  {"id": {{ question.url | jsonify }}, "search": {{ search_text | downcase | jsonify }}}{% unless forloop.last %},{% endunless %}
 {% endfor %}
 ]

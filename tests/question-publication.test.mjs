@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
+  MAX_QUESTION_FOLLOWUP_LENGTH,
+  MAX_QUESTION_FOLLOWUPS,
   QUESTION_STUDY_TIERS,
   STUDY_TIERS,
   isQuestionDocumentPath,
@@ -8,7 +11,11 @@ import {
   parseQuestionDocument,
 } from '../scripts/question-publication.mjs';
 
-const document = ({ published = 'true', body = '这是一段普通的公开题目答案。' } = {}) => `---
+const document = ({
+  published = 'true',
+  body = '这是一段普通的公开题目答案。',
+  followups = [],
+} = {}) => `---
 title: "Transformer 为什么使用多头注意力？"
 source: "公开题库整理"
 verified: true
@@ -17,6 +24,9 @@ difficulty: "中等"
 tags:
   - Attention
   - Transformer
+${followups.length
+    ? `followups:\n${followups.map((followup) => `  - ${JSON.stringify(followup)}`).join('\n')}`
+    : 'followups: []'}
 review_status: "待复习"
 published: ${published}
 answer_status: complete
@@ -31,9 +41,69 @@ test('安全题目 frontmatter 可以解析，支持两种 Markdown 扩展名和
   assert.deepEqual(result.errors, []);
   assert.equal(result.values.get('published'), true);
   assert.deepEqual(result.values.get('tags'), ['Attention', 'Transformer']);
+  assert.deepEqual(result.values.get('followups'), []);
   assert.equal(isQuestionDocumentPath('nested/example.md'), true);
   assert.equal(isQuestionDocumentPath('nested/example.markdown'), true);
   assert.equal(isQuestionDocumentPath('nested/example.txt'), false);
+});
+
+test('现场追问使用扁平字符串列表，并限制为 10 条、每条 300 字', () => {
+  const followups = Array.from(
+    { length: MAX_QUESTION_FOLLOWUPS },
+    () => '追'.repeat(MAX_QUESTION_FOLLOWUP_LENGTH),
+  );
+  const valid = parseQuestionDocument(document({ followups }), 'followups.md');
+  assert.deepEqual(valid.errors, []);
+  assert.deepEqual(valid.values.get('followups'), followups);
+
+  const tooMany = parseQuestionDocument(document({
+    followups: [...followups, '第十一条追问？'],
+  }), 'too-many-followups.md');
+  assert.ok(tooMany.errors.some((message) => message.includes('followups 最多填写 10 条追问')));
+
+  const tooLong = parseQuestionDocument(document({
+    followups: ['问'.repeat(MAX_QUESTION_FOLLOWUP_LENGTH + 1)],
+  }), 'too-long-followup.md');
+  assert.ok(tooLong.errors.some((message) => message.includes('第 1 条长度应为 1～300 个字符')));
+
+  const scalar = document().replace('followups: []', 'followups: 这不是列表');
+  assert.ok(parseQuestionDocument(scalar, 'scalar-followups.md').errors
+    .some((message) => message.includes('followups 必须使用列表')));
+
+  const nested = document().replace('followups: []', 'followups:\n  - question: 嵌套对象');
+  assert.ok(parseQuestionDocument(nested, 'nested-followups.md').errors
+    .some((message) => message.includes('复杂 YAML')));
+});
+
+test('公开现场追问接受隐私扫描，未发布草稿仍可留作本地清理', () => {
+  const publicResult = parseQuestionDocument(document({
+    followups: ['可以联系 person%40example.com 继续沟通吗？'],
+  }), 'public-followup.md');
+  assert.ok(publicResult.errors.some((message) => message.includes('邮箱地址')));
+
+  const privateResult = parseQuestionDocument(document({
+    published: 'false',
+    followups: ['可以联系 person%40example.com 继续沟通吗？'],
+  }), 'private-followup.md');
+  assert.deepEqual(privateResult.errors, []);
+});
+
+test('Pages CMS、模板、题目页、搜索索引和公开投稿接通现场追问', async () => {
+  const [pages, template, layout, searchIndex, issueForm] = await Promise.all([
+    readFile(new URL('../.pages.yml', import.meta.url), 'utf8'),
+    readFile(new URL('../docs/_templates/question.md', import.meta.url), 'utf8'),
+    readFile(new URL('../docs/_layouts/question.html', import.meta.url), 'utf8'),
+    readFile(new URL('../docs/search-index.json', import.meta.url), 'utf8'),
+    readFile(new URL('../.github/ISSUE_TEMPLATE/public-question.yml', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(pages, /search: \[[^\]]*followups[^\]]*\]/);
+  assert.match(pages, /- name: followups[\s\S]*?type: string[\s\S]*?list: true[\s\S]*?maxlength: 300/);
+  assert.match(template, /^followups: \[\]$/m);
+  assert.match(layout, /for followup in page\.followups[\s\S]*?\{\{ followup \| escape \}\}/);
+  assert.match(searchIndex, /question\.followups \| join: ' '/);
+  assert.match(searchIndex, /search_text \| downcase \| jsonify/);
+  assert.match(issueForm, /id: followups[\s\S]*?最多 10 条、每条不超过 300 字/);
 });
 
 test('网页后台新建题目时 verified 可以省略并按未核验处理', () => {

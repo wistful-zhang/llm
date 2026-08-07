@@ -166,7 +166,7 @@
     });
 
     if (cards.length === 0) {
-      empty.textContent = '题库还没有公开内容；“＋题目”可以只留在本机，也可以在 GitHub 确认后公开给大家。';
+      empty.textContent = '题库还没有正式内容；“＋题目”可以保存草稿，也可以立即发布到当前浏览器的“我的题目”，之后再同步 GitHub。';
     } else if (answerIndexState === 'failed' && keyword) {
       empty.textContent = '题目、分类和标签中没有匹配项；答案全文暂时无法搜索，请稍后重试。';
     } else if (activeStudyTier === 'recommended' && !track?.value) {

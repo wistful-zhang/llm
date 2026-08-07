@@ -60,10 +60,9 @@ if (root) {
   const idInput = root.querySelector('#question-draft-id');
   const titleInput = root.querySelector('#question-draft-title');
   const answerInput = root.querySelector('#question-draft-answer');
+  const followUpsInput = root.querySelector('#question-draft-follow-ups');
   const answerStatusInput = root.querySelector('#question-draft-answer-status');
   const visibilityInputs = [...root.querySelectorAll('input[name="visibility"]')];
-  const publicConfirmation = root.querySelector('#question-public-confirmation');
-  const publicConfirmedInput = root.querySelector('#question-public-confirmed');
   const categoryInput = root.querySelector('#question-draft-category');
   const difficultyInput = root.querySelector('#question-draft-difficulty');
   const tagsInput = root.querySelector('#question-draft-tags');
@@ -95,6 +94,7 @@ if (root) {
   const inputByField = {
     title: titleInput,
     answer: answerInput,
+    followUps: followUpsInput,
     answerStatus: answerStatusInput,
     visibility: visibilityInputs[0],
     category: categoryInput,
@@ -323,7 +323,7 @@ if (root) {
       title: `[新增题目] ${question.title}`,
     });
     const omittedFields = [];
-    const included = { answer: true, source: true, tags: true };
+    const included = { answer: true, followUps: true, source: true, tags: true };
     const updateDetails = () => params.set('details', contributionText(question, included));
     updateDetails();
     const toUrl = () => `${repositoryUrl}/issues/new?${params.toString()}`;
@@ -336,6 +336,7 @@ if (root) {
 
     // GitHub 会拒绝过长的网址。只降级可选长字段，题目、分类和难度始终只从网页带入一次。
     if (toUrl().length > 6500) omit('answer', '答案');
+    if (toUrl().length > 6500) omit('followUps', '追问');
     if (toUrl().length > 6500) omit('tags', '标签');
     if (toUrl().length > 6500) omit('source', '来源');
 
@@ -347,7 +348,12 @@ if (root) {
     return `${question.date}-${suffix}.md`;
   };
 
-  const contributionText = (question, included = { answer: true, source: true, tags: true }) => [
+  const contributionText = (question, included = {
+    answer: true,
+    followUps: true,
+    source: true,
+    tags: true,
+  }) => [
     `题目：${question.title}`,
     '提交类型：公开补充（尚未正式收录）',
     `答案状态：${question.answerStatus === 'complete' ? '已完成' : '待解答'}`,
@@ -358,12 +364,15 @@ if (root) {
     included.answer ? '' : null,
     included.answer ? '参考答案 / 当前思路：' : null,
     included.answer ? (question.answer || '暂未作答') : null,
+    included.followUps && question.followUps.length ? '' : null,
+    included.followUps && question.followUps.length ? '追问记录（每行一条）：' : null,
+    included.followUps && question.followUps.length ? question.followUps.join('\n') : null,
   ].filter((line) => line !== null && line !== '').join('\n');
 
   const codexPublishPrompt = (question) => {
     const visibilityRule = question.visibility === 'private'
-      ? '这道题选择了“只留给自己”。只有当前目标仓库确认为 Private 时才能写入；如果当前仓库是 Public，请停止，不要创建文件或提交。'
-      : '这道题选择了“公开给大家”。写入前仍要检查隐私和授权；先保持为仓库草稿，不要跳过最终发布确认。';
+      ? '这道题选择了“只保存草稿”。只有当前目标仓库确认为 Private 时才能写入；如果当前仓库是 Public，请停止，不要创建文件或提交。'
+      : '这道题选择了“发布到我的题目”。写入前仍要检查隐私和授权；检查通过后按公开题目收录，让它出现在阅读网站。';
     return `请把下面的站内题目草稿整理并写入“大模型面经”仓库。
 
 目标目录：${root.dataset.codexPath || 'docs/_questions/'}
@@ -372,11 +381,11 @@ ${JSON.stringify(question, null, 2)}
 
 要求：
 1. ${visibilityRule}
-2. 使用仓库现有题目格式创建一个新文件，不覆盖同名题目；保留用户选择的 answerStatus 和 visibility 意图。
+2. 使用仓库现有题目格式创建一个新文件，不覆盖同名题目；保留用户选择的 answerStatus、visibility 和全部追问。
 3. 如果答案状态是 pending，允许正文为空或保留草稿，但不要把它改成 complete；如果是 complete，先检查答案确实完整。
 4. 不要编造公司、岗位、项目数据、面试轮次或资料来源；发现隐私、会议链接、公司机密、NDA 或未授权题库内容时停止发布并说明。
 5. 新文件必须保留 study_tier: archive，表示尚待人工分级；不要因为题目看起来重要就自动提升为 core、role 或 extended。
-6. 新文件必须保持 published: false；完成内容、隐私和仓库可见性检查后，再由我明确决定是否改为 true 并在阅读网站展示。以后切换 published 时也要保留 study_tier: archive，除非我明确要求重新分级。
+6. 私密题必须保持 published: false；选择“发布到我的题目”的题在检查通过后写成 published: true。以后切换 published 时也要保留 study_tier: archive，除非我明确要求重新分级。
 7. 修改后运行 npm run check；只有检查通过才提交到 GitHub。`;
   };
 
@@ -396,6 +405,7 @@ ${JSON.stringify(question, null, 2)}
     const findings = findSensitivePublicContent(
       question.title,
       question.answer,
+      question.followUps,
       question.source,
       question.tags,
     );
@@ -407,6 +417,7 @@ ${JSON.stringify(question, null, 2)}
     const markup = [
       ...unsafeMetadataReasons(question),
       ...findUnsafeQuestionAnswer(question.answer),
+      ...findUnsafeQuestionAnswer(question.followUps.join('\n')),
     ];
     const uniqueMarkup = [...new Set(markup)];
     if (uniqueMarkup.length > 0) {
@@ -422,12 +433,9 @@ ${JSON.stringify(question, null, 2)}
 
   const updateVisibilityUi = (editing = Boolean(idInput.value)) => {
     const visibility = selectedVisibility();
-    publicConfirmation.hidden = visibility !== 'public';
-    publicConfirmedInput.required = visibility === 'public';
-    if (visibility !== 'public') publicConfirmedInput.checked = false;
     saveButton.textContent = visibility === 'public'
-      ? (editing ? '保存修改' : '保存，选择公开方式')
-      : (editing ? '保存修改' : '保存为我的题目');
+      ? (editing ? '保存并返回我的题目' : '发布到我的题目')
+      : (editing ? '保存草稿修改' : '保存草稿');
   };
 
   const createQuestionCard = (question) => {
@@ -446,8 +454,8 @@ ${JSON.stringify(question, null, 2)}
         'span',
         `question-visibility-badge question-visibility-${question.visibility}`,
         question.visibility === 'public'
-          ? (submittedIssue ? `已公开补充 #${submittedIssue.number}` : '准备公开 · 尚未提交')
-          : '只留给自己',
+          ? (submittedIssue ? `已同步 GitHub #${submittedIssue.number}` : '我的题目 · 当前浏览器')
+          : '未发布草稿',
       ),
     );
     copy.append(meta, makeElement('h3', '', question.title));
@@ -463,6 +471,15 @@ ${JSON.stringify(question, null, 2)}
     );
     card.append(answer);
 
+    if (question.followUps.length > 0) {
+      const followUps = makeElement('div', 'question-draft-card-follow-ups');
+      followUps.append(makeElement('strong', '', `追问记录 · ${question.followUps.length} 条`));
+      const followUpList = document.createElement('ol');
+      question.followUps.forEach((item) => followUpList.append(makeElement('li', '', item)));
+      followUps.append(followUpList);
+      card.append(followUps);
+    }
+
     if (question.tags.length > 0 || question.source) {
       const tags = makeElement('div', 'question-draft-card-tags');
       question.tags.forEach((tag) => tags.append(makeElement('span', 'tag', tag)));
@@ -475,19 +492,21 @@ ${JSON.stringify(question, null, 2)}
       button('编辑', 'edit', 'secondary-button', question.id),
       button('复制题目', 'copy-question', 'text-button', question.id),
     );
-    if (question.answer) actions.append(button('口述练习', 'practice', 'text-button', question.id));
+    if (question.answer || question.followUps.length > 0) {
+      actions.append(button('口述练习', 'practice', 'text-button', question.id));
+    }
     card.append(actions);
 
     const more = makeElement('details', 'question-draft-card-more');
-    more.append(makeElement('summary', '', '正式收录、公开补充与删除'));
+    more.append(makeElement('summary', '', '同步 GitHub 与删除'));
     const note = makeElement(
       'p',
       'question-draft-publish-note',
       question.visibility === 'public'
         ? (submittedIssue
           ? `这道题已经作为公开补充 #${submittedIssue.number} 提交，别人可以看到；它尚未进入正式题库、分类统计和模拟面试。题库主人审核后再决定是否正式收录。`
-          : '这只是准备公开的本机副本，别人还看不到。题库主人请选择正式收录；其他使用者才提交 GitHub 公开补充。')
-        : '这道题当前只留在浏览器。若它以前已提交到 GitHub，改成“只留给自己”不会撤回公开内容，仍需到原 Issue 处理。',
+          : '这道题已经发布到首页“我的题目”，当前只有这个浏览器能看到。同步到 GitHub 并完成网站发布后，其他人才可以看到。')
+        : '这道题当前只留在浏览器。若它以前已提交到 GitHub，改成“只保存草稿”不会撤回公开内容，仍需到原 Issue 处理。',
     );
     const publishActions = makeElement('div', 'question-draft-publish-actions');
     const librarySearchUrl = buildLibrarySearchUrl(question);
@@ -545,6 +564,7 @@ ${JSON.stringify(question, null, 2)}
       const searchable = [
         question.title,
         question.answer,
+        ...question.followUps,
         question.category,
         question.difficulty,
         question.source,
@@ -585,7 +605,6 @@ ${JSON.stringify(question, null, 2)}
     difficultyInput.value = '待评估';
     answerStatusInput.value = 'pending';
     visibilityInputs.forEach((input) => { input.checked = input.value === 'private'; });
-    publicConfirmedInput.checked = false;
     modeBadge.textContent = '新题';
     formTitle.textContent = '记录一道题';
     updateVisibilityUi();
@@ -600,6 +619,7 @@ ${JSON.stringify(question, null, 2)}
   const formValues = () => ({
     title: titleInput.value,
     answer: answerInput.value,
+    followUps: followUpsInput.value,
     answerStatus: answerStatusInput.value,
     visibility: selectedVisibility(),
     category: categoryInput.value || '待整理',
@@ -612,9 +632,9 @@ ${JSON.stringify(question, null, 2)}
     idInput.value = question.id;
     titleInput.value = question.title;
     answerInput.value = question.answer;
+    followUpsInput.value = question.followUps.join('\n');
     answerStatusInput.value = question.answerStatus;
     visibilityInputs.forEach((input) => { input.checked = input.value === question.visibility; });
-    publicConfirmedInput.checked = false;
     selectCategory(question.category);
     difficultyInput.value = question.difficulty;
     tagsInput.value = question.tags.join('，');
@@ -630,7 +650,20 @@ ${JSON.stringify(question, null, 2)}
   const openPractice = (question) => {
     practice.dataset.questionId = question.id;
     practiceTitle.textContent = question.title;
-    practiceAnswer.textContent = question.answer;
+    const practiceParts = [];
+    if (question.answer) {
+      practiceParts.push(makeElement('strong', '', '我的答案'));
+      practiceParts.push(makeElement('p', '', question.answer));
+    } else {
+      practiceParts.push(makeElement('p', 'is-empty', '这道题还没有填写答案。'));
+    }
+    if (question.followUps.length > 0) {
+      practiceParts.push(makeElement('strong', '', '追问记录'));
+      const followUpList = document.createElement('ol');
+      question.followUps.forEach((item) => followUpList.append(makeElement('li', '', item)));
+      practiceParts.push(followUpList);
+    }
+    practiceAnswer.replaceChildren(...practiceParts);
     practiceAnswer.hidden = true;
     practiceReveal.hidden = false;
     practiceReveal.setAttribute('aria-expanded', 'false');
@@ -648,11 +681,6 @@ ${JSON.stringify(question, null, 2)}
 
   const saveQuestion = () => {
     const visibility = selectedVisibility();
-    if (visibility === 'public' && !publicConfirmedInput.checked) {
-      formStatus.textContent = '公开前请先确认已经移除隐私、机密和未授权内容。';
-      publicConfirmedInput.focus();
-      return;
-    }
     if (storageBlocked || !form.reportValidity()) return;
     try {
       const questionId = idInput.value;
@@ -667,28 +695,15 @@ ${JSON.stringify(question, null, 2)}
       const savedQuestion = questionId
         ? next.questions.find((question) => question.id === questionId)
         : next.questions.at(-1);
-      if (commit(next, questionId
-        ? '修改已保存到此浏览器，尚未上传 GitHub。'
-        : '题目已保存到此浏览器，尚未上传 GitHub。')) {
-        const showPublicChoices = savedQuestion?.visibility === 'public' && !questionId;
-        if (showPublicChoices) {
-          formStatus.textContent = repositoryUrl
-            ? '题目已保存并会出现在首页“我的本机题目”。请在下方题目卡选择“题库主人正式收录”或“其他使用者提交公开补充”；当前尚未公开。'
-            : '题目已保存并会出现在首页“我的本机题目”，但当前站点没有连接 GitHub 仓库，尚未公开。';
-        } else if (savedQuestion?.visibility === 'public' && questionId) {
-          const submittedIssue = publicIssuesByTitle.get(publicTitleKey(savedQuestion.title));
-          formStatus.textContent = submittedIssue
-            ? `修改已保存到本机；公开补充 #${submittedIssue.number} 不会被自动改写，请在 GitHub 中单独修改。`
-            : '修改已保存到本机；尚未提交的公开补充可以继续从题目卡发起。';
-        }
+      const savedMessage = visibility === 'public'
+        ? '已发布到首页“我的题目”；当前浏览器立即可见，同步 GitHub 后其他人可见。'
+        : (questionId ? '草稿修改已保存到此浏览器。' : '草稿已保存到此浏览器。');
+      if (commit(next, savedMessage)) {
         resetForm();
-        if (showPublicChoices) {
-          window.requestAnimationFrame(() => {
-            const card = list.querySelector(`[data-question-id="${CSS.escape(savedQuestion.id)}"]`);
-            const details = card?.querySelector('details');
-            if (details) details.open = true;
-            card?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          });
+        if (savedQuestion?.visibility === 'public' && libraryUrl) {
+          const target = new URL(libraryUrl);
+          target.hash = 'my-published-questions';
+          window.location.assign(target.toString());
         }
       }
     } catch (error) {
@@ -794,6 +809,7 @@ ${JSON.stringify(question, null, 2)}
         'copy-codex-publish',
         'copy-answer-prompt',
         'copy-markdown',
+        'download-markdown',
         'copy-contribution',
       ]);
       if (outboundActions.has(action) && !publishSafety(question, status)) return;
@@ -807,7 +823,9 @@ ${JSON.stringify(question, null, 2)}
       if (action === 'copy-contribution') await copyText(contributionText(question));
       const messages = {
         'copy-question': '题目已复制。',
-        'copy-codex-publish': '写入仓库草稿的指令已复制。只有 Codex 打开你的仓库并具有写权限时，才能修改和提交；published: false 不会在阅读网站展示。',
+        'copy-codex-publish': question.visibility === 'public'
+          ? '正式收录指令已复制。Codex 只有打开你的仓库并具有写权限时，才能检查、发布并提交。'
+          : '写入 Private 仓库草稿的指令已复制。Codex 只有打开你的私有仓库并具有写权限时才能提交；题目会保持 published: false。',
         'copy-answer-prompt': '补答指令已复制；生成结果需要你检查后再粘贴回来。',
         'copy-markdown': 'Markdown 已复制；它还没有上传或发布。',
         'download-markdown': 'Markdown 文件已下载；它还没有上传或发布。',

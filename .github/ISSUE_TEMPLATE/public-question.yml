@@ -54,8 +54,17 @@ body:
     id: answer
     attributes:
       label: 你的答案或思路（可选）
-      description: 直接写正常文字即可。不会也没关系，其他人可以在题目下方补充。
+      description: 直接写正常文字即可。不会也没关系，可以先只发布问题，之后再由维护者补充。
       placeholder: 我会先从……回答，然后说明……
+
+  - type: textarea
+    id: followups
+    attributes:
+      label: 现场追问（可选）
+      description: 每行填写一道面试官继续追问的问题，最多 10 条、每条不超过 300 字；不要填写个人隐私、公司机密或受保密约束的内容。
+      placeholder: |
+        如果上下文很长，KV Cache 的显存怎么控制？
+        多轮对话时缓存什么时候需要失效？
 
   - type: textarea
     id: context
