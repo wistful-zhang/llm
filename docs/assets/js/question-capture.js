@@ -17,6 +17,7 @@ import { findSensitivePublicContent } from './public-content-privacy.mjs';
 import {
   buildPublicQuestionsApiUrl,
   normalizePublicQuestions,
+  PUBLIC_QUESTIONS_TIMEOUT_MS,
 } from './question-collaboration-core.mjs';
 import {
   insertLatexTemplate,
@@ -413,7 +414,7 @@ if (root) {
       return undefined;
     }
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    const timeoutId = window.setTimeout(() => controller.abort(), PUBLIC_QUESTIONS_TIMEOUT_MS);
     publicIssuesLoadPromise = fetch(apiUrl, {
       headers: { Accept: 'application/vnd.github+json' },
       signal: controller.signal,

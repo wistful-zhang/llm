@@ -1,6 +1,7 @@
 import {
   buildPublicQuestionsApiUrl,
   normalizePublicQuestions,
+  PUBLIC_QUESTIONS_TIMEOUT_MS,
 } from './question-collaboration-core.mjs';
 
 const root = document.querySelector('[data-public-questions]');
@@ -73,7 +74,7 @@ if (root) {
     if (loadPromise) return loadPromise;
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    const timeoutId = window.setTimeout(() => controller.abort(), PUBLIC_QUESTIONS_TIMEOUT_MS);
     loadPromise = (async () => {
       try {
         const response = await fetch(buildPublicQuestionsApiUrl(repositoryNwo, 30, 1), {
