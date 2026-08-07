@@ -18,6 +18,13 @@ import {
   buildPublicQuestionsApiUrl,
   normalizePublicQuestions,
 } from './question-collaboration-core.mjs';
+import {
+  insertLatexTemplate,
+  kramdownMathToMathJax,
+  parseKramdownMath,
+  validateKramdownMath,
+} from './latex-input-core.mjs';
+import { clearMath, renderMath } from './math-render.mjs';
 
 const root = document.querySelector('[data-question-capture]');
 
@@ -60,6 +67,10 @@ if (root) {
   const idInput = root.querySelector('#question-draft-id');
   const titleInput = root.querySelector('#question-draft-title');
   const answerInput = root.querySelector('#question-draft-answer');
+  const latexInlineButton = root.querySelector('#question-draft-latex-inline');
+  const latexDisplayButton = root.querySelector('#question-draft-latex-display');
+  const latexPreview = root.querySelector('#question-draft-latex-preview');
+  const latexStatus = root.querySelector('#question-draft-latex-status');
   const followUpsInput = root.querySelector('#question-draft-follow-ups');
   const answerStatusInput = root.querySelector('#question-draft-answer-status');
   const visibilityInputs = [...root.querySelectorAll('input[name="visibility"]')];
@@ -113,6 +124,9 @@ if (root) {
   let state = createEmptyQuestionDrafts(repositoryId);
   let publicIssuesByTitle = new Map();
   let publicIssuesLoadPromise = null;
+  let latexPreviewTimer = 0;
+  let latexPreviewRevision = 0;
+  let latexPreviewRenderQueue = Promise.resolve();
 
   const makeElement = (tag, className = '', text = '') => {
     const element = document.createElement(tag);
@@ -127,6 +141,121 @@ if (root) {
     element.dataset.action = action;
     if (questionId) element.dataset.questionId = questionId;
     return element;
+  };
+
+  const setLatexStatus = (message, stateName = '') => {
+    latexStatus.textContent = message;
+    latexStatus.classList.toggle('is-error', stateName === 'error');
+    latexStatus.classList.toggle('is-warning', stateName === 'warning');
+  };
+
+  const latexPreviewItem = (segment, index, renderable = true) => {
+    const item = makeElement('div', 'question-latex-preview-item');
+    item.append(makeElement(
+      'span',
+      'question-latex-preview-kind',
+      `${segment.display ? '独立公式' : '行内公式'} ${index + 1}`,
+    ));
+    const source = makeElement(
+      'code',
+      'question-latex-preview-source',
+      `$$${segment.content}$$`,
+    );
+    item.append(source);
+    if (!renderable) return item;
+    const formula = makeElement('div', 'question-latex-preview-formula');
+    formula.classList.add('is-pending');
+    formula.setAttribute('aria-hidden', 'true');
+    formula.textContent = segment.display
+      ? `\\[${segment.content}\\]`
+      : `\\(${segment.content}\\)`;
+    item.append(formula);
+    return item;
+  };
+
+  const refreshLatexPreview = () => {
+    const revision = ++latexPreviewRevision;
+    window.clearTimeout(latexPreviewTimer);
+    clearMath(latexPreview);
+
+    const parsed = parseKramdownMath(answerInput.value);
+    const errors = validateKramdownMath(answerInput.value);
+    const visibleSegments = parsed.segments.slice(0, 12);
+    if (visibleSegments.length === 0) {
+      latexPreview.replaceChildren(makeElement(
+        'p',
+        'is-empty',
+        errors.length ? '公式源码会原样保留，补完整后再显示排版效果。' : '还没有公式，普通文字仍可直接保存。',
+      ));
+    } else {
+      latexPreview.replaceChildren(...visibleSegments.map((segment, index) => (
+        latexPreviewItem(segment, index, false)
+      )));
+    }
+
+    if (errors.length > 0) {
+      latexPreviewTimer = window.setTimeout(() => {
+        if (revision === latexPreviewRevision) {
+          setLatexStatus(`${errors[0]}。草稿仍可保存，请补完整后再同步 GitHub。`, 'error');
+        }
+      }, 280);
+      return;
+    }
+    if (parsed.segments.length === 0) {
+      setLatexStatus('输入完整公式后，这里会显示排版效果。');
+      return;
+    }
+
+    latexPreviewTimer = window.setTimeout(() => {
+      const renderCurrentPreview = async () => {
+        if (revision !== latexPreviewRevision) return;
+        clearMath(latexPreview);
+        latexPreview.replaceChildren(...visibleSegments.map(latexPreviewItem));
+        const rendered = await renderMath(latexPreview);
+        if (revision !== latexPreviewRevision) return;
+        if (!rendered) {
+          clearMath(latexPreview);
+          latexPreview.replaceChildren(...visibleSegments.map((segment, index) => (
+            latexPreviewItem(segment, index, false)
+          )));
+          setLatexStatus('公式预览暂时不可用，内容已原样保留，仍可保存和导出。', 'warning');
+          return;
+        }
+        latexPreview.querySelectorAll('.question-latex-preview-source')
+          .forEach((source) => { source.hidden = true; });
+        latexPreview.querySelectorAll('.question-latex-preview-formula')
+          .forEach((formula) => {
+            formula.classList.remove('is-pending');
+            formula.removeAttribute('aria-hidden');
+          });
+        const limited = parsed.segments.length > visibleSegments.length
+          ? `；当前显示前 ${visibleSegments.length} 个`
+          : '';
+        setLatexStatus(`已识别 ${parsed.segments.length} 个公式${limited}；保存和导出会保留原始 LaTeX。`);
+      };
+      latexPreviewRenderQueue = latexPreviewRenderQueue.then(
+        renderCurrentPreview,
+        renderCurrentPreview,
+      );
+    }, 280);
+  };
+
+  const insertLatex = (mode) => {
+    const result = insertLatexTemplate(
+      answerInput.value,
+      answerInput.selectionStart,
+      answerInput.selectionEnd,
+      mode,
+    );
+    if (answerInput.maxLength > 0 && result.value.length > answerInput.maxLength) {
+      setLatexStatus(`答案最多 ${answerInput.maxLength} 个字符，请先删减内容再插入公式。`, 'warning');
+      answerInput.focus();
+      return;
+    }
+    answerInput.value = result.value;
+    answerInput.focus();
+    answerInput.setSelectionRange(result.selectionStart, result.selectionEnd);
+    answerInput.dispatchEvent(new Event('input', { bubbles: true }));
   };
 
   const localDate = () => {
@@ -414,6 +543,18 @@ ${JSON.stringify(question, null, 2)}
       status.focus?.();
       return false;
     }
+    const mathFields = [
+      ['题目', question.title],
+      ['答案', question.answer],
+      ...question.followUps.map((followUp, index) => [`第 ${index + 1} 条追问`, followUp]),
+    ];
+    for (const [label, value] of mathFields) {
+      const [mathError] = validateKramdownMath(value);
+      if (!mathError) continue;
+      status.textContent = `已阻止外发操作：${label}：${mathError}。请先编辑补完整；本机草稿不会丢失。`;
+      status.focus?.();
+      return false;
+    }
     const markup = [
       ...unsafeMetadataReasons(question),
       ...findUnsafeQuestionAnswer(question.answer),
@@ -612,6 +753,7 @@ ${JSON.stringify(question, null, 2)}
       element.removeAttribute('aria-invalid');
       element.setCustomValidity?.('');
     });
+    refreshLatexPreview();
     formDirty = false;
     if (focus) titleInput.focus();
   };
@@ -642,25 +784,31 @@ ${JSON.stringify(question, null, 2)}
     modeBadge.textContent = '编辑中';
     formTitle.textContent = '编辑本机题目';
     updateVisibilityUi(true);
+    refreshLatexPreview();
     formDirty = false;
     formTitle.focus({ preventScroll: true });
     form.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
   const openPractice = (question) => {
+    clearMath(practice);
     practice.dataset.questionId = question.id;
-    practiceTitle.textContent = question.title;
+    practiceTitle.textContent = kramdownMathToMathJax(question.title, { forceInline: true });
     const practiceParts = [];
     if (question.answer) {
       practiceParts.push(makeElement('strong', '', '我的答案'));
-      practiceParts.push(makeElement('p', '', question.answer));
+      practiceParts.push(makeElement('p', '', kramdownMathToMathJax(question.answer)));
     } else {
       practiceParts.push(makeElement('p', 'is-empty', '这道题还没有填写答案。'));
     }
     if (question.followUps.length > 0) {
       practiceParts.push(makeElement('strong', '', '追问记录'));
       const followUpList = document.createElement('ol');
-      question.followUps.forEach((item) => followUpList.append(makeElement('li', '', item)));
+      question.followUps.forEach((item) => followUpList.append(makeElement(
+        'li',
+        '',
+        kramdownMathToMathJax(item, { forceInline: true }),
+      )));
       practiceParts.push(followUpList);
     }
     practiceAnswer.replaceChildren(...practiceParts);
@@ -670,6 +818,9 @@ ${JSON.stringify(question, null, 2)}
     practice.hidden = false;
     practiceTitle.focus({ preventScroll: true });
     practice.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    const practiceMathIsValid = [question.title, question.answer, ...question.followUps]
+      .every((value) => validateKramdownMath(value).length === 0);
+    if (practiceMathIsValid) void renderMath(practice);
   };
 
   const closePractice = () => {
@@ -731,7 +882,11 @@ ${JSON.stringify(question, null, 2)}
     formDirty = true;
     event.target.removeAttribute?.('aria-invalid');
     event.target.setCustomValidity?.('');
+    if (event.target === answerInput) refreshLatexPreview();
   });
+
+  latexInlineButton.addEventListener('click', () => insertLatex('inline'));
+  latexDisplayButton.addEventListener('click', () => insertLatex('display'));
 
   visibilityInputs.forEach((input) => {
     input.addEventListener('change', () => updateVisibilityUi());

@@ -2009,6 +2009,55 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .question-draft-field :is(input, select, textarea):hover { border-color: var(--accent-border); }
 .question-draft-field :is(input, select, textarea):focus { border-color: var(--accent); outline: 0; box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .09); }
 .question-draft-field :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 4px rgba(180, 35, 24, .08); }
+.question-latex-assist {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+}
+.question-latex-heading, .question-latex-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.question-latex-heading > div:first-child { display: grid; gap: 2px; }
+.question-latex-heading strong, .question-latex-preview-heading strong { font-size: .9rem; }
+.question-latex-heading span, .question-latex-preview-heading span { color: var(--muted); font-size: .78rem; line-height: 1.5; }
+.question-latex-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.question-latex-actions button { min-height: 44px; margin: 0; padding-inline: 12px; }
+.question-latex-note { margin: 11px 0 0; color: #475467; font-size: .82rem; line-height: 1.6; }
+.question-draft-field small code, .question-latex-note code, .question-latex-examples code {
+  padding: 2px 5px;
+  border: 1px solid #d0d5dd;
+  border-radius: 3px;
+  color: var(--ink);
+  background: var(--white);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: .78rem;
+}
+.question-latex-help { margin-top: 10px; }
+.question-latex-help summary { display: flex; width: max-content; max-width: 100%; min-height: 44px; color: var(--accent-strong); cursor: pointer; font-size: .82rem; font-weight: 700; align-items: center; }
+.question-latex-examples { display: grid; margin-top: 10px; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 10px; }
+.question-latex-examples > div { min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.question-latex-examples strong { display: block; margin-bottom: 7px; font-size: .78rem; }
+.question-latex-examples pre { max-width: 100%; margin: 0; overflow-x: auto; white-space: pre; }
+.question-latex-examples pre code { display: block; width: max-content; min-width: 100%; padding: 8px 9px; line-height: 1.55; }
+.question-latex-preview { margin-top: 13px; padding: 13px 14px; border: 1px solid var(--accent-border); border-left: 3px solid var(--accent); border-radius: 4px; background: var(--white); }
+.question-latex-preview-heading { align-items: baseline; }
+.question-latex-preview-heading span.is-error { color: var(--red); font-weight: 650; }
+.question-latex-preview-heading span.is-warning { color: var(--orange); font-weight: 650; }
+.question-latex-preview-list { display: grid; min-width: 0; margin-top: 10px; gap: 9px; }
+.question-latex-preview-list > .is-empty { margin: 0; color: var(--muted); font-size: .82rem; }
+.question-latex-preview-item { display: grid; min-width: 0; padding: 10px 11px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); gap: 6px; }
+.question-latex-preview-kind { color: var(--muted); font-size: .7rem; font-weight: 750; letter-spacing: .04em; }
+.question-latex-preview-source { display: block; max-width: 100%; overflow-x: auto; color: #475467; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: .78rem; line-height: 1.55; white-space: pre-wrap; }
+.question-latex-preview-source[hidden] { display: none; }
+.question-latex-preview-formula { min-width: 0; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+.question-latex-preview-formula.is-pending { height: 0; visibility: hidden; overflow: hidden; }
+.question-latex-preview-formula mjx-container[jax="CHTML"] { max-width: 100%; margin: 0 !important; color: var(--ink); font-size: 1.02em; }
+.question-latex-preview-formula mjx-container[jax="CHTML"][display="true"] { padding-block: 4px; }
 .question-draft-form-actions, .capture-backup-actions, .capture-alert-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .question-draft-form-actions { margin-top: 22px; }
 .question-draft-form-actions > *, .capture-backup-actions > *, .capture-alert-actions > * { margin: 0; }
@@ -2045,6 +2094,8 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .capture-practice-answer > :last-child { margin-bottom: 0; }
 .capture-practice-answer strong { display: block; margin: 18px 0 6px; }
 .capture-practice-answer ol { margin: 6px 0 0; padding-left: 1.35rem; white-space: normal; }
+.capture-practice :is(h2, .capture-practice-answer) mjx-container[jax="CHTML"] { color: var(--ink); }
+.capture-practice-answer mjx-container[jax="CHTML"][display="true"] { max-width: 100%; margin-block: 18px !important; overflow-x: auto; overflow-y: hidden; }
 .capture-practice-answer:focus-visible { outline: 3px solid rgba(var(--accent-rgb), .24); outline-offset: 3px; }
 
 .question-draft-library { margin-top: 56px; }
@@ -2253,6 +2304,11 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
   .question-draft-grid { grid-template-columns: 1fr; }
   .question-draft-field-wide { grid-column: auto; }
   .question-visibility-options { grid-template-columns: 1fr; }
+  .question-latex-heading { flex-direction: column; }
+  .question-latex-actions { width: 100%; justify-content: stretch; }
+  .question-latex-actions button { flex: 1 1 150px; }
+  .question-latex-examples { grid-template-columns: 1fr; }
+  .question-latex-preview-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
   .capture-next-steps { padding: 20px 18px; }
   .capture-storage-alert, .capture-backup { align-items: stretch; flex-direction: column; }
   .capture-section-heading { align-items: flex-start; flex-direction: column; gap: 7px; }

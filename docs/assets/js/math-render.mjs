@@ -3,7 +3,9 @@ import {
   MATHJAX_SOURCE,
   containsRenderableMath,
   createMathJaxConfig,
+  isSkippedMathTag,
 } from './math-render-core.mjs';
+import { kramdownMathToMathJax } from './latex-input-core.mjs';
 
 let loaderPromise = null;
 let failureReported = false;
@@ -36,29 +38,37 @@ export function loadMathJax() {
 
   loaderPromise = new Promise((resolve) => {
     let script = document.querySelector('script[data-mathjax-loader]');
+    let timeoutId = 0;
+    let settled = false;
+
+    const settle = (value, state, error = null) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      if (script) script.dataset.mathjaxState = state;
+      if (error) reportFailureOnce(error);
+      resolve(value);
+    };
 
     const finish = async () => {
       try {
         const mathJax = await waitForStartup();
         if (!mathJax) throw new Error('MathJax loaded without the typeset API.');
-        script.dataset.mathjaxState = 'ready';
-        resolve(mathJax);
+        settle(mathJax, 'ready');
       } catch (error) {
-        script.dataset.mathjaxState = 'failed';
-        reportFailureOnce(error);
-        resolve(null);
+        settle(null, 'failed', error);
       }
     };
 
     const fail = () => {
-      script.dataset.mathjaxState = 'failed';
-      reportFailureOnce(new Error('Unable to load MathJax from the CDN.'));
-      resolve(null);
+      settle(null, 'failed', new Error('Unable to load MathJax from the CDN.'));
     };
+
+    timeoutId = window.setTimeout(fail, 15_000);
 
     if (script) {
       if (script.dataset.mathjaxState === 'failed') {
-        resolve(null);
+        settle(null, 'failed');
       } else if (readyMathJax()) {
         void finish();
       } else {
@@ -95,6 +105,28 @@ export function clearMath(root) {
     reportFailureOnce(error);
     return false;
   }
+}
+
+export function prepareKramdownMath(root, options = {}) {
+  if (!root) return false;
+  let changed = false;
+
+  const visit = (node) => {
+    if (node.nodeType === 3) {
+      const current = node.nodeValue || '';
+      const next = kramdownMathToMathJax(current, options);
+      if (next !== current) {
+        node.nodeValue = next;
+        changed = true;
+      }
+      return;
+    }
+    if (node.tagName && isSkippedMathTag(node.tagName)) return;
+    Array.from(node.childNodes || []).forEach(visit);
+  };
+
+  visit(root);
+  return changed;
 }
 
 export async function renderMath(root) {
