@@ -57,7 +57,7 @@ test('评论实现保留但站点默认关闭，题目页只在开关开启时�
 
   const csp = defaultLayout.match(/Content-Security-Policy" content="([^"]+)"/)?.[1] || '';
   assert.match(csp, /frame-src \{% if comments_enabled and comments_api_url != empty %\}https:\/\/challenges\.cloudflare\.com\{% else %\}'none'/);
-  assert.match(csp, /connect-src 'self' https:\/\/api\.github\.com\{% if comments_enabled and comments_api_url != empty %\} {{ comments_api_url \| escape }}/);
+  assert.match(csp, /connect-src 'self' https:\/\/api\.github\.com https:\/\/cdn\.jsdelivr\.net\{% if comments_enabled and comments_api_url != empty %\} {{ comments_api_url \| escape }}/);
   assert.doesNotMatch(csp, /utteranc\.es|frame-src https:;|connect-src[^;]+\shttps:\s/);
 });
 

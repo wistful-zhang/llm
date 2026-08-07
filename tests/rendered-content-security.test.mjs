@@ -40,7 +40,8 @@ test('普通站内链接、HTTPS 资料和图片可以通过', () => {
   assert.deepEqual(validateRenderedPublicArticleHtml(html, 'q.html'), []);
 });
 
-test('页面 CSP 允许 MathJax 使用同源 Blob Worker', () => {
+test('页面 CSP 允许 MathJax 使用 Blob Worker 并从固定 CDN 读取辅助数据', () => {
   const layout = readFileSync(new URL('../docs/_layouts/default.html', import.meta.url), 'utf8');
   assert.match(layout, /worker-src 'self' blob:/);
+  assert.match(layout, /connect-src 'self' https:\/\/api\.github\.com https:\/\/cdn\.jsdelivr\.net/);
 });
