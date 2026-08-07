@@ -188,6 +188,7 @@ test('新增题目只选择一次去向，发布后立即进入我的题目且�
   assert.match(publicOption, /\bvalue="public"/);
   assert.doesNotMatch(publicOption, /\bchecked\b/);
   assert.doesNotMatch(page, /question-public-confirmed|question-public-confirmation/);
+  assert.match(page, /<legend>保存后放在哪里？<\/legend>/);
   assert.match(page, /只保存草稿[\s\S]*当前浏览器/);
   assert.match(page, /发布到我的题目[\s\S]*同步 GitHub 后，其他人才能看到/);
 
@@ -199,6 +200,7 @@ test('新增题目只选择一次去向，发布后立即进入我的题目且�
   assert.match(script, /editing \? '保存并返回我的题目' : '发布到我的题目'/);
   assert.match(script, /target\.hash = 'my-published-questions'/);
   assert.match(script, /window\.location\.assign\(target\.toString\(\)\)/);
+  assert.match(script, /savedQuestion\?\.visibility === 'public' && libraryUrl && !hasUnpersistedState/);
   assert.doesNotMatch(script, /publicConfirmation|publicConfirmedInput|showPublicChoices/);
 });
 
@@ -299,7 +301,7 @@ test('发布立即进入我的题目，GitHub 同步作为后续操作且分类�
   assert.doesNotMatch(issueLaunchBlock[0], /params\.set\('(?:category|difficulty)'/);
 
   assert.match(script, /question\.visibility === 'public'[\s\S]*buildIssueLaunch\(question\)/);
-  assert.match(script, /savedQuestion\?\.visibility === 'public' && libraryUrl/);
+  assert.match(script, /savedQuestion\?\.visibility === 'public' && libraryUrl && !hasUnpersistedState/);
   assert.match(script, /target\.hash = 'my-published-questions'/);
   assert.match(script, /追问记录（每行一条）：/);
   assert.match(script, /question\.followUps\.join\('\\n'\)/);
