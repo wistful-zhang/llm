@@ -700,7 +700,8 @@ ${JSON.stringify(question, null, 2)}
         : (questionId ? '草稿修改已保存到此浏览器。' : '草稿已保存到此浏览器。');
       if (commit(next, savedMessage)) {
         resetForm();
-        if (savedQuestion?.visibility === 'public' && libraryUrl) {
+        // 只有 localStorage 已确认写入后才离开本页；内存临时态必须留在这里供用户导出救援。
+        if (savedQuestion?.visibility === 'public' && libraryUrl && !hasUnpersistedState) {
           const target = new URL(libraryUrl);
           target.hash = 'my-published-questions';
           window.location.assign(target.toString());
