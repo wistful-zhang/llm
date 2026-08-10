@@ -1,4 +1,5 @@
 import {
+  buildPublicQuestionDetailUrl,
   buildPublicQuestionsApiUrl,
   normalizePublicQuestions,
   PUBLIC_QUESTIONS_PAGE_SIZE,
@@ -17,11 +18,12 @@ import { validateKramdownMath } from './latex-input-core.mjs';
 import { clearMath, prepareKramdownMath, renderMath } from './math-render.mjs';
 
 const root = document.querySelector('[data-public-questions]');
+const genericAuthors = new Set(['匿名用户', '匿名发布者']);
 
 if (root) {
   const apiBaseUrl = root.dataset.questionsApiUrl || '';
   const repositoryId = root.dataset.repositoryId || '';
-  const captureUrl = root.dataset.captureUrl || '/capture/';
+  const questionDetailUrl = root.dataset.questionDetailUrl || '/shared-question/';
   const status = root.querySelector('[data-public-questions-status]');
   const list = root.querySelector('[data-public-questions-list]');
   const fallback = root.querySelector('[data-public-questions-fallback]');
@@ -43,22 +45,17 @@ if (root) {
 
   const prepareQuestionMath = (card) => {
     prepareSafeMath(card.querySelector('h2'), { forceInline: true });
-    card.querySelectorAll('.public-question-answer')
-      .forEach((answer) => prepareSafeMath(answer));
-    card.querySelectorAll('.public-question-details-content li')
-      .forEach((followUp) => prepareSafeMath(followUp, { forceInline: true }));
   };
 
   const setStatus = (message) => {
     if (status) status.textContent = message;
   };
 
-  const editUrl = (localId) => {
-    const url = new URL(captureUrl, window.location.href);
-    url.searchParams.set('edit', localId);
-    url.hash = 'question-draft-form';
-    return url.toString();
-  };
+  const detailUrl = (questionId) => buildPublicQuestionDetailUrl(
+    questionDetailUrl,
+    questionId,
+    window.location.href,
+  );
 
   const ownedQuestions = () => {
     try {
@@ -86,7 +83,8 @@ if (root) {
   };
 
   const createQuestion = (question, ownedByRemoteId) => {
-    const card = makeElement('article', 'question-card question-card-public');
+    const card = makeElement('a', 'question-card question-card-public');
+    card.href = detailUrl(question.id);
     card.dataset.category = question.category || '待整理';
     card.dataset.difficulty = question.difficulty || '待评估';
     card.dataset.verified = 'false';
@@ -114,9 +112,11 @@ if (root) {
       makeElement('span', '', question.category === '待整理' || !question.category
         ? '未分类'
         : question.category),
-      makeElement('span', 'question-visibility-badge question-visibility-public', '公开'),
+      makeElement('span', 'question-visibility-badge question-visibility-public', '大家发布'),
     );
-    if (question.author) meta.append(makeElement('span', 'public-question-author', question.author));
+    if (question.author && !genericAuthors.has(question.author)) {
+      meta.append(makeElement('span', 'public-question-author', question.author));
+    }
     if (question.difficulty && question.difficulty !== '待评估') {
       meta.insertBefore(
         makeElement('span', `difficulty difficulty-${question.difficulty}`, question.difficulty),
@@ -124,12 +124,12 @@ if (root) {
       );
     }
     if (question.answerStatus !== 'complete') {
-      meta.append(makeElement('span', 'answer-state-badge', '待解答'));
+      meta.append(makeElement('span', 'answer-state-badge', question.answer ? '思路未完成' : '待解答'));
     } else {
-      meta.append(makeElement('span', 'review-pending-badge', '参考答案 · 用户提供'));
+      meta.append(makeElement('span', 'review-pending-badge', '网友答法 · 未核验'));
     }
     if (question.followUps.length > 0) {
-      meta.append(makeElement('span', '', `${question.followUps.length} 个追问`));
+      meta.append(makeElement('span', '', `${question.followUps.length} 条追问`));
     }
     body.append(meta, makeElement('h2', '', question.title));
 
@@ -137,28 +137,11 @@ if (root) {
     question.tags.forEach((tag) => tags.append(makeElement('span', 'tag', tag)));
     body.append(tags);
 
-    if (question.answer || question.followUps.length > 0 || question.source) {
-      const details = makeElement('details', 'public-question-details');
-      details.append(makeElement('summary', '', question.answer ? '查看参考答案' : '查看题目补充'));
-      const content = makeElement('div', 'public-question-details-content');
-      if (question.answer) content.append(makeElement('p', 'public-question-answer', question.answer));
-      if (question.followUps.length > 0) {
-        content.append(makeElement('strong', '', '追问'));
-        const followUps = document.createElement('ol');
-        question.followUps.forEach((item) => followUps.append(makeElement('li', '', item)));
-        content.append(followUps);
-      }
-      if (question.source) content.append(makeElement('small', '', `来源：${question.source}`));
-      details.append(content);
-      body.append(details);
-    }
-
     const owned = ownedByRemoteId.byRemoteId.get(question.id)
       || (question.localId ? ownedByRemoteId.byLocalId.get(question.localId) : null);
-    const action = owned
-      ? makeElement('a', 'card-arrow public-question-edit', '编辑 →')
-      : makeElement('span', 'card-arrow', '公开');
-    if (owned) action.href = editUrl(owned.id);
+    if (owned) meta.append(makeElement('span', 'question-owner-badge', '我发布的'));
+    const action = makeElement('span', 'card-arrow', '↗');
+    action.setAttribute('aria-hidden', 'true');
     card.append(body, action);
     prepareQuestionMath(card);
     return card;

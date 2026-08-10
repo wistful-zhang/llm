@@ -16,6 +16,7 @@ import {
 import { findSensitivePublicContent } from './public-content-privacy.mjs';
 import {
   buildPublicQuestionApiUrl,
+  buildPublicQuestionDetailUrl,
   buildPublicQuestionsCollectionApiUrl,
   buildQuestionsConfigApiUrl,
   normalizePublicQuestionResponse,
@@ -50,6 +51,7 @@ if (root) {
   const storageKey = questionDraftsStorageKey(repositoryId);
   const publicationTokensKey = questionPublicationTokensStorageKey(repositoryId);
   const questionsApiUrl = root.dataset.questionsApiUrl || '';
+  const questionDetailUrl = root.dataset.questionDetailUrl || '/shared-question/';
   const libraryUrl = (() => {
     try {
       if (!root.dataset.libraryUrl) return '';
@@ -143,6 +145,12 @@ if (root) {
     if (text) element.textContent = text;
     return element;
   };
+
+  const publicQuestionDetailUrl = (questionId) => buildPublicQuestionDetailUrl(
+    questionDetailUrl,
+    questionId,
+    window.location.href,
+  );
 
   const button = (label, action, className = 'text-button', questionId = '') => {
     const element = makeElement('button', className, label);
@@ -702,6 +710,11 @@ if (root) {
       button('编辑', 'edit', 'secondary-button', question.id),
       button('复制题目', 'copy-question', 'text-button', question.id),
     );
+    if (question.remoteId) {
+      const viewPublicPage = makeElement('a', 'text-link', '查看公开页面 ↗');
+      viewPublicPage.href = publicQuestionDetailUrl(question.remoteId);
+      actions.append(viewPublicPage);
+    }
     if (question.answer || question.followUps.length > 0) {
       actions.append(button('口述练习', 'practice', 'text-button', question.id));
     }

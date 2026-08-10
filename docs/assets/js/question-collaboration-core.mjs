@@ -98,6 +98,23 @@ export const buildPublicQuestionApiUrl = (apiBaseUrl, questionId) => {
   return new URL(`/v1/questions/${encodeURIComponent(id)}`, origin).toString();
 };
 
+export const buildPublicQuestionDetailUrl = (detailPageUrl, questionId, baseUrl) => {
+  const id = String(questionId || '').trim().toLowerCase();
+  if (!UUID_PATTERN.test(id)) throw new TypeError('公开题编号无效');
+
+  const fallbackBase = typeof window !== 'undefined' ? window.location.href : undefined;
+  const resolvedBase = baseUrl || fallbackBase;
+  const url = new URL(detailPageUrl, resolvedBase);
+  if (!['http:', 'https:'].includes(url.protocol)) throw new TypeError('公开题详情页地址无效');
+  if (resolvedBase && url.origin !== new URL(resolvedBase).origin) {
+    throw new TypeError('公开题详情页必须与当前网站同源');
+  }
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('id', id);
+  return url.toString();
+};
+
 export const buildQuestionsConfigApiUrl = (apiBaseUrl) => {
   const origin = normalizeQuestionsApiBaseUrl(apiBaseUrl, {
     allowLocalhost: typeof location !== 'undefined'
@@ -134,7 +151,7 @@ const normalizeQuestion = (candidate) => {
     updatedAt: typeof candidate.updatedAt === 'string' ? candidate.updatedAt : '',
     status: 'visible',
     verified: false,
-    studyTier: 'archive',
+    studyTier: 'unclassified',
   };
 };
 

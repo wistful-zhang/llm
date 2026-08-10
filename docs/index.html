@@ -75,7 +75,8 @@ title: 题库
          data-public-questions
          data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
          data-questions-api-url="{{ site.data.question_runtime.api_url | default: '' | escape }}"
-         data-capture-url="{{ '/capture/' | relative_url }}">
+         data-capture-url="{{ '/capture/' | relative_url }}"
+         data-question-detail-url="{{ '/shared-question/' | relative_url }}">
   <section class="study-tier-intro" aria-labelledby="study-tier-intro-title">
     <div>
       <span class="eyebrow">一个题库 · 两种可见性</span>

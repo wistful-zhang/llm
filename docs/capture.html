@@ -9,7 +9,8 @@ permalink: /capture/
   data-question-capture
   data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
   data-questions-api-url="{{ site.data.question_runtime.api_url | default: '' | escape }}"
-  data-library-url="{{ '/' | relative_url }}">
+  data-library-url="{{ '/' | relative_url }}"
+  data-question-detail-url="{{ '/shared-question/' | relative_url }}">
   <header class="capture-intro">
     <span class="status-badge">不进后台 · 不需要 Markdown</span>
     <h1>增加一道题，只选公开或私人</h1>

@@ -155,8 +155,11 @@ test('仓库题、本机题和共享公开题共用一个题目列表与同类�
   assert.match(localScript, /url\.searchParams\.set\('edit', questionId\)/);
   assert.match(localScript, /url\.hash = 'question-draft-form'/);
 
-  assert.match(publicScript, /makeElement\('article', 'question-card question-card-public'\)/);
-  assert.match(publicScript, /question-visibility-public', '公开'/);
+  assert.match(publicScript, /makeElement\('a', 'question-card question-card-public'\)/);
+  assert.match(publicScript, /card\.href = detailUrl\(question\.id\)/);
+  assert.match(publicScript, /buildPublicQuestionDetailUrl/);
+  assert.doesNotMatch(publicScript, /makeElement\('details'|public-question-details/);
+  assert.match(publicScript, /question-visibility-public', '大家发布'/);
   assert.match(publicScript, /if \(question\.localId\) card\.dataset\.localId = question\.localId/);
   assert.match(publicScript, /remoteIds: questions\.map\(\(question\) => question\.id\)/);
   assert.match(publicScript, /localIds: questions\.map\(\(question\) => question\.localId\)\.filter\(Boolean\)/);
