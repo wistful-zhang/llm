@@ -105,7 +105,7 @@ test('快速记题页提供无需 Markdown 的完整表单，并允许只保存�
   assert.doesNotMatch(followUps, /\bname=/);
   assert.match(followUps, /\bmaxlength="3200"/);
   assert.doesNotMatch(followUps, /\brequired\b/);
-  assert.match(page, /追问 \/ 补充问题[\s\S]*最多 10 条，每条最多 300 字/);
+  assert.match(page, /常见追问[\s\S]*问题？答：简答[\s\S]*回答另起一行时请用“答：”开头/);
   assert.match(script, /const followUpsInput = root\.querySelector\('#question-draft-follow-ups'\)/);
   assert.match(script, /followUps:\s*followUpsInput\.value/);
   assert.match(script, /followUpsInput\.value = question\.followUps\.join\('\\n'\)/);
@@ -168,7 +168,7 @@ test('正式题目、本机口述练习和共享公开题详情都会安全渲�
   assert.match(questionMath, /void renderMath\(article\)/);
   assert.match(questionLayout, /\{% endif %\}\s*<script type="module" src="\{\{ '\/assets\/js\/question-math\.js'/);
   assert.match(script, /kramdownMathToMathJax\(question\.answer\)/);
-  assert.match(script, /kramdownMathToMathJax\(item, \{ forceInline: true \}\)/);
+  assert.match(script, /\(value\) => kramdownMathToMathJax\(value, \{ forceInline: true \}\)/);
   assert.match(script, /void renderMath\(practice\)/);
   assert.match(publicQuestionsScript, /import \{ validateKramdownMath \} from '\.\/latex-input-core\.mjs'/);
   assert.match(publicQuestionsScript, /import \{ clearMath, prepareKramdownMath, renderMath \} from '\.\/math-render\.mjs'/);
@@ -309,7 +309,9 @@ test('渲染本机题目只使用安全 DOM API，并在外发操作前检查隐
   assert.match(script, /findSensitivePublicContent\(\s*question\.title,\s*question\.answer,\s*question\.followUps,\s*question\.source,\s*question\.tags,?\s*\)/);
   assert.match(script, /findUnsafeQuestionAnswer\(question\.followUps\.join\('\\n'\)\)/);
   assert.match(script, /\.\.\.question\.followUps,[\s\S]*question\.category/);
-  assert.match(script, /追问记录 · \$\{question\.followUps\.length\} 条/);
+  assert.match(script, /groupFollowUpsForDisplay\(question\.followUps\)/);
+  assert.match(script, /常见追问 · \$\{followUpGroups\.length\} 条/);
+  assert.match(script, /makeFollowUpItem/);
   assert.match(script, /practiceAnswer\.replaceChildren\(\.\.\.practiceParts\)/);
   assert.match(stylesheet, /\.question-draft-card-follow-ups/);
   assert.match(script, /原始 HTML/);

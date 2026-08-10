@@ -86,8 +86,13 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.doesNotMatch(page, /data-public-question="true"/);
   assert.doesNotMatch(page, /data-shared-question-title tabindex/);
   assert.match(page, /data-shared-question-owner-actions hidden/);
-  assert.match(page, /data-shared-question-answer-title>面试时怎么答/);
+  assert.match(page, /data-shared-question-answer-title hidden>面试时怎么答/);
   assert.match(page, /data-shared-question-answer-content/);
+  assert.match(
+    page,
+    /data-shared-question-unanswered hidden>[\s\S]*?data-question-answer hidden>[\s\S]*?data-shared-question-answer-block hidden>[\s\S]*?data-shared-question-followups[\s\S]*?>常见追问<[\s\S]*?data-shared-question-followup-list/,
+  );
+  assert.doesNotMatch(page, /class="prose question-followups"|>现场追问</);
   assert.match(page, /需要开启 JavaScript 才能读取这道公开题/);
   assert.match(page, /assets\/js\/shared-question\.js/);
   assert.match(page, /assets\/js\/question-coach\.js/);
@@ -97,7 +102,6 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
     'question-header',
     'question-study-tier',
     'question-provenance',
-    'question-followups',
     'answer-coach',
     'prose question-answer',
     'answer-edit-bar',
@@ -123,6 +127,16 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(script, /editLink\.href = editUrl\(owned\.id\)/);
   assert.match(script, /网友答法 · 未核验/);
   assert.match(script, /面试场景（用户填写）：/);
+  assert.match(script, /groupFollowUpsForDisplay\(question\.followUps\)/);
+  assert.match(script, /makeElement\('strong', '', question\)/);
+  assert.match(script, /document\.createTextNode\(` \$\{followUpAnswer\}`\)/);
+  assert.match(script, /const hasFollowUps = followUpGroups\.length > 0/);
+  assert.match(script, /answerContent\?\.closest\('blockquote'\)/);
+  assert.match(script, /followUps\.hidden = !hasFollowUps/);
+  assert.match(script, /answerTitle\.hidden = !hasAnswer/);
+  assert.match(script, /answerBlock\.hidden = !hasAnswer/);
+  assert.match(script, /answer\.hidden = !hasAnswer && !hasFollowUps/);
+  assert.match(script, /unanswered\.hidden = hasAnswer/);
   assert.match(script, /\.textContent\s*=/);
   assert.match(script, /\.replaceChildren\(/);
   assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
@@ -136,4 +150,5 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(share, /const currentUrl = \(\)/);
   assert.match(stylesheet, /\.shared-question-state \{/);
   assert.match(stylesheet, /\.shared-question-answer-text \{[^}]*white-space: pre-wrap/);
+  assert.match(stylesheet, /\.shared-question-followups li \{[^}]*overflow-wrap: anywhere/);
 });

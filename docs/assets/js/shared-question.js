@@ -13,6 +13,7 @@ import {
   parseQuestionPublicationTokens,
   questionPublicationTokensStorageKey,
 } from './question-publication-tokens.mjs';
+import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
 import { validateKramdownMath } from './latex-input-core.mjs';
 import { prepareKramdownMath, renderMath } from './math-render.mjs';
 
@@ -44,6 +45,8 @@ if (root) {
   const answer = root.querySelector('[data-question-answer]');
   const answerTitle = root.querySelector('[data-shared-question-answer-title]');
   const answerContent = root.querySelector('[data-shared-question-answer-content]');
+  const answerBlock = root.querySelector('[data-shared-question-answer-block]')
+    || answerContent?.closest('blockquote');
   const unanswered = root.querySelector('[data-shared-question-unanswered]');
   const ownerActions = root.querySelector('[data-shared-question-owner-actions]');
   const editLink = root.querySelector('[data-shared-question-edit]');
@@ -56,6 +59,13 @@ if (root) {
     if (className) element.className = className;
     if (text) element.textContent = text;
     return element;
+  };
+
+  const makeFollowUpItem = ({ question, answer: followUpAnswer }) => {
+    const item = document.createElement('li');
+    item.append(makeElement('strong', '', question));
+    if (followUpAnswer) item.append(document.createTextNode(` ${followUpAnswer}`));
+    return item;
   };
 
   const prepareSafeMath = (element, options = {}) => {
@@ -154,13 +164,17 @@ if (root) {
       return item;
     }));
 
-    followUpList.replaceChildren(...question.followUps.map((item) => makeElement('li', '', item)));
-    followUps.hidden = question.followUps.length === 0;
+    const followUpGroups = groupFollowUpsForDisplay(question.followUps);
+    const hasFollowUps = followUpGroups.length > 0;
+    followUpList.replaceChildren(...followUpGroups.map(makeFollowUpItem));
+    followUps.hidden = !hasFollowUps;
 
     const hasAnswer = Boolean(question.answer);
     answerTitle.textContent = question.answerStatus === 'complete' ? '面试时怎么答' : '当前思路';
     answerContent.textContent = question.answer;
-    answer.hidden = !hasAnswer;
+    answerTitle.hidden = !hasAnswer;
+    answerBlock.hidden = !hasAnswer;
+    answer.hidden = !hasAnswer && !hasFollowUps;
     coach.hidden = !hasAnswer || question.answerStatus !== 'complete';
     draftNote.hidden = !hasAnswer || question.answerStatus === 'complete';
     unanswered.hidden = hasAnswer;
@@ -182,7 +196,7 @@ if (root) {
     followUpList.querySelectorAll('li').forEach((item) => {
       if (prepareSafeMath(item, { forceInline: true })) mathRoots.push(item);
     });
-    if (prepareSafeMath(answerContent)) mathRoots.push(answerContent);
+    if (hasAnswer && prepareSafeMath(answerContent)) mathRoots.push(answerContent);
 
     loading.hidden = true;
     errorPanel.hidden = true;

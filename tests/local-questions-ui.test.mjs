@@ -154,6 +154,7 @@ test('仓库题、本机题和共享公开题共用一个题目列表与同类�
   assert.match(localScript, /context\.list\.replaceChildren/);
   assert.match(localScript, /url\.searchParams\.set\('edit', questionId\)/);
   assert.match(localScript, /url\.hash = 'question-draft-form'/);
+  assert.match(localScript, /groupFollowUpsForDisplay\(question\.followUps\)\.length/);
 
   assert.match(publicScript, /makeElement\('a', 'question-card question-card-public'\)/);
   assert.match(publicScript, /card\.href = detailUrl\(question\.id\)/);
@@ -166,6 +167,8 @@ test('仓库题、本机题和共享公开题共用一个题目列表与同类�
   assert.match(publicScript, /const cards = questions\.map\(\(question\) => createQuestion\(question, ownedByRemoteId\)\)/);
   assert.match(publicScript, /list\.replaceChildren\(\.\.\.cards\)/);
   assert.match(publicScript, /getRecoverableQuestionPublicationToken\(publicationTokens/);
+  assert.match(publicScript, /const followUpCount = groupFollowUpsForDisplay\(question\.followUps\)\.length/);
+  assert.match(publicScript, /`\$\{followUpCount\} 条追问`/);
 
   assert.match(searchScript, /questionList \? \[\.\.\.questionList\.querySelectorAll\('\.question-card'\)\] : \[\]/);
   assert.match(searchScript, /document\.addEventListener\('question-library:changed'/);
