@@ -42,11 +42,6 @@ permalink: /shared-question/
       <div class="tag-list" data-shared-question-tags role="list" aria-label="标签"></div>
     </header>
 
-    <section class="prose question-followups" data-shared-question-followups aria-labelledby="shared-question-followups-title" hidden>
-      <h2 id="shared-question-followups-title">现场追问</h2>
-      <ol data-shared-question-followup-list></ol>
-    </section>
-
     <section class="answer-coach" data-question-coach aria-labelledby="shared-answer-coach-title" hidden>
       <div class="answer-coach-copy">
         <span class="answer-coach-kicker">口述训练</span>
@@ -67,16 +62,20 @@ permalink: /shared-question/
       <p>下面是发布者目前记录的思路，还没有标记为完整答案。</p>
     </aside>
 
-    <div class="prose question-answer shared-question-answer" data-question-answer hidden>
-      <h2 data-shared-question-answer-title>面试时怎么答</h2>
-      <blockquote><p class="shared-question-answer-text" data-shared-question-answer-content></p></blockquote>
-    </div>
-
     <section class="unanswered-panel" data-shared-question-unanswered hidden>
       <span class="answer-state-badge">待解答</span>
-      <h2>这道题目前只发布了问题</h2>
-      <p>发布者可以稍后补充答案；你也可以先自己口述一遍，再记录自己的解法。</p>
+      <h2>这道题目前还没有填写主答案</h2>
+      <p>发布者可以稍后补充主答案；你也可以先自己口述一遍，再记录自己的解法。</p>
     </section>
+
+    <div class="prose question-answer shared-question-answer" data-question-answer hidden>
+      <h2 data-shared-question-answer-title hidden>面试时怎么答</h2>
+      <blockquote data-shared-question-answer-block hidden><p class="shared-question-answer-text" data-shared-question-answer-content></p></blockquote>
+      <section class="shared-question-followups" data-shared-question-followups aria-labelledby="shared-question-followups-title" hidden>
+        <h2 id="shared-question-followups-title">常见追问</h2>
+        <ol data-shared-question-followup-list></ol>
+      </section>
+    </div>
 
     <aside class="answer-edit-bar" data-shared-question-owner-actions hidden>
       <div class="answer-edit-bar-copy">

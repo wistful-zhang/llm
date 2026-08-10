@@ -2,6 +2,7 @@ import {
   parseQuestionDraftsJson,
   questionDraftsStorageKey,
 } from './question-drafts-core.mjs';
+import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
 
 const PREVIEW_LIMIT = 6;
 const VALID_VISIBILITIES = new Set(['private', 'public']);
@@ -103,8 +104,8 @@ if (roots.length > 0) {
     if (question.answerStatus !== 'complete') {
       meta.append(makeElement('span', 'answer-state-badge', '待解答'));
     }
-    const followUpCount = Array.isArray(question.followUps) ? question.followUps.length : 0;
-    if (followUpCount > 0) meta.append(makeElement('span', '', `${followUpCount} 个追问`));
+    const followUpCount = groupFollowUpsForDisplay(question.followUps).length;
+    if (followUpCount > 0) meta.append(makeElement('span', '', `${followUpCount} 条追问`));
     body.append(meta, makeElement('h2', '', question.title));
 
     const tags = makeElement('div', 'tag-list');

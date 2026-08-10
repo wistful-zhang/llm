@@ -23,6 +23,7 @@ import {
   PUBLIC_QUESTIONS_TIMEOUT_MS,
   readQuestionsApiError,
 } from './question-collaboration-core.mjs';
+import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
 import {
   createQuestionPublicationTokens,
   completePendingQuestionPublication,
@@ -144,6 +145,15 @@ if (root) {
     if (className) element.className = className;
     if (text) element.textContent = text;
     return element;
+  };
+
+  const makeFollowUpItem = ({ question, answer: followUpAnswer }, transform = (value) => value) => {
+    const item = document.createElement('li');
+    item.append(makeElement('strong', '', transform(question)));
+    if (followUpAnswer) {
+      item.append(document.createTextNode(` ${transform(followUpAnswer)}`));
+    }
+    return item;
   };
 
   const publicQuestionDetailUrl = (questionId) => buildPublicQuestionDetailUrl(
@@ -689,11 +699,12 @@ if (root) {
     );
     card.append(answer);
 
-    if (question.followUps.length > 0) {
+    const followUpGroups = groupFollowUpsForDisplay(question.followUps);
+    if (followUpGroups.length > 0) {
       const followUps = makeElement('div', 'question-draft-card-follow-ups');
-      followUps.append(makeElement('strong', '', `追问记录 · ${question.followUps.length} 条`));
+      followUps.append(makeElement('strong', '', `常见追问 · ${followUpGroups.length} 条`));
       const followUpList = document.createElement('ol');
-      question.followUps.forEach((item) => followUpList.append(makeElement('li', '', item)));
+      followUpList.append(...followUpGroups.map((item) => makeFollowUpItem(item)));
       followUps.append(followUpList);
       card.append(followUps);
     }
@@ -860,13 +871,13 @@ if (root) {
     } else {
       practiceParts.push(makeElement('p', 'is-empty', '这道题还没有填写答案。'));
     }
-    if (question.followUps.length > 0) {
-      practiceParts.push(makeElement('strong', '', '追问记录'));
+    const followUpGroups = groupFollowUpsForDisplay(question.followUps);
+    if (followUpGroups.length > 0) {
+      practiceParts.push(makeElement('strong', '', '常见追问'));
       const followUpList = document.createElement('ol');
-      question.followUps.forEach((item) => followUpList.append(makeElement(
-        'li',
-        '',
-        kramdownMathToMathJax(item, { forceInline: true }),
+      followUpList.append(...followUpGroups.map((item) => makeFollowUpItem(
+        item,
+        (value) => kramdownMathToMathJax(value, { forceInline: true }),
       )));
       practiceParts.push(followUpList);
     }

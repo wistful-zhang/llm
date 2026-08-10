@@ -16,6 +16,7 @@ import {
 } from './question-publication-tokens.mjs';
 import { validateKramdownMath } from './latex-input-core.mjs';
 import { clearMath, prepareKramdownMath, renderMath } from './math-render.mjs';
+import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
 
 const root = document.querySelector('[data-public-questions]');
 const genericAuthors = new Set(['匿名用户', '匿名发布者']);
@@ -90,6 +91,7 @@ if (root) {
   };
 
   const createQuestion = (question, ownedByRemoteId) => {
+    const followUpCount = groupFollowUpsForDisplay(question.followUps).length;
     const card = makeElement('a', 'question-card question-card-public');
     card.href = detailUrl(question.id);
     card.dataset.category = question.category || '待整理';
@@ -135,8 +137,8 @@ if (root) {
     } else {
       meta.append(makeElement('span', 'review-pending-badge', '网友答法 · 未核验'));
     }
-    if (question.followUps.length > 0) {
-      meta.append(makeElement('span', '', `${question.followUps.length} 条追问`));
+    if (followUpCount > 0) {
+      meta.append(makeElement('span', '', `${followUpCount} 条追问`));
     }
     body.append(meta, makeElement('h2', '', question.title));
 

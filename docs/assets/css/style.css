@@ -620,6 +620,7 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .shared-answer-note p { margin: 0; color: var(--muted); font-size: .88rem; }
 .shared-question-answer > h2:first-child { margin-top: 0; }
 .shared-question-answer-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.78; }
+.shared-question-followups li { overflow-wrap: anywhere; }
 .shared-question-page .question-header h1,
 .shared-question-page .question-provenance { overflow-wrap: anywhere; }
 .shared-question-page .question-provenance:empty,
