@@ -15,10 +15,26 @@ import {
 } from './question-drafts-core.mjs';
 import { findSensitivePublicContent } from './public-content-privacy.mjs';
 import {
-  buildPublicQuestionsApiUrl,
-  normalizePublicQuestions,
+  buildPublicQuestionApiUrl,
+  buildPublicQuestionsCollectionApiUrl,
+  buildQuestionsConfigApiUrl,
+  normalizePublicQuestionResponse,
   PUBLIC_QUESTIONS_TIMEOUT_MS,
+  readQuestionsApiError,
 } from './question-collaboration-core.mjs';
+import {
+  createQuestionPublicationTokens,
+  completePendingQuestionPublication,
+  generateQuestionPublicationToken,
+  getRecoverableQuestionPublicationToken,
+  getPendingQuestionPublication,
+  parseQuestionPublicationTokens,
+  questionPublicationTokensStorageKey,
+  removePendingQuestionPublication,
+  removeQuestionPublicationToken,
+  serializeQuestionPublicationTokens,
+  setPendingQuestionPublication,
+} from './question-publication-tokens.mjs';
 import {
   insertLatexTemplate,
   kramdownMathToMathJax,
@@ -32,18 +48,8 @@ const root = document.querySelector('[data-question-capture]');
 if (root) {
   const repositoryId = root.dataset.repositoryId;
   const storageKey = questionDraftsStorageKey(repositoryId);
-  const repositoryUrl = (() => {
-    try {
-      const url = new URL(root.dataset.repositoryUrl);
-      const segments = url.pathname.split('/').filter(Boolean);
-      return url.protocol === 'https:' && url.hostname === 'github.com' && segments.length === 2
-        ? `${url.origin}/${segments.map(encodeURIComponent).join('/')}`
-        : '';
-    } catch {
-      return '';
-    }
-  })();
-  const repositoryNwo = root.dataset.repositoryNwo || '';
+  const publicationTokensKey = questionPublicationTokensStorageKey(repositoryId);
+  const questionsApiUrl = root.dataset.questionsApiUrl || '';
   const libraryUrl = (() => {
     try {
       if (!root.dataset.libraryUrl) return '';
@@ -75,6 +81,9 @@ if (root) {
   const formTitle = root.querySelector('#capture-form-title');
   const formStatus = root.querySelector('#question-draft-form-status');
   const saveButton = root.querySelector('#question-draft-save');
+  const publicChallenge = root.querySelector('#question-public-challenge');
+  const publicChallengeStatus = root.querySelector('#question-public-challenge-status');
+  const publicChallengeWidget = root.querySelector('#question-public-challenge-widget');
   const resetButton = root.querySelector('#question-draft-reset');
   const searchInput = root.querySelector('#question-draft-search');
   const list = root.querySelector('#question-draft-list');
@@ -110,13 +119,20 @@ if (root) {
   let storage;
   let storageAvailable = true;
   let storageBlocked = false;
+  let publicationTokensBlocked = false;
   let damagedRaw = '';
   let persistedRaw = '';
+  let persistedPublicationTokensRaw = '';
   let hasUnpersistedState = false;
   let formDirty = false;
   let state = createEmptyQuestionDrafts(repositoryId);
-  let publicIssuesByTitle = new Map();
-  let publicIssuesLoadPromise = null;
+  let publicationTokens = createQuestionPublicationTokens(repositoryId);
+  let questionsApiConfigPromise = null;
+  let questionsApiConfig = null;
+  let turnstileScriptPromise = null;
+  let turnstileWidgetId = null;
+  let turnstileToken = '';
+  let pendingPublicAction = null;
   let latexPreviewTimer = 0;
   let latexPreviewRevision = 0;
   let latexPreviewRenderQueue = Promise.resolve();
@@ -189,7 +205,7 @@ if (root) {
     if (errors.length > 0) {
       latexPreviewTimer = window.setTimeout(() => {
         if (revision === latexPreviewRevision) {
-          setLatexStatus(`${errors[0]}。草稿仍可保存，请补完整后再同步 GitHub。`, 'error');
+          setLatexStatus(`${errors[0]}。私人题仍可保存；公开题请补完整后再发布。`, 'error');
         }
       }, 280);
       return;
@@ -300,7 +316,7 @@ if (root) {
   };
 
   const clearAlert = () => {
-    if (storageBlocked) return;
+    if (storageBlocked || publicationTokensBlocked) return;
     alertBox.hidden = true;
     downloadRawButton.hidden = true;
     clearDamagedButton.hidden = true;
@@ -320,6 +336,17 @@ if (root) {
       state = raw
         ? parseQuestionDraftsJson(raw, { repositoryId })
         : createEmptyQuestionDrafts(repositoryId);
+      try {
+        persistedPublicationTokensRaw = storage.getItem(publicationTokensKey) || '';
+        publicationTokens = parseQuestionPublicationTokens(
+          persistedPublicationTokensRaw,
+          { repositoryId },
+        );
+      } catch {
+        publicationTokensBlocked = true;
+        publicationTokens = createQuestionPublicationTokens(repositoryId);
+        setAlert('公开题编辑凭证无法读取', '私人题仍可正常使用，但为避免覆盖原凭证，公开题的发布、修改和删除已暂停。请先导出题目备份，再清理当前站点的损坏存储。');
+      }
     } catch (error) {
       if (error instanceof QuestionDraftDataError) {
         storageBlocked = true;
@@ -372,48 +399,178 @@ if (root) {
     render();
     formStatus.textContent = persisted
       ? message
-      : '修改目前只暂存在这个页面，尚未持久保存，也没有上传 GitHub；刷新前请立即导出 JSON。';
+      : '修改目前只暂存在这个页面，尚未持久保存，也没有同步到共享题库；刷新前请立即导出 JSON。';
     return true;
   };
 
   const questionById = (id) => state.questions.find((question) => question.id === id);
 
-  const publicTitleKey = (value) => String(value || '')
-    .normalize('NFKC')
-    .trim()
-    .toLocaleLowerCase('zh-CN');
-
-  const loadPublicIssueMatches = async () => {
-    if (!repositoryNwo || publicIssuesLoadPromise) return publicIssuesLoadPromise;
-    let apiUrl = '';
-    try {
-      apiUrl = buildPublicQuestionsApiUrl(repositoryNwo, 100, 1, 'all');
-    } catch {
-      return undefined;
-    }
+  const requestJson = async (url, options = {}) => {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), PUBLIC_QUESTIONS_TIMEOUT_MS);
-    publicIssuesLoadPromise = fetch(apiUrl, {
-      headers: { Accept: 'application/vnd.github+json' },
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error(`GitHub Issues API ${response.status}`);
-        return response.json();
-      })
-      .then((payload) => {
-        publicIssuesByTitle = new Map(normalizePublicQuestions(payload, repositoryNwo)
-          .map((issue) => [publicTitleKey(issue.title), issue]));
-        render();
-      })
-      .catch(() => {
-        // 公开状态读取失败不影响本机记题、编辑、备份或导出。
-      })
-      .finally(() => {
-        window.clearTimeout(timeoutId);
-        publicIssuesLoadPromise = null;
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: { Accept: 'application/json', ...(options.headers || {}) },
+        signal: controller.signal,
       });
-    return publicIssuesLoadPromise;
+      if (!response.ok) {
+        throw new Error(await readQuestionsApiError(response, `共享题库请求失败（${response.status}）`));
+      }
+      return await response.json();
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  };
+
+  const loadQuestionsApiConfig = async () => {
+    if (questionsApiConfig) return questionsApiConfig;
+    if (!questionsApiUrl) throw new Error('当前站点尚未配置共享公开题服务。');
+    if (questionsApiConfigPromise) return questionsApiConfigPromise;
+    questionsApiConfigPromise = requestJson(buildQuestionsConfigApiUrl(questionsApiUrl))
+      .then((payload) => {
+        questionsApiConfig = {
+          writeEnabled: payload?.questionsWriteEnabled === true || payload?.writeEnabled === true,
+          turnstileSiteKey: String(payload?.turnstileSiteKey || '').trim(),
+        };
+        return questionsApiConfig;
+      })
+      .finally(() => { questionsApiConfigPromise = null; });
+    return questionsApiConfigPromise;
+  };
+
+  const loadTurnstileScript = () => {
+    if (window.turnstile?.render) return Promise.resolve(window.turnstile);
+    if (turnstileScriptPromise) return turnstileScriptPromise;
+    turnstileScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.addEventListener('load', () => {
+        if (window.turnstile?.render) resolve(window.turnstile);
+        else reject(new Error('安全验证组件没有正确加载。'));
+      }, { once: true });
+      script.addEventListener('error', () => reject(new Error('安全验证组件加载失败。')), { once: true });
+      document.head.append(script);
+    }).catch((error) => {
+      turnstileScriptPromise = null;
+      throw error;
+    });
+    return turnstileScriptPromise;
+  };
+
+  const resetTurnstile = () => {
+    turnstileToken = '';
+    if (turnstileWidgetId !== null && window.turnstile?.reset) {
+      window.turnstile.reset(turnstileWidgetId);
+    }
+  };
+
+  const preparePublicChallenge = async () => {
+    const config = await loadQuestionsApiConfig();
+    if (!config.writeEnabled || !config.turnstileSiteKey) {
+      throw new Error('共享公开题服务暂时不接受发布，请稍后重试。');
+    }
+    publicChallenge.hidden = false;
+    publicChallengeStatus.textContent = turnstileToken ? '验证已完成，可以直接发布。' : '正在完成防滥用验证…';
+    const turnstile = await loadTurnstileScript();
+    if (turnstileWidgetId === null) {
+      turnstileWidgetId = turnstile.render(publicChallengeWidget, {
+        sitekey: config.turnstileSiteKey,
+        action: 'public-question',
+        appearance: 'interaction-only',
+        callback: (token) => {
+          turnstileToken = String(token || '');
+          publicChallengeStatus.textContent = '验证已完成，正在发布…';
+          const action = pendingPublicAction;
+          pendingPublicAction = null;
+          if (action) void action(turnstileToken);
+        },
+        'expired-callback': () => {
+          turnstileToken = '';
+          publicChallengeStatus.textContent = '验证已过期，请重新完成验证。';
+        },
+        'error-callback': () => {
+          turnstileToken = '';
+          publicChallengeStatus.textContent = '安全验证暂时失败，请稍后重试。';
+        },
+      });
+    }
+    return turnstileToken;
+  };
+
+  const withPublicChallenge = async (action) => {
+    const token = await preparePublicChallenge();
+    if (token) return action(token);
+    pendingPublicAction = action;
+    formStatus.textContent = '题目已保存在当前浏览器；完成上方安全验证后会自动公开。';
+    return undefined;
+  };
+
+  const persistPublicationTokens = (next) => {
+    if (publicationTokensBlocked || !storageAvailable || !storage) {
+      throw new Error('当前浏览器无法保存公开题编辑凭证。');
+    }
+    const serialized = serializeQuestionPublicationTokens(next, { repositoryId });
+    const currentRaw = storage.getItem(publicationTokensKey) || '';
+    if (currentRaw !== persistedPublicationTokensRaw) {
+      publicationTokensBlocked = true;
+      setAlert('另一个标签页已经更新公开题编辑凭证', '为避免覆盖，当前页面没有写入凭证，也不会修改或删除共享题库中的题目。请刷新后重试。');
+      throw new Error('检测到另一个标签页更新了公开题编辑凭证，请刷新后重试。');
+    }
+    storage.setItem(publicationTokensKey, serialized);
+    persistedPublicationTokensRaw = serialized;
+    publicationTokens = next;
+  };
+
+  const publicationTokenFor = (question) => getRecoverableQuestionPublicationToken(
+    publicationTokens,
+    { remoteId: question.remoteId, localId: question.id },
+  );
+
+  const assertRemoteMutationStateCurrent = () => {
+    if (storageBlocked || publicationTokensBlocked || !storageAvailable || !storage || hasUnpersistedState) {
+      throw new Error('当前页面没有可核对的完整本机状态，请恢复本地存储后重试。');
+    }
+    let currentRaw;
+    let currentPublicationTokensRaw;
+    try {
+      currentRaw = storage.getItem(storageKey) || '';
+      currentPublicationTokensRaw = storage.getItem(publicationTokensKey) || '';
+    } catch {
+      throw new Error('浏览器无法核对最新本机状态，因此没有向共享题库发送请求。');
+    }
+    if (currentRaw !== persistedRaw) {
+      setAlert('另一个标签页已经更新本机题目', '当前页面没有覆盖另一页，也没有修改或删除共享题库中的题目。请刷新后检查最新内容。');
+      throw new Error('检测到另一个标签页更新了本机题目，请刷新后重试。');
+    }
+    if (currentPublicationTokensRaw !== persistedPublicationTokensRaw) {
+      publicationTokensBlocked = true;
+      setAlert('另一个标签页已经更新公开题编辑凭证', '当前页面没有覆盖凭证，也没有修改或删除共享题库中的题目。请刷新后重试。');
+      throw new Error('检测到另一个标签页更新了公开题编辑凭证，请刷新后重试。');
+    }
+  };
+
+  const rememberPendingPublication = (localId, publication) => {
+    persistPublicationTokens(setPendingQuestionPublication(publicationTokens, localId, publication));
+  };
+
+  const completePendingPublication = (localId, remoteId, token) => {
+    persistPublicationTokens(completePendingQuestionPublication(
+      publicationTokens,
+      localId,
+      remoteId,
+      token,
+    ));
+  };
+
+  const forgetPublicationCredentials = (question) => {
+    const withoutRemoteToken = removeQuestionPublicationToken(
+      publicationTokens,
+      question.remoteId,
+    );
+    persistPublicationTokens(removePendingQuestionPublication(withoutRemoteToken, question.id));
   };
 
   const formatTime = (value) => new Date(value).toLocaleString('zh-CN', {
@@ -424,59 +581,10 @@ if (root) {
     minute: '2-digit',
   });
 
-  const buildIssueLaunch = (question) => {
-    if (!repositoryUrl) return { url: '', omittedFields: [] };
-    const params = new URLSearchParams({
-      template: 'public-question-from-web.yml',
-      title: `[新增题目] ${question.title}`,
-    });
-    const omittedFields = [];
-    const included = { answer: true, followUps: true, source: true, tags: true };
-    const updateDetails = () => params.set('details', contributionText(question, included));
-    updateDetails();
-    const toUrl = () => `${repositoryUrl}/issues/new?${params.toString()}`;
-    const omit = (field, label) => {
-      if (!included[field]) return;
-      included[field] = false;
-      omittedFields.push(label);
-      updateDetails();
-    };
-
-    // GitHub 会拒绝过长的网址。只降级可选长字段，题目、分类和难度始终只从网页带入一次。
-    if (toUrl().length > 6500) omit('answer', '答案');
-    if (toUrl().length > 6500) omit('followUps', '追问');
-    if (toUrl().length > 6500) omit('tags', '标签');
-    if (toUrl().length > 6500) omit('source', '来源');
-
-    return { url: toUrl(), omittedFields };
-  };
-
   const filenameFor = (question) => {
     const suffix = question.id.replace(/[^A-Za-z0-9_-]/g, '-').slice(-24) || 'question';
     return `${question.date}-${suffix}.md`;
   };
-
-  const contributionText = (question, included = {
-    answer: true,
-    followUps: true,
-    source: true,
-    tags: true,
-  }) => [
-    `题目：${question.title}`,
-    `站内题目编号：${question.id}`,
-    '可见性：公开',
-    `答案状态：${question.answerStatus === 'complete' ? '已完成' : '待解答'}`,
-    `分类：${question.category}`,
-    `难度：${question.difficulty}`,
-    included.tags ? `标签：${question.tags.join('、') || '无'}` : '',
-    included.source ? `匿名来源：${question.source || '未填写'}` : '',
-    included.answer ? '' : null,
-    included.answer ? '参考答案 / 当前思路：' : null,
-    included.answer ? (question.answer || '暂未作答') : null,
-    included.followUps && question.followUps.length ? '' : null,
-    included.followUps && question.followUps.length ? '追问记录（每行一条）：' : null,
-    included.followUps && question.followUps.length ? question.followUps.join('\n') : null,
-  ].filter((line) => line !== null && line !== '').join('\n');
 
   const unsafeMetadataReasons = (question) => {
     const joined = [question.title, question.source, ...question.tags]
@@ -540,7 +648,6 @@ if (root) {
   };
 
   const createQuestionCard = (question) => {
-    const submittedIssue = publicIssuesByTitle.get(publicTitleKey(question.title));
     const card = makeElement('article', 'question-draft-card');
     card.dataset.questionId = question.id;
 
@@ -553,9 +660,11 @@ if (root) {
       makeElement('span', 'answer-state-badge', question.answerStatus === 'complete' ? '答案已完成' : '待解答'),
       makeElement(
         'span',
-        `question-visibility-badge question-visibility-${question.visibility}`,
+        question.visibility === 'public' && !question.remoteId
+          ? 'question-visibility-badge question-publication-incomplete'
+          : `question-visibility-badge question-visibility-${question.visibility}`,
         question.visibility === 'public'
-          ? (submittedIssue ? `公开 · #${submittedIssue.number}` : '公开发布未完成 · 仅此浏览器')
+          ? (question.remoteId ? '公开' : '公开失败 · 仅此浏览器')
           : '私人 · 仅此浏览器',
       ),
     );
@@ -604,9 +713,9 @@ if (root) {
       'p',
       'question-draft-publish-note',
       question.visibility === 'public'
-        ? (submittedIssue
-          ? `这道题已经公开发布为 #${submittedIssue.number}，所有人都会在同一个题库中看到。编辑或关闭 GitHub Issue 会更新或下架公开版本。`
-          : '这道题选择了公开，但还没有完成 GitHub 最终提交，因此目前只在这个浏览器显示。')
+        ? (question.remoteId
+          ? '这道题已在共享题库中；编辑并保存后会立即更新。'
+          : '公开失败。这道题目前只在这个浏览器中，可以重新发布。')
         : '这是一道私人题，也会显示在首页题库中，但只保存在当前浏览器。',
     );
     const publishActions = makeElement('div', 'question-draft-publish-actions');
@@ -615,12 +724,13 @@ if (root) {
       button('复制 Markdown', 'copy-markdown', 'text-button', question.id),
       button('下载 Markdown', 'download-markdown', 'text-button', question.id),
     );
-    if (repositoryUrl && question.visibility === 'public') {
-      publishActions.append(submittedIssue
-        ? button(`查看或修改公开题 #${submittedIssue.number} ↗`, 'open-submitted-issue', 'secondary-button', question.id)
-        : button('继续公开发布（需 GitHub 登录） ↗', 'open-issue', 'primary-button', question.id));
+    if (question.visibility === 'public' && !question.remoteId) {
+      publishActions.append(button('重新发布', 'retry-public', 'primary-button', question.id));
     }
-    publishActions.append(button('删除这道本机题目', 'delete', 'text-button interview-danger-button', question.id));
+    const deleteLabel = question.remoteId
+      ? '从公开题库撤回并删除'
+      : (question.visibility === 'public' ? '删除这道未发布题目' : '删除这道私人题');
+    publishActions.append(button(deleteLabel, 'delete', 'text-button interview-danger-button', question.id));
     const status = makeElement('p', 'question-draft-card-status');
     status.tabIndex = -1;
     status.setAttribute('role', 'status');
@@ -680,6 +790,8 @@ if (root) {
     difficultyInput.value = '待评估';
     answerStatusInput.value = 'pending';
     visibilityInputs.forEach((input) => { input.checked = input.value === 'private'; });
+    pendingPublicAction = null;
+    publicChallenge.hidden = true;
     modeBadge.textContent = '新题';
     formTitle.textContent = '记录一道题';
     updateVisibilityUi();
@@ -764,100 +876,214 @@ if (root) {
     list.querySelector(`[data-question-id="${CSS.escape(questionId)}"][data-action="practice"]`)?.focus();
   };
 
-  const saveQuestion = () => {
+  const publicQuestionPayload = (question) => ({
+    title: question.title,
+    category: question.category,
+    difficulty: question.difficulty,
+    answerStatus: question.answerStatus,
+    answer: question.answer,
+    followUps: question.followUps,
+    tags: question.tags,
+    source: question.source,
+    localId: question.id,
+  });
+
+  const redirectToLibrary = () => {
+    if (!libraryUrl || hasUnpersistedState) return;
+    const target = new URL(libraryUrl);
+    target.hash = 'question-list-section';
+    window.location.assign(target.toString());
+  };
+
+  const setPublishing = (active) => {
+    saveButton.disabled = active;
+    saveButton.setAttribute('aria-busy', String(active));
+  };
+
+  const postPublicQuestion = async (question, status = formStatus) => {
+    if (!publishSafety(question, status)) return;
+    if (publicationTokensBlocked || !storageAvailable || hasUnpersistedState) {
+      status.textContent = '题目已留在当前页面，但浏览器无法安全保存公开题编辑凭证，因此没有发布。请先恢复本地存储后重试。';
+      return;
+    }
+    if (!questionsApiUrl) {
+      status.textContent = '题目已保存在当前浏览器，但站点尚未配置共享公开题服务，因此目前没有对其他人发布。';
+      return;
+    }
+
+    let pending = getPendingQuestionPublication(publicationTokens, question.id);
+
+    const submit = async (securityToken) => {
+      setPublishing(true);
+      status.textContent = '正在发布到公开题库…';
+      try {
+        if (!pending) {
+          pending = {
+            requestId: crypto.randomUUID(),
+            editToken: generateQuestionPublicationToken(),
+          };
+          rememberPendingPublication(question.id, pending);
+        }
+        assertRemoteMutationStateCurrent();
+        const payload = await requestJson(buildPublicQuestionsCollectionApiUrl(questionsApiUrl), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...publicQuestionPayload(question),
+            requestId: pending.requestId,
+            editToken: pending.editToken,
+            turnstileToken: securityToken,
+            website: '',
+          }),
+        });
+        const published = normalizePublicQuestionResponse(payload);
+        if (!published) throw new Error('共享题库返回了无法识别的题目数据。');
+        const linked = updateQuestionDraft(state, question.id, { remoteId: published.id }, {
+          repositoryId,
+          now: new Date().toISOString(),
+        });
+        if (!commit(linked, '公开题已发布，所有人现在都能在题库中看到。', {
+          requirePersistence: true,
+        })) {
+          throw new Error('题目已经公开，但本机没有保存远端编号；发布恢复记录仍在，请刷新后用同一道题重试。');
+        }
+        try {
+          completePendingPublication(question.id, published.id, pending.editToken);
+        } catch {
+          status.textContent = '题目已经公开；编辑凭证仍以本机发布恢复记录保留，刷新后仍可继续管理。';
+        }
+        pendingPublicAction = null;
+        publicChallenge.hidden = true;
+        resetForm();
+        redirectToLibrary();
+      } catch (error) {
+        status.textContent = `公开发布失败：${error?.message || '共享题库暂时不可用'}。题目仍在当前浏览器，可以重新发布。`;
+      } finally {
+        resetTurnstile();
+        setPublishing(false);
+      }
+    };
+
+    try {
+      await withPublicChallenge(submit);
+    } catch (error) {
+      status.textContent = `题目仍保存在当前浏览器，但尚未公开：${error?.message || '安全验证暂时不可用'}。`;
+    }
+  };
+
+  const patchPublicQuestion = async (question, next) => {
+    assertRemoteMutationStateCurrent();
+    const token = publicationTokenFor(question);
+    if (!token) throw new Error('当前浏览器没有这道公开题的编辑凭证，不能覆盖线上版本。');
+    setPublishing(true);
+    try {
+      await requestJson(buildPublicQuestionApiUrl(questionsApiUrl, question.remoteId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...publicQuestionPayload(question), editToken: token }),
+      });
+      if (!commit(next, '公开题修改已同步，题库刷新后即可看到。')) return;
+      resetForm();
+      redirectToLibrary();
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const deletePublicQuestion = async (question) => {
+    assertRemoteMutationStateCurrent();
+    const token = publicationTokenFor(question);
+    if (!token) throw new Error('当前浏览器没有这道公开题的删除凭证。');
+    await requestJson(buildPublicQuestionApiUrl(questionsApiUrl, question.remoteId), {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ editToken: token }),
+    });
+    forgetPublicationCredentials(question);
+  };
+
+  const handleSaveError = (error, fallback = '无法保存这道题，请检查输入。') => {
+    const field = error instanceof QuestionDraftDataError && error.field
+      ? inputByField[error.field]
+      : null;
+    if (field) {
+      field.setCustomValidity?.(error.message);
+      field.setAttribute('aria-invalid', 'true');
+      field.reportValidity?.();
+      field.focus();
+    }
+    formStatus.textContent = error?.message || fallback;
+  };
+
+  const saveQuestion = async () => {
     const visibility = selectedVisibility();
     if (storageBlocked || !form.reportValidity()) return;
     try {
       const questionId = idInput.value;
       const previousQuestion = questionId ? questionById(questionId) : null;
       const values = formValues();
+      const now = new Date().toISOString();
       const next = questionId
-        ? updateQuestionDraft(state, questionId, values, { repositoryId, now: new Date().toISOString() })
+        ? updateQuestionDraft(state, questionId, {
+          ...values,
+          remoteId: previousQuestion?.remoteId && visibility === 'private'
+            ? ''
+            : previousQuestion?.remoteId,
+        }, { repositoryId, now })
         : addQuestionDraft(state, values, {
           repositoryId,
-          now: new Date().toISOString(),
+          now,
           localDate: localDate(),
         });
       const savedQuestion = questionId
         ? next.questions.find((question) => question.id === questionId)
         : next.questions.at(-1);
+
+      if (previousQuestion?.remoteId && visibility === 'public') {
+        if (!publishSafety(savedQuestion, formStatus)) return;
+        try {
+          await patchPublicQuestion(savedQuestion, next);
+        } catch (error) {
+          formStatus.textContent = `公开题修改失败，公开版本没有改变；当前表单内容仍保留：${error?.message || '共享题库暂时不可用'}。`;
+        }
+        return;
+      }
+
+      if (previousQuestion?.remoteId && visibility === 'private') {
+        setPublishing(true);
+        try {
+          await deletePublicQuestion(previousQuestion);
+          if (!commit(next, '题目已改为私人，并从共享题库下架。')) return;
+          resetForm();
+          redirectToLibrary();
+        } catch (error) {
+          formStatus.textContent = `没有改为私人，公开版本仍然可见：${error?.message || '共享题库暂时不可用'}。`;
+        } finally {
+          setPublishing(false);
+        }
+        return;
+      }
+
       const savedMessage = visibility === 'public'
-        ? '题目已安全保存到当前浏览器，正在准备公开发布。'
+        ? '题目已保存在当前浏览器，正在发布到公开题库。'
         : (questionId ? '私人题修改已保存。' : '私人题已添加到题库。');
-      if (commit(next, savedMessage)) {
-        const submittedIssue = publicIssuesByTitle.get(publicTitleKey(savedQuestion?.title))
-          || publicIssuesByTitle.get(publicTitleKey(previousQuestion?.title));
-        if (savedQuestion?.visibility === 'public') {
-          if (submittedIssue) {
-            const opened = window.open(submittedIssue.url, '_blank');
-            if (opened) opened.opener = null;
-            resetForm();
-            formStatus.textContent = opened
-              ? '本机修改已保存。公开版本由已打开的 GitHub 页面管理；点击 Edit 即可修改公开答案。'
-              : '本机修改已保存。请在题目卡中打开 GitHub 公开版本继续修改。';
-            return;
-          }
-          if (!publishSafety(savedQuestion, formStatus)) return;
-          const launch = buildIssueLaunch(savedQuestion);
-          if (!launch.url) {
-            formStatus.textContent = '题目已保存，但当前站点没有连接 GitHub 仓库，暂时不能公开发布。';
-            return;
-          }
-          const opened = window.open(launch.url, '_blank');
-          if (opened) opened.opener = null;
-          if (!opened) {
-            formStatus.textContent = '题目已保存，但浏览器拦截了 GitHub 发布页；请从下方题目卡点击“继续公开发布”。';
-            return;
-          }
-          resetForm();
-          if (launch.omittedFields.length > 0) {
-            formStatus.textContent = `已打开 GitHub 发布页。由于内容较长，${launch.omittedFields.join('、')}没有自动带入，请在提交前补上。`;
-            return;
-          }
-          if (libraryUrl && !hasUnpersistedState) {
-            const target = new URL(libraryUrl);
-            target.hash = 'question-list-section';
-            window.location.assign(target.toString());
-          }
-          return;
-        }
-
-        if (submittedIssue) {
-          const opened = window.open(submittedIssue.url, '_blank');
-          if (opened) opened.opener = null;
-          resetForm();
-          formStatus.textContent = opened
-            ? '私人副本已保存，但原公开题仍然可见。请在已打开的 GitHub 页面关闭 Issue，公开版本才会下架。'
-            : '私人副本已保存，但原公开题仍然可见。请从题目卡打开 GitHub 并关闭 Issue。';
-          return;
-        }
-
-        resetForm();
-        // 只有 localStorage 已确认写入后才离开本页；内存临时态必须留在这里供用户导出救援。
-        if (libraryUrl && !hasUnpersistedState) {
-          const target = new URL(libraryUrl);
-          target.hash = 'question-list-section';
-          window.location.assign(target.toString());
-        }
+      if (!commit(next, savedMessage)) return;
+      if (savedQuestion?.visibility === 'public') {
+        await postPublicQuestion(savedQuestion, formStatus);
+        return;
       }
+
+      resetForm();
+      redirectToLibrary();
     } catch (error) {
-      const field = error instanceof QuestionDraftDataError && error.field
-        ? inputByField[error.field]
-        : null;
-      if (field) {
-        field.setCustomValidity?.(error.message);
-        field.setAttribute('aria-invalid', 'true');
-        field.reportValidity?.();
-        field.focus();
-      }
-      formStatus.textContent = error?.message || '无法保存这道题，请检查输入。';
+      handleSaveError(error);
     }
   };
 
-  // 题目、答案和来源控件没有 name；脚本接管 submit 后只写入当前浏览器。
+  // 题目、答案和来源控件没有 name；脚本接管 submit 后按可见性保存或调用共享服务。
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    saveQuestion();
+    void saveQuestion();
   });
 
   form.addEventListener('input', (event) => {
@@ -871,7 +1097,18 @@ if (root) {
   latexDisplayButton.addEventListener('click', () => insertLatex('display'));
 
   visibilityInputs.forEach((input) => {
-    input.addEventListener('change', () => updateVisibilityUi());
+    input.addEventListener('change', () => {
+      updateVisibilityUi();
+      if (selectedVisibility() === 'public') {
+        void preparePublicChallenge().catch((error) => {
+          publicChallenge.hidden = false;
+          publicChallengeStatus.textContent = error?.message || '公开发布安全验证暂时不可用。';
+        });
+      } else {
+        pendingPublicAction = null;
+        publicChallenge.hidden = true;
+      }
+    });
   });
 
   resetButton.addEventListener('click', () => {
@@ -903,37 +1140,22 @@ if (root) {
       const unsaved = formDirty && idInput.value === question.id
         ? ' 当前正在编辑的尚未保存文字也会丢失。'
         : '';
-      if (!window.confirm(`删除本机题目“${question.title}”？此操作无法撤销。${unsaved}`)) return;
-      const next = deleteQuestionDraft(state, question.id, { repositoryId, now: new Date().toISOString() });
-      if (commit(next, '这道题已从当前浏览器删除。') && idInput.value === question.id) resetForm();
+      const scope = question.remoteId ? '这会从公开题库撤回，并删除当前浏览器中的副本。' : '此操作无法撤销。';
+      if (!window.confirm(`删除题目“${question.title}”？${scope}${unsaved}`)) return;
+      try {
+        if (question.remoteId) await deletePublicQuestion(question);
+        const next = deleteQuestionDraft(state, question.id, { repositoryId, now: new Date().toISOString() });
+        const message = question.remoteId
+          ? '这道题已从公开题库撤回，并从当前浏览器删除。'
+          : '这道题已从当前浏览器删除。';
+        if (commit(next, message) && idInput.value === question.id) resetForm();
+      } catch (error) {
+        status.textContent = `没有删除：${error?.message || '共享题库暂时不可用'}。`;
+      }
       return;
     }
-    if (action === 'open-submitted-issue') {
-      const submittedIssue = publicIssuesByTitle.get(publicTitleKey(question.title));
-      if (!submittedIssue) {
-        status.textContent = '暂时没有读取到对应公开题，请稍后重试或刷新页面。';
-        void loadPublicIssueMatches();
-        return;
-      }
-      const opened = window.open(submittedIssue.url, '_blank');
-      if (opened) opened.opener = null;
-      status.textContent = opened
-        ? `已打开公开题 #${submittedIssue.number}；可以在 GitHub 中编辑答案或关闭下架。`
-        : '浏览器拦截了新窗口；请允许本站打开新标签页后重试。';
-      return;
-    }
-    if (action === 'open-issue') {
-      if (!publishSafety(question, status)) {
-        return;
-      }
-      const launch = buildIssueLaunch(question);
-      const opened = window.open(launch.url, '_blank');
-      if (opened) opened.opener = null;
-      status.textContent = opened
-        ? (launch.omittedFields.length
-          ? `${launch.omittedFields.join('、')}没有自动带入，请复制公开内容并在 GitHub 补齐；当前尚未提交。`
-          : '已打开 GitHub 最终确认页；点击提交后会直接进入题库，不需要审核。')
-        : '浏览器拦截了新窗口；请允许本站打开新标签页后重试。';
+    if (action === 'retry-public') {
+      await postPublicQuestion(question, status);
       return;
     }
 
@@ -1011,6 +1233,14 @@ if (root) {
   });
 
   clearAllButton.addEventListener('click', () => {
+    const sharedCount = state.questions.filter((question) => question.remoteId).length;
+    const uncertainCount = state.questions.filter((question) => (
+      getPendingQuestionPublication(publicationTokens, question.id)
+    )).length;
+    if (sharedCount || uncertainCount) {
+      formStatus.textContent = `为避免公开题遗留，不能批量清空：请先逐题删除 ${sharedCount} 道已公开题${uncertainCount ? `，并重试确认 ${uncertainCount} 道结果不确定的发布` : ''}。`;
+      return;
+    }
     const formWarning = formDirty ? ' 当前表单中尚未保存的文字也会被清空。' : '';
     if (!window.confirm(`彻底删除当前浏览器中的 ${state.questions.length} 道本机题目？建议先导出 JSON。此操作无法撤销。${formWarning}`)) return;
     const next = {
@@ -1044,6 +1274,18 @@ if (root) {
   });
 
   window.addEventListener('storage', (event) => {
+    if (event.key === publicationTokensKey) {
+      try {
+        const incomingRaw = event.newValue || '';
+        publicationTokens = parseQuestionPublicationTokens(incomingRaw, { repositoryId });
+        persistedPublicationTokensRaw = incomingRaw;
+        publicationTokensBlocked = false;
+      } catch {
+        publicationTokensBlocked = true;
+        setAlert('另一个标签页写入了无法读取的公开题编辑凭证', '为避免覆盖，公开题的发布、修改和删除已暂停；私人题不受影响。');
+      }
+      return;
+    }
     if (event.key !== storageKey) return;
     try {
       const incoming = event.newValue
@@ -1077,13 +1319,6 @@ if (root) {
     event.returnValue = '';
   });
 
-  let publicIssueRetryTimer = 0;
-  window.addEventListener('focus', () => {
-    void loadPublicIssueMatches();
-    window.clearTimeout(publicIssueRetryTimer);
-    publicIssueRetryTimer = window.setTimeout(() => { void loadPublicIssueMatches(); }, 12_000);
-  });
-
   readInitialState();
   resetForm();
   render();
@@ -1096,5 +1331,4 @@ if (root) {
       formStatus.textContent = '没有在当前浏览器找到这道本机题目；它可能位于另一台设备、另一个浏览器或另一个题库副本中。';
     }
   }
-  void loadPublicIssueMatches();
 }

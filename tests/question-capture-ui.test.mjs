@@ -13,24 +13,22 @@ const [
   layout,
   stylesheet,
   cms,
-  publicQuestionForm,
-  prefilledQuestionForm,
   latexCore,
   questionMath,
   questionLayout,
   draftsCore,
+  publicQuestionsScript,
 ] = await Promise.all([
   read('../docs/capture.html'),
   read('../docs/assets/js/question-capture.js'),
   read('../docs/_layouts/default.html'),
   read('../docs/assets/css/style.css'),
   read('../.pages.yml'),
-  read('../.github/ISSUE_TEMPLATE/public-question.yml'),
-  read('../.github/ISSUE_TEMPLATE/public-question-from-web.yml'),
   read('../docs/assets/js/latex-input-core.mjs'),
   read('../docs/assets/js/question-math.js'),
   read('../docs/_layouts/question.html'),
   read('../docs/assets/js/question-drafts-core.mjs'),
+  read('../docs/assets/js/public-questions.js'),
 ]);
 
 const questionDirectory = new URL('../docs/_questions/', import.meta.url);
@@ -74,15 +72,6 @@ const yamlFieldSection = (source, fieldName, nextFieldName) => {
   return match[0];
 };
 
-const issueFieldSection = (source, fieldId) => {
-  const normalized = source.replace(/\r\n?/g, '\n');
-  const match = normalized.match(new RegExp(
-    `\\n  - type: [^\\n]+\\n    id: ${fieldId}\\n[\\s\\S]*?(?=\\n  - type:|$)`,
-  ));
-  assert.ok(match, `Issue Form 缺少 ${fieldId} 字段`);
-  return match[0];
-};
-
 const yamlListAfter = (section, marker, endMarker = null) => {
   const tail = section.split(marker)[1] || '';
   const block = endMarker ? tail.split(endMarker)[0] : tail;
@@ -93,7 +82,7 @@ test('快速记题页提供无需 Markdown 的完整表单，并允许只保存�
   assert.match(page, /permalink:\s*\/capture\//);
   assert.match(page, /data-question-capture/);
   assert.match(page, /data-repository-id="{{ site\.github\.repository_nwo/);
-  assert.match(page, /data-repository-url="{{ site\.github\.repository_url/);
+  assert.match(page, /data-questions-api-url="{{ site\.data\.question_runtime\.api_url/);
 
   const title = attributesFor(page, 'question-draft-title');
   assert.doesNotMatch(title, /\bname=/);
@@ -169,7 +158,7 @@ test('答案输入支持安全的 LaTeX 插入、即时预览和失败兜底', (
   assert.match(stylesheet, /\.question-latex-help summary \{[^}]*min-height: 44px/);
 });
 
-test('正式题目与本机口述练习也会渲染答案、标题和追问中的公式', () => {
+test('正式题目、本机口述练习和共享公开题都会安全渲染答案、标题和追问中的公式', () => {
   assert.match(questionMath, /prepareKramdownMath\(title, \{ forceInline: true \}\)/);
   assert.match(questionMath, /\.question-followups li/);
   assert.match(questionMath, /void renderMath\(article\)/);
@@ -177,22 +166,27 @@ test('正式题目与本机口述练习也会渲染答案、标题和追问中�
   assert.match(script, /kramdownMathToMathJax\(question\.answer\)/);
   assert.match(script, /kramdownMathToMathJax\(item, \{ forceInline: true \}\)/);
   assert.match(script, /void renderMath\(practice\)/);
+  assert.match(publicQuestionsScript, /import \{ validateKramdownMath \} from '\.\/latex-input-core\.mjs'/);
+  assert.match(publicQuestionsScript, /import \{ clearMath, prepareKramdownMath, renderMath \} from '\.\/math-render\.mjs'/);
+  assert.match(publicQuestionsScript, /const source = element\.textContent \|\| ''/);
+  assert.match(publicQuestionsScript, /validateKramdownMath\(source\)\.length === 0/);
+  assert.match(publicQuestionsScript, /card\.querySelector\('h2'\), \{ forceInline: true \}/);
+  assert.match(publicQuestionsScript, /\.public-question-answer/);
+  assert.match(publicQuestionsScript, /\.public-question-details-content li/);
+  assert.match(publicQuestionsScript, /clearMath\(list\);[\s\S]*list\.replaceChildren[\s\S]*void renderMath\(list\)/);
+  assert.doesNotMatch(publicQuestionsScript, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
 });
 
-test('网页、Pages CMS 和公开投稿使用同一组当前已有分类下拉选项', () => {
+test('网页与 Pages CMS 使用同一组当前已有分类下拉选项', () => {
   const expected = ['待整理', ...currentCategories].sort((left, right) => left.localeCompare(right, 'zh-CN'));
   const cmsCategory = yamlFieldSection(cms, 'category', 'difficulty');
-  const publicCategory = issueFieldSection(publicQuestionForm, 'category');
   const cmsValues = yamlListAfter(cmsCategory, '          values:\n')
-    .sort((left, right) => left.localeCompare(right, 'zh-CN'));
-  const publicValues = yamlListAfter(publicCategory, '      options:\n', '    validations:')
     .sort((left, right) => left.localeCompare(right, 'zh-CN'));
 
   assert.match(cmsCategory, /type: select/);
-  assert.match(publicCategory, /type: dropdown/);
-  assert.match(publicCategory, /default: 0/);
   assert.deepEqual(cmsValues, expected);
-  assert.deepEqual(publicValues, expected);
+  assert.match(page, /for category in published_categories/);
+  assert.match(page, /unless category == '待整理'/);
 });
 
 test('编辑旧草稿时临时保留已经不在当前下拉框中的历史分类', () => {
@@ -246,7 +240,6 @@ test('新增题目只选择公开或私人，两种题都会进入统一题库',
   assert.doesNotMatch(page, /question-public-confirmed|question-public-confirmation/);
   assert.match(page, /<legend>谁可以看这道题？<\/legend>/);
   assert.match(page, /<strong>私人<\/strong>[\s\S]*也会加入题库[\s\S]*当前浏览器[\s\S]*标记“私人”/);
-  assert.match(page, /<strong>公开<\/strong>[\s\S]*GitHub 最终确认页[\s\S]*不经过审核/);
 
   assert.match(script, /visibility:\s*selectedVisibility\(\)/);
   assert.match(script, /question\.visibility === 'public'/);
@@ -257,22 +250,20 @@ test('新增题目只选择公开或私人，两种题都会进入统一题库',
   assert.match(script, /target\.hash = 'question-list-section'/);
   assert.match(script, /window\.location\.assign\(target\.toString\(\)\)/);
   assert.doesNotMatch(script, /publicConfirmation|publicConfirmedInput|showPublicChoices/);
-  assert.doesNotMatch(`${page}\n${script}`, /待审核|正式收录|公开补充/);
 });
 
 test('页面明确区分私人本机题与公开题，且不收集访问凭据', () => {
   assert.match(page, /公开和私人都会加入题库/);
   assert.match(page, /<b>私人<\/b>[\s\S]*当前浏览器[\s\S]*标记“私人”/);
-  assert.match(page, /<b>公开<\/b>[\s\S]*GitHub[\s\S]*直接发布[\s\S]*不需要审核/);
-  assert.match(page, /不会要求你填写 Token 或密码/);
-  assert.match(page, /浏览器明文本地存储/);
+  assert.match(page, /选择私人时，内容只保存在当前浏览器/);
+  assert.match(page, /选择公开时，题目、答案、追问、分类、标签和来源会上传到共享题库并公开显示/);
   assert.match(page, /公司机密、未授权题库或受 NDA 约束/);
 
   assert.doesNotMatch(page, /<input[^>]+type=["']password["']/i);
   assert.doesNotMatch(page, /<(?:input|textarea)[^>]+name=["'][^"']*(?:token|password|secret|pat)[^"']*["']/i);
-  assert.match(script, /apiUrl = buildPublicQuestionsApiUrl\(repositoryNwo, 100, 1, 'all'\)/);
-  assert.match(script, /fetch\(apiUrl/);
-  assert.match(script, /公开状态读取失败不影响本机记题/);
+  assert.match(script, /buildPublicQuestionsCollectionApiUrl\(questionsApiUrl\)/);
+  assert.match(script, /method: 'POST'/);
+  assert.match(script, /公开发布失败：[\s\S]*题目仍在当前浏览器，可以重新发布/);
   assert.doesNotMatch(script, /XMLHttpRequest|\bAuthorization\b/i);
 });
 
@@ -329,52 +320,47 @@ test('浏览器端隐私检查能识别常见及简单混淆的联系方式', ()
   assert.deepEqual(findSensitivePublicContent('讨论 HTTPS、95% 成功率和普通项目链接。'), []);
 });
 
-test('公开主提交直接打开 GitHub 最终页，提交后无需人工审核', () => {
+test('公开主提交直接写入共享题库，追问随请求一并提交', () => {
   assert.match(page, /data-library-url="\{\{ '\/' \| relative_url \}\}"/);
   assert.match(page, /两种题都在同一个题库/);
   assert.match(page, /<strong>私人题<\/strong>[\s\S]*保存后直接回到题库[\s\S]*只在本机可见/);
-  assert.match(page, /<strong>公开题<\/strong>[\s\S]*GitHub 最终发布页[\s\S]*立即对所有人可见[\s\S]*不需要人工审核/);
-  assert.doesNotMatch(`${page}\n${script}`, /待审核|正式收录|公开补充|先搜索正式题库/);
+  assert.doesNotMatch(script, /ISSUE_TEMPLATE|issues\/new|buildIssueLaunch|open-issue/i);
 
-  const issueLaunchBlock = script.match(/const buildIssueLaunch = \(question\) => \{[\s\S]*?\n  \};/);
-  assert.ok(issueLaunchBlock, '应集中构造受控且有长度预算的 Issue 地址');
-  assert.match(issueLaunchBlock[0], /template: 'public-question-from-web\.yml'/);
-  assert.match(issueLaunchBlock[0], /title: `\[新增题目\] \$\{question\.title\}`/);
-  assert.match(issueLaunchBlock[0], /params\.set\('details', contributionText\(question, included\)\)/);
-  assert.match(issueLaunchBlock[0], /toUrl\(\)\.length > 6500/);
-  assert.match(issueLaunchBlock[0], /omit\('answer', '答案'\)/);
-  assert.match(issueLaunchBlock[0], /omit\('followUps', '追问'\)/);
-  assert.match(issueLaunchBlock[0], /omit\('tags', '标签'\)/);
-  assert.match(issueLaunchBlock[0], /omit\('source', '来源'\)/);
-  assert.match(issueLaunchBlock[0], /return \{ url: toUrl\(\), omittedFields \}/);
-  assert.doesNotMatch(issueLaunchBlock[0], /params\.set\('(?:category|difficulty)'/);
+  const payloadBlock = script.match(/const publicQuestionPayload = \(question\) => \(\{[\s\S]*?\n  \}\);/);
+  assert.ok(payloadBlock, '应集中构造共享题 API 请求内容');
+  for (const field of ['title', 'category', 'difficulty', 'answerStatus', 'answer', 'followUps', 'tags', 'source']) {
+    assert.match(payloadBlock[0], new RegExp(`${field}: question\\.${field}`));
+  }
 
-  assert.match(script, /追问记录（每行一条）：/);
-  assert.match(script, /question\.followUps\.join\('\\n'\)/);
-  const saveBlock = script.replace(/\r\n?/g, '\n').match(/const saveQuestion = \(\) => \{[\s\S]*?\n  \};\n\n  \/\/ 题目、答案和来源控件/);
-  assert.ok(saveBlock, '应能定位完整本机保存与公开跳转流程');
+  const postBlock = script.match(/const postPublicQuestion = async \(question, status = formStatus\) => \{[\s\S]*?\n  \};/);
+  assert.ok(postBlock, '应能定位公开题直发流程');
+  assert.match(postBlock[0], /buildPublicQuestionsCollectionApiUrl\(questionsApiUrl\)/);
+  assert.match(postBlock[0], /method: 'POST'/);
+  assert.match(postBlock[0], /\.\.\.publicQuestionPayload\(question\)/);
+  assert.match(postBlock[0], /requestId: pending\.requestId/);
+  assert.match(postBlock[0], /editToken: pending\.editToken/);
+  assert.match(postBlock[0], /turnstileToken: securityToken/);
+  assert.match(postBlock[0], /updateQuestionDraft\(state, question\.id, \{ remoteId: published\.id \}/);
+  assert.ok(
+    postBlock[0].indexOf('commit(linked')
+      < postBlock[0].indexOf('completePendingPublication(question.id, published.id, pending.editToken)'),
+    'POST 成功后必须先持久化 remoteId，再清除 localId 恢复记录',
+  );
+  assert.match(postBlock[0], /commit\(linked,[\s\S]*?requirePersistence: true/);
+  assert.match(postBlock[0], /发布恢复记录仍在/);
+  assert.match(postBlock[0], /编辑凭证仍以本机发布恢复记录保留/);
+  assert.match(postBlock[0], /redirectToLibrary\(\)/);
+  assert.match(postBlock[0], /公开发布失败：[\s\S]*题目仍在当前浏览器，可以重新发布/);
+
+  const saveBlock = script.replace(/\r\n?/g, '\n').match(/const saveQuestion = async \(\) => \{[\s\S]*?\n  \};/);
+  assert.ok(saveBlock, '应能定位本机保存与公开直发流程');
   assert.match(saveBlock[0], /savedQuestion\?\.visibility === 'public'/);
-  assert.match(saveBlock[0], /publishSafety\(savedQuestion, formStatus\)/);
-  assert.match(saveBlock[0], /const launch = buildIssueLaunch\(savedQuestion\)/);
-  assert.match(saveBlock[0], /window\.open\(launch\.url, '_blank'\)/);
-  assert.doesNotMatch(saveBlock[0], /window\.confirm/);
+  assert.match(saveBlock[0], /await postPublicQuestion\(savedQuestion, formStatus\)/);
   assert.match(script, /target\.hash = 'question-list-section'/);
-  assert.match(script, /if \(action === 'open-issue'\)[\s\S]*publishSafety\(question, status\)[\s\S]*window\.open\(launch\.url/);
-  const retryBlock = script.match(/if \(action === 'open-issue'\) \{[\s\S]*?\n    \}/);
-  assert.ok(retryBlock, '公开发布失败后应提供直接重试入口');
-  assert.doesNotMatch(retryBlock[0], /window\.confirm/);
-  assert.match(retryBlock[0], /点击提交后会直接进入题库，不需要审核/);
-  assert.match(script, /loadPublicIssueMatches/);
-  assert.match(script, /公开 · #\$\{submittedIssue\.number\}/);
-  assert.match(script, /if \(action === 'open-submitted-issue'\)/);
-  assert.doesNotMatch(script, /search-public|buildPublicQuestionSearchUrl/);
-
-  const detailsField = issueFieldSection(prefilledQuestionForm, 'details');
-  assert.match(detailsField, /type: textarea/);
-  assert.match(detailsField, /required:\s*true/);
-  assert.match(prefilledQuestionForm, /分类和难度已经由网站带入/);
-  assert.match(prefilledQuestionForm, /统一题库中，不经过人工审核/);
-  assert.doesNotMatch(prefilledQuestionForm, /\bid:\s*(?:category|difficulty)\b/);
+  assert.match(script, /if \(action === 'retry-public'\) \{[\s\S]*?await postPublicQuestion\(question, status\)/);
+  assert.match(script, /button\('重新发布', 'retry-public'/);
+  assert.match(script, /'从公开题库撤回并删除'/);
+  assert.doesNotMatch(script, /window\.open\(|github\.com\/.*issues/i);
   assert.doesNotMatch(script, /\.submit\s*\(|requestSubmit\s*\(/);
 });
 
@@ -395,6 +381,8 @@ test('本地存储按仓库隔离，写入前检测跨标签页冲突并处理�
   assert.match(script, /const currentRaw = storage\.getItem\(storageKey\) \|\| ''/);
   assert.match(script, /if \(currentRaw !== persistedRaw\)[\s\S]*另一个标签页已经更新本机题目/);
   assert.match(script, /persistedRaw = serialized/);
+  assert.match(script, /persistedPublicationTokensRaw = serialized/);
+  assert.match(script, /currentPublicationTokensRaw !== persistedPublicationTokensRaw/);
   assert.match(script, /浏览器没有保存这次修改[\s\S]*请立即导出 JSON/);
   assert.match(script, /修改目前只暂存在这个页面[\s\S]*刷新前请立即导出 JSON/);
   assert.match(script, /hasUnpersistedState/);
@@ -416,9 +404,31 @@ test('本地存储按仓库隔离，写入前检测跨标签页冲突并处理�
   assert.match(crossTabFailure[0], /另一个标签页写入了无法读取的数据/);
 });
 
+test('公开题修改和删除会在发远端请求前核对两份本机存储修订', () => {
+  const guardBlock = script.match(/const assertRemoteMutationStateCurrent = \(\) => \{[\s\S]*?\n  \};/);
+  assert.ok(guardBlock, '应有远端写操作的同步前置检查');
+  assert.match(guardBlock[0], /storage\.getItem\(storageKey\)/);
+  assert.match(guardBlock[0], /storage\.getItem\(publicationTokensKey\)/);
+  assert.match(guardBlock[0], /currentRaw !== persistedRaw/);
+  assert.match(guardBlock[0], /currentPublicationTokensRaw !== persistedPublicationTokensRaw/);
+  assert.match(guardBlock[0], /没有修改或删除共享题库中的题目/);
+
+  for (const functionName of ['patchPublicQuestion', 'deletePublicQuestion']) {
+    const block = script.match(new RegExp(
+      `const ${functionName} = async \\(question(?:, next)?\\) => \\{[\\s\\S]*?\\n  \\};`,
+    ));
+    assert.ok(block, `应能定位 ${functionName}`);
+    assert.ok(
+      block[0].indexOf('assertRemoteMutationStateCurrent()') < block[0].indexOf('requestJson('),
+      `${functionName} 检测到跨标签页修订时不得发远端请求`,
+    );
+  }
+});
+
 test('JSON 备份导入导出有大小限制、合并预览和用户确认', () => {
   assert.match(attributesFor(page, 'question-draft-import-file'), /\baccept="application\/json,\.json"/);
-  assert.match(page, /JSON 用于完整恢复，文件是未加密明文/);
+  assert.match(page, /JSON 用于恢复题目内容，文件是未加密明文/);
+  assert.match(page, /公开题的修改凭据只留在当前浏览器，不会写进备份/);
   assert.match(script, /exportQuestionDraftsJson\(state\)/);
   assert.match(script, /application\/json;charset=utf-8/);
   assert.match(script, /全部本机题目已导出为未加密 JSON/);

@@ -132,7 +132,10 @@ test('评论实现保留安全 DOM，默认关闭时也不会开放外部连接'
   assert.doesNotMatch(script, /api\.github\.com|utteranc|\b(?:password|personal access token|PAT)\b/i);
   assert.doesNotMatch(defaultLayout, /utteranc\.es/);
   assert.match(layout, /comments_enabled == nil\s*%\}\{% assign comments_enabled = false/);
-  assert.match(defaultLayout, /frame-src \{% if comments_enabled and comments_api_url != empty %\}https:\/\/challenges\.cloudflare\.com/);
+  assert.match(defaultLayout, /assign questions_api_url = site\.data\.question_runtime\.api_url/);
+  assert.match(defaultLayout, /if questions_api_url != empty[\s\S]*assign turnstile_enabled = true/);
+  assert.match(defaultLayout, /frame-src \{% if turnstile_enabled %\}https:\/\/challenges\.cloudflare\.com/);
+  assert.match(defaultLayout, /\{% if questions_api_url != empty %\} \{\{ questions_api_url \| escape \}\}/);
   assert.match(runtime, /^api_url:\s*""$/m);
   assert.match(manifest, /permalink:\s*\/comments-manifest\.json/);
   assert.match(manifest, /site\.questions\s*\|\s*where:\s*'published',\s*true/);

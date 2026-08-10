@@ -13,6 +13,7 @@ if (root) {
   const repositoryPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
   const commentsEnabled = root.dataset.commentsEnabled === 'true';
   const commentsApiUrl = (root.dataset.commentsApi || '').trim();
+  const questionsApiUrl = (root.dataset.questionsApi || '').trim();
 
   const makeElement = (tag, className, text) => {
     const element = document.createElement(tag);
@@ -108,6 +109,59 @@ if (root) {
     }
   };
 
+  const inspectQuestions = async () => {
+    if (!questionsApiUrl) return {
+      value: '尚未开通',
+      state: 'warning',
+      hint: '私人题仍可使用；要让公开题站内直发，请配置 QUESTIONS_API_URL。',
+      healthy: false,
+    };
+
+    let api;
+    try {
+      api = new URL(questionsApiUrl);
+      if (api.protocol !== 'https:' || api.username || api.password || api.search || api.hash) throw new Error();
+    } catch {
+      return { value: '网址无效', state: 'error', hint: 'QUESTIONS_API_URL 必须是共享服务的 HTTPS 根网址。', healthy: false };
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch(`${api.href.replace(/\/+$/, '')}/v1/config`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const config = await response.json();
+      const writeEnabled = config?.questionsWriteEnabled ?? config?.writeEnabled;
+      if (!config?.siteId || !config?.turnstileSiteKey || writeEnabled !== true) throw new Error('公开题写入配置不完整');
+      const questionsResponse = await fetch(`${api.href.replace(/\/+$/, '')}/v1/questions?cursor=0&limit=1`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!questionsResponse.ok) throw new Error(`公开题读取接口 HTTP ${questionsResponse.status}`);
+      const questionsPage = await questionsResponse.json();
+      if (!Array.isArray(questionsPage?.questions)) throw new Error('公开题读取接口返回格式不完整');
+      return {
+        value: '站内直发可用',
+        state: 'success',
+        hint: '访客选择“公开”并保存后会立即进入共享题库，所有人都能看到。',
+        healthy: true,
+        adminUrl: `${api.href.replace(/\/+$/, '')}/admin`,
+      };
+    } catch (error) {
+      return {
+        value: '连接失败',
+        state: 'error',
+        hint: error?.name === 'AbortError' ? '共享题目服务响应超时，请检查 Worker 状态和 SITE_URL。' : `请检查 Worker、D1、Turnstile 与 CORS（${error?.message || '未知错误'}）。`,
+        healthy: false,
+      };
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  };
+
   const inspect = async (repository) => {
     results.hidden = false;
     grid.replaceChildren();
@@ -128,7 +182,7 @@ if (root) {
       if (!repoResponse.ok) throw new Error(`GitHub 暂时无法返回仓库状态（${repoResponse.status}）。`);
 
       const repo = await repoResponse.json();
-      const commentsStatus = await inspectComments();
+      const [commentsStatus, questionsStatus] = await Promise.all([inspectComments(), inspectQuestions()]);
       const workflowUrl = `https://api.github.com/repos/${encoded}/actions/workflows/pages.yml/runs?per_page=10&branch=${encodeURIComponent(repo.default_branch)}`;
       const workflowResponse = await fetch(workflowUrl, { headers: { Accept: 'application/vnd.github+json' } });
       let workflowLookupError = '';
@@ -151,7 +205,7 @@ if (root) {
       addCard('仓库可见性', repo.visibility === 'public' ? 'Public' : repo.visibility, repo.visibility === 'public' ? 'success' : 'warning', repo.visibility === 'public' ? '公开题库可以启用 GitHub Pages。' : 'Private 仓库不要启用公开 Pages。');
       addCard('默认分支', repo.default_branch || '未知', 'success', '保存和首次手动发布时应选择这个分支。');
       addCard('GitHub Pages', repo.has_pages ? '已经启用' : '尚未启用', repo.has_pages ? 'success' : 'error', repo.has_pages ? 'Pages 已有配置；继续检查最近一次运行。' : '到 Settings → Pages，把 Source 设为 GitHub Actions。');
-      addCard('公开增加题目', repo.has_issues ? 'Issues 已开启' : 'Issues 已关闭', repo.has_issues ? 'success' : 'error', repo.has_issues ? '公开补题入口可用；题目下方的站内评论不再依赖 Issues。' : '到 Settings → General → Features 开启 Issues，否则访客无法使用“＋题目”公开投稿。');
+      addCard('公开增加题目', questionsStatus.value, questionsStatus.state, questionsStatus.hint);
       addCard('题目下方站内评论', commentsStatus.value, commentsStatus.state, commentsStatus.hint);
       if (workflowLookupError) {
         addCard('最近一次发布', '状态读取失败', 'error', workflowLookupError);
@@ -162,7 +216,7 @@ if (root) {
 
       const healthy = repo.visibility === 'public'
         && repo.has_pages
-        && repo.has_issues
+        && questionsStatus.healthy
         && commentsStatus.healthy
         && !workflowLookupError
         && latestRun?.conclusion === 'success';
@@ -172,10 +226,11 @@ if (root) {
 
       addAction('打开仓库', repo.html_url, true);
       addAction('Pages 设置', `${repo.html_url}/settings/pages`);
+      if (questionsStatus.adminUrl) addAction('管理公开题', questionsStatus.adminUrl);
+      else addAction('开通共享题目服务', new URL('../questions/setup/', window.location.href).href);
       if (commentsStatus.adminUrl) addAction('管理站内评论', commentsStatus.adminUrl);
       else if (commentsEnabled) addAction('开通站内评论', new URL('../comments/setup/', window.location.href).href);
       addAction('Actions 运行记录', `${repo.html_url}/actions/workflows/pages.yml`);
-      addAction('题目协作标签', `${repo.html_url}/actions/workflows/question-collaboration.yml`);
       if (latestRun?.html_url) addAction('打开最近一次运行', latestRun.html_url);
       if (repo.has_pages) {
         const configuredWebsite = safeHttpUrl(repo.homepage);

@@ -4,15 +4,15 @@ description: 不填写 Token，检查公开题库的 GitHub Pages 和最近一�
 permalink: /setup-check/
 ---
 
-<div class="container prose standalone-page setup-check-page" data-setup-check data-default-repository="{{ site.github.repository_nwo | escape }}" data-comments-api="{{ site.data.comment_runtime.api_url | default: '' | strip | escape }}" data-comments-enabled="{{ site.data.settings.comments_enabled | escape }}" markdown="1">
+<div class="container prose standalone-page setup-check-page" data-setup-check data-default-repository="{{ site.github.repository_nwo | escape }}" data-questions-api="{{ site.data.question_runtime.api_url | default: '' | strip | escape }}" data-comments-api="{{ site.data.comment_runtime.api_url | default: '' | strip | escape }}" data-comments-enabled="{{ site.data.settings.comments_enabled | escape }}" markdown="1">
 
 <span class="status-badge">公开仓库 · 无需 Token</span>
 
 # 检查题库为什么没有更新
 
-输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages、Issues 和最近一次发布。它不会登录 GitHub，也不会读取 Private 仓库、题目草稿或浏览器面试记录。
+输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages、共享题目服务和最近一次发布。它不会登录 GitHub，也不会读取 Private 仓库、私人题或浏览器面试记录。
 
-本站当前默认关闭题目评论，自检会直接显示“已关闭”，不会连接或探测任何评论服务。公开补题仍使用 GitHub Issues，因此启用“公开增加题目”时 Issues 检查仍然有意义。
+本站当前默认关闭题目评论，自检会直接显示“已关闭”。公开题不再使用 GitHub Issues；自检会单独确认 `QUESTIONS_API_URL` 指向的共享服务是否可以读取和直接发布。
 
 <form class="setup-check-form" data-setup-check-form>
   <label for="setup-repository"><strong>GitHub 仓库</strong><span>例如：your-name/llm-notes</span></label>

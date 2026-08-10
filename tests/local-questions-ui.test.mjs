@@ -99,7 +99,7 @@ test('首页把公开与私人本机题目放进同一个选择结果', () => {
   );
 });
 
-test('仓库题、本机题和公开 Issue 共用一个题目列表与同类卡片', async () => {
+test('仓库题、本机题和共享公开题共用一个题目列表与同类卡片', async () => {
   const [
     home,
     layout,
@@ -135,15 +135,19 @@ test('仓库题、本机题和公开 Issue 共用一个题目列表与同类卡�
   assert.match(home, /公开题和私人题|公开题所有人都能看到/);
   assert.match(capturePage, /id="question-draft-library"/);
   assert.match(capturePage, /公开题和私人题都会进入首页的同一个题库/);
-  assert.match(capturePage, /提交成功即进入题库，不经过审核/);
+  assert.match(capturePage, /点击保存后由本站直接发布，并立即进入所有人可见的公开题库/);
   assert.match(home, /data-repository-id="{{ site\.github\.repository_nwo \| default: 'local\/llm-interview-notes'/);
+  assert.match(home, /data-questions-api-url="{{ site\.data\.question_runtime\.api_url/);
   assert.match(layout, /assets\/js\/local-questions\.js/);
   assert.match(layout, /assets\/js\/public-questions\.js/);
 
   assert.match(localScript, /makeElement\('a', 'question-card question-card-local'\)/);
   assert.match(localScript, /私人 · 仅此浏览器/);
-  assert.match(localScript, /question\.visibility === 'private' \|\| !publishedLocalIds\.has\(question\.id\)/);
+  assert.match(localScript, /公开失败 · 仅此浏览器/);
+  assert.match(localScript, /publishedRemoteIds\.has\(question\.remoteId\)/);
+  assert.match(localScript, /publishedLocalIds\.has\(question\.id\)/);
   assert.match(localScript, /question-library:public-loaded/);
+  assert.match(localScript, /event\.detail\?\.remoteIds/);
   assert.match(localScript, /event\.detail\?\.localIds/);
   assert.match(localScript, /window\.localStorage\.getItem\(context\.storageKey\)/);
   assert.match(localScript, /parseQuestionDraftsJson\(raw, \{ repositoryId: context\.repositoryId \}\)/);
@@ -151,11 +155,12 @@ test('仓库题、本机题和公开 Issue 共用一个题目列表与同类卡�
   assert.match(localScript, /url\.searchParams\.set\('edit', questionId\)/);
   assert.match(localScript, /url\.hash = 'question-draft-form'/);
 
-  assert.match(publicScript, /makeElement\('a', 'question-card question-card-public'\)/);
+  assert.match(publicScript, /makeElement\('article', 'question-card question-card-public'\)/);
   assert.match(publicScript, /question-visibility-public', '公开'/);
-  assert.match(publicScript, /if \(question\.localId\) link\.dataset\.localId = question\.localId/);
-  assert.match(publicScript, /detail: \{ localIds: questions\.map\(\(question\) => question\.localId\)\.filter\(Boolean\) \}/);
-  assert.match(publicScript, /list\.replaceChildren\(\.\.\.questions\.map\(createQuestion\)\)/);
+  assert.match(publicScript, /if \(question\.localId\) card\.dataset\.localId = question\.localId/);
+  assert.match(publicScript, /remoteIds: questions\.map\(\(question\) => question\.id\)/);
+  assert.match(publicScript, /localIds: questions\.map\(\(question\) => question\.localId\)\.filter\(Boolean\)/);
+  assert.match(publicScript, /list\.replaceChildren\(\.\.\.questions\.map\(\(question\) => createQuestion\(question, ownedByRemoteId\)\)\)/);
 
   assert.match(searchScript, /questionList \? \[\.\.\.questionList\.querySelectorAll\('\.question-card'\)\] : \[\]/);
   assert.match(searchScript, /document\.addEventListener\('question-library:changed'/);
@@ -167,7 +172,8 @@ test('仓库题、本机题和公开 Issue 共用一个题目列表与同类卡�
   }
   assert.doesNotMatch(localScript, /\bfetch\s*\(|XMLHttpRequest/);
   assert.doesNotMatch(localScript, /localStorage\.(?:setItem|removeItem|clear)\s*\(/);
-  assert.doesNotMatch(publicScript, /localStorage|sessionStorage/i);
+  assert.match(publicScript, /window\.localStorage\.getItem\(questionPublicationTokensStorageKey\(repositoryId\)\)/);
+  assert.doesNotMatch(publicScript, /localStorage\.(?:setItem|removeItem|clear)\s*\(|sessionStorage/i);
   assert.doesNotMatch(capturePage, /type=["']password["']|name=["'][^"']*(?:token|password|secret|pat)[^"']*["']/i);
   assert.doesNotMatch(captureScript, /\bAuthorization\b|\.innerHTML\b|insertAdjacentHTML/);
 

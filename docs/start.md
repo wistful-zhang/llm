@@ -11,7 +11,7 @@ permalink: /start/
 
 # 建立自己的大模型面经
 
-只想先记题或练习时，直接使用网站表单，不需要后台或 Markdown。选择“私人”不需要 GitHub 账号，题目会在同一题库中标注“私人”，只存在当前浏览器。选择“公开”需要登录 GitHub 完成最终确认，之后会自动发布，不经过人工审核。要建立自己的站点或多人维护时，再创建仓库并连接 Pages CMS。
+只想先记题或练习时，直接使用网站表单，不需要后台、Markdown 或 GitHub 登录。选择“私人”后，题目会在同一题库中标注“私人”，只存在当前浏览器；选择“公开”并保存后，题目会直接进入共享题库，不创建 Issue，也不经过人工审核。要建立自己的站点或多人维护时，再创建仓库并连接 Pages CMS。
 
 </div>
 
@@ -94,18 +94,18 @@ permalink: /start/
   <summary><span class="status-badge status-public">Public</span><strong>公开题库：启用阅读网页</strong><span class="summary-hint">展开步骤</span></summary>
   <div class="mode-details-body">
     <ol>
-      <li>先在 <strong>Settings → General → Features</strong> 确认 <strong>Issues</strong> 已开启；它用于访客公开发布题目和对应讨论。</li>
       <li>打开新仓库的 <strong>Settings → Pages</strong>。</li>
       <li>在 <strong>Build and deployment → Source</strong> 选择 <strong>GitHub Actions</strong>。项目已经包含工作流，不要再点击 Jekyll 或 Static HTML 的 Configure。</li>
       <li>进入 <strong>Actions → 内容检查与网站发布 → Run workflow</strong>，Branch 选择仓库默认分支（通常是 <code>main</code>），手动运行第一次部署。</li>
       <li>工作流变为绿色后，回到 <strong>Settings → Pages</strong> 点击 <strong>Visit site</strong>。</li>
-      <li>题目评论默认关闭，不需要额外配置；建题、补答案、公开发布和模拟面试都可以直接使用。</li>
+      <li>如果只自己记私人题，到这里即可；如果要让任何人都能在网页直接发布公开题，再完成一次[共享题目服务设置]({{ '/questions/setup/' | relative_url }})。以后发布者不需要 GitHub 登录或 Issue。</li>
+      <li>题目评论默认关闭，不影响建题、补答案、公开发布和模拟面试。</li>
     </ol>
     <figure class="guide-figure guide-wide">
       <a href="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 GitHub Pages 设置示意图（在新窗口打开）"><img src="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" loading="lazy" alt="GitHub Settings Pages 中选择 GitHub Actions 的操作示意图"></a>
       <figcaption>图 3：这张图只适用于公开题库。点击查看大图。</figcaption>
     </figure>
-    <p class="mode-outcome">以后点击 Pages CMS 的 Save，内容会先写入 GitHub，随后自动校验；只有校验通过，公开网页才会更新。</p>
+    <p class="mode-outcome">共享服务只需要题库主人配置一次。完成后，访客选择“公开”并保存，题目会立即出现在题库；仓库内置核验题仍由 Pages CMS 管理。</p>
   </div>
 </details>
 
@@ -231,7 +231,7 @@ permalink: /start/
 </div>
 
 - **Pages CMS 看不到仓库**：点击账号旁的齿轮或 **Manage GitHub App**，补选仓库并保存。
-- **在“＋题目”保存后，在哪里看**：公开题和私人题都在首页同一个题库列表中。私人题标注“私人”，只对当前浏览器可见；公开题需在 GitHub 完成最终提交，网站自动更新后对所有人可见。
+- **在“＋题目”保存后，在哪里看**：公开题和私人题都在首页同一个题库列表中。私人题标注“私人”，只对当前浏览器可见；公开题保存成功后立即对所有人可见，不需要再去 GitHub 操作。
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。

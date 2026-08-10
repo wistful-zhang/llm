@@ -64,7 +64,7 @@ const add = (state, values = {}, options = {}) => addQuestionDraft(
   },
 );
 
-test('schema v2 与稳定 storage key 按 repositoryId 严格隔离', () => {
+test('schema v3 与稳定 storage key 按 repositoryId 严格隔离', () => {
   const empty = createEmptyQuestionDrafts('Owner/Repo', FIRST_TIME);
 
   assert.deepEqual(empty, {
@@ -91,7 +91,7 @@ test('schema v2 与稳定 storage key 按 repositoryId 严格隔离', () => {
   );
 });
 
-test('schema v1 本机数据与备份无损迁移到 v2，未来版本会安全拒绝', () => {
+test('schema v1/v2 本机数据与备份无损迁移到 v3，未来版本会安全拒绝', () => {
   const current = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
     visibility: 'public',
   });
@@ -148,6 +148,7 @@ test('新增题目会清理空白、去重标签，且不修改原对象', () =>
     followUps: [],
     answerStatus: 'pending',
     visibility: 'private',
+    remoteId: '',
     category: 'LLM 基础',
     difficulty: '中等',
     tags: ['KV Cache', '推理'],
@@ -207,6 +208,24 @@ test('题目可见性只接受 private 或 public，旧记录缺省时安全迁�
     (error) => error instanceof QuestionDraftDataError
       && error.code === 'invalid_visibility'
       && error.field === 'visibility',
+  );
+});
+
+test('公开题远端编号使用 UUID，旧记录安全迁移为空编号', () => {
+  const remoteId = '123e4567-e89b-42d3-a456-426614174000';
+  const linked = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    visibility: 'public',
+    remoteId,
+  });
+  assert.equal(linked.questions[0].remoteId, remoteId);
+
+  const legacy = structuredClone(linked);
+  legacy.schemaVersion = 2;
+  delete legacy.questions[0].remoteId;
+  assert.equal(sanitizeQuestionDrafts(legacy).questions[0].remoteId, '');
+  assert.throws(
+    () => add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), { remoteId: 'issue-39' }),
+    (error) => error instanceof QuestionDraftDataError && error.code === 'invalid_remote_id',
   );
 });
 
@@ -607,7 +626,9 @@ $$`;
     () => buildQuestionMarkdown({ ...state.questions[0], answer: '尚未写完 $$x+y' }),
     (error) => error instanceof QuestionDraftDataError
       && error.code === 'invalid_math'
-      && error.field === 'answer',
+      && error.field === 'answer'
+      && /发布到共享题库/.test(error.message)
+      && !/同步 GitHub/.test(error.message),
   );
   assert.equal(state.questions[0].answer, answer);
 });
