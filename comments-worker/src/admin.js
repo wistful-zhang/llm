@@ -1,5 +1,6 @@
 import { HttpError, normalizePlainText, validateSlug } from "./validation.js";
 import { assertAdmin, jsonResponse, readJson } from "./security.js";
+import { listAdminPublicQuestions, moderatePublicQuestion } from "./db.js";
 
 const ADMIN_PAGE_SIZE = 30;
 
@@ -8,7 +9,7 @@ export async function handleAdminApi(request, env, url) {
   const method = request.method.toUpperCase();
 
   if (method === "GET" && url.pathname === "/v1/admin/overview") {
-    const [comments, reports, threads] = await Promise.all([
+    const [comments, reports, threads, questions] = await Promise.all([
       env.DB.prepare("SELECT COUNT(*) AS count FROM comments WHERE site_id = ? AND status = 'visible'")
         .bind(env.SITE_ID)
         .first(),
@@ -18,16 +19,20 @@ export async function handleAdminApi(request, env, url) {
       env.DB.prepare("SELECT COUNT(*) AS count FROM threads WHERE site_id = ? AND locked = 1")
         .bind(env.SITE_ID)
         .first(),
+      env.DB.prepare("SELECT COUNT(*) AS count FROM public_questions WHERE site_id = ? AND status = 'visible'")
+        .bind(env.SITE_ID)
+        .first(),
     ]);
     return jsonResponse(request, env, {
       visibleComments: Number(comments?.count || 0),
       pendingReports: Number(reports?.count || 0),
       lockedThreads: Number(threads?.count || 0),
+      visibleQuestions: Number(questions?.count || 0),
     });
   }
 
   if (method === "GET" && url.pathname === "/v1/admin/export") {
-    const [threads, comments, reports, moderationLog] = await Promise.all([
+    const [threads, comments, reports, moderationLog, publicQuestions] = await Promise.all([
       env.DB.prepare(
         `SELECT question_slug, next_floor, locked, created_at, updated_at
          FROM threads WHERE site_id = ? ORDER BY question_slug ASC`,
@@ -49,6 +54,13 @@ export async function handleAdminApi(request, env, url) {
       env.DB.prepare(
         `SELECT id, action, target_type, target_id, reason, created_at
          FROM moderation_log WHERE site_id = ? ORDER BY created_at ASC, id ASC`,
+      )
+        .bind(env.SITE_ID)
+        .all(),
+      env.DB.prepare(
+        `SELECT id, title, category, difficulty, answer_status, answer, follow_ups_json,
+                tags_json, source, author, local_id, status, created_at, updated_at, deleted_at
+         FROM public_questions WHERE site_id = ? ORDER BY created_at ASC, id ASC`,
       )
         .bind(env.SITE_ID)
         .all(),
@@ -89,6 +101,23 @@ export async function handleAdminApi(request, env, url) {
           createdAt: row.created_at,
           updatedAt: row.updated_at,
           resolvedAt: row.resolved_at,
+        })),
+        publicQuestions: publicQuestions.results.map((row) => ({
+          id: row.id,
+          title: row.title,
+          category: row.category,
+          difficulty: row.difficulty,
+          answerStatus: row.answer_status,
+          answer: row.answer,
+          followUps: parseStoredList(row.follow_ups_json),
+          tags: parseStoredList(row.tags_json),
+          source: row.source,
+          author: row.author,
+          localId: row.local_id,
+          status: row.status,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          deletedAt: row.deleted_at,
         })),
         moderationLog: moderationLog.results.map((row) => ({
           id: row.id,
@@ -187,6 +216,31 @@ export async function handleAdminApi(request, env, url) {
       })),
       nextCursor: hasMore ? cursor + ADMIN_PAGE_SIZE : null,
     });
+  }
+
+  if (method === "GET" && url.pathname === "/v1/admin/public-questions") {
+    const cursor = parseAdminCursor(url.searchParams.get("cursor"));
+    return jsonResponse(
+      request,
+      env,
+      await listAdminPublicQuestions(env.DB, env.SITE_ID, cursor, ADMIN_PAGE_SIZE),
+    );
+  }
+
+  const publicQuestionMatch = url.pathname.match(/^\/v1\/admin\/public-questions\/([^/]+)$/);
+  if (method === "PATCH" && publicQuestionMatch) {
+    const questionId = parseUuidPath(publicQuestionMatch[1]);
+    const input = await readJson(request);
+    const action = parseAction(input.action, ["hide", "show", "delete"]);
+    const reason = parseOptionalReason(input.reason);
+    const question = await moderatePublicQuestion(env.DB, {
+      siteId: env.SITE_ID,
+      id: questionId,
+      action,
+      reason,
+      now: new Date().toISOString(),
+    });
+    return jsonResponse(request, env, { ok: true, question });
   }
 
   const commentMatch = url.pathname.match(/^\/v1\/admin\/comments\/([^/]+)$/);
@@ -329,4 +383,13 @@ function parseUuidPath(value) {
     throw new HttpError(400, "invalid_id", "ID 不合法");
   }
   return decoded.toLowerCase();
+}
+
+function parseStoredList(value) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
 }

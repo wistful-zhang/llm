@@ -27,6 +27,7 @@ const roots = typeof document === 'undefined'
   : [...document.querySelectorAll('[data-local-questions]')];
 
 if (roots.length > 0) {
+  const publishedRemoteIds = new Set();
   const publishedLocalIds = new Set();
 
   const makeElement = (tag, className = '', text = '') => {
@@ -67,6 +68,7 @@ if (roots.length > 0) {
     card.dataset.searchId = `local:${question.id}`;
     card.dataset.source = 'local';
     card.dataset.localId = question.id;
+    if (question.remoteId) card.dataset.remoteId = question.remoteId;
     card.dataset.search = [
       question.title,
       question.category,
@@ -91,10 +93,12 @@ if (roots.length > 0) {
       'span',
       question.visibility === 'private'
         ? 'question-visibility-badge question-visibility-private'
-        : 'question-visibility-badge question-publication-incomplete',
+        : (question.remoteId
+          ? 'question-visibility-badge question-visibility-public'
+          : 'question-visibility-badge question-publication-incomplete'),
       question.visibility === 'private'
         ? '私人 · 仅此浏览器'
-        : '公开发布未完成 · 仅此浏览器',
+        : (question.remoteId ? '公开' : '公开失败 · 仅此浏览器'),
     ));
     if (question.answerStatus !== 'complete') {
       meta.append(makeElement('span', 'answer-state-badge', '待解答'));
@@ -140,7 +144,8 @@ if (roots.length > 0) {
         : { questions: [] };
       const summary = selectLocalQuestions(state.questions, { all: true });
       const visibleQuestions = summary.questions.filter((question) => (
-        question.visibility === 'private' || !publishedLocalIds.has(question.id)
+        (!question.remoteId || !publishedRemoteIds.has(question.remoteId))
+          && (question.visibility !== 'public' || !publishedLocalIds.has(question.id))
       ));
       context.list.replaceChildren(
         ...visibleQuestions.map((question) => createQuestionCard(question, context)),
@@ -149,11 +154,11 @@ if (roots.length > 0) {
       if (context.status) {
         const privateCount = summary.questions
           .filter((question) => question.visibility === 'private').length;
-        const unfinishedPublicCount = visibleQuestions
-          .filter((question) => question.visibility === 'public').length;
+        const unfinishedPublicCount = summary.questions
+          .filter((question) => question.visibility === 'public' && !question.remoteId).length;
         context.status.textContent = summary.total === 0
           ? '私人题只在当前浏览器显示。'
-          : `本机有 ${privateCount} 道私人题${unfinishedPublicCount ? ` · ${unfinishedPublicCount} 道公开发布未完成` : ''}`;
+          : `本机有 ${privateCount} 道私人题${unfinishedPublicCount ? ` · ${unfinishedPublicCount} 道公开失败题目` : ''}`;
       }
       notifyLibraryChanged();
     } catch (caught) {
@@ -164,8 +169,11 @@ if (roots.length > 0) {
   const renderAll = () => contexts.forEach(render);
 
   document.addEventListener('question-library:public-loaded', (event) => {
+    publishedRemoteIds.clear();
     publishedLocalIds.clear();
+    const remoteIds = Array.isArray(event.detail?.remoteIds) ? event.detail.remoteIds : [];
     const localIds = Array.isArray(event.detail?.localIds) ? event.detail.localIds : [];
+    remoteIds.forEach((id) => publishedRemoteIds.add(String(id)));
     localIds.forEach((id) => publishedLocalIds.add(String(id)));
     renderAll();
   });

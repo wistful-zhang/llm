@@ -33,6 +33,10 @@
 
 从 1.8.0 升级到 1.8.1 不需要迁移本机数据。请一起合并 `latex-input-core.mjs`、记题页与脚本、公式渲染脚本、题目布局、样式和公式校验器；新版本会为用户输入启用 MathJax 安全过滤。公式源码仍使用成对 `$$`，既有题目无需改写。
 
+从 1.8.x 升级到 1.9.0 时，请先导出本机题目 JSON，再一起合并 `comments-worker/` 的公开题 migration 与 API、`question-publication-tokens.mjs`、公开题读取和记题脚本、`question_runtime.yml`、`build-question-config.mjs`、Pages 工作流、CSP、样式和测试。浏览器题目 schema 会从 v2 自动迁移到 v3，为成功同步的共享题保存 `remoteId`；发布者的原始修改凭据单独保存在浏览器，不进入题目 JSON 或仓库。
+
+1.9.0 不再读取 `public-question` GitHub Issues。升级前如果旧 Issue 中存在仓库题库没有的独有内容，应先脱敏并迁移到 `docs/_questions/` 或新的共享题服务，再关闭旧 Issue。每个独立题库必须部署自己的 Worker + D1，并设置仓库变量 `QUESTIONS_API_URL`；不要复制上游题库的共享数据库地址。变量为空时私人题和仓库内置题仍可使用，但网页会明确暂停公开发布。
+
 1.6.0 当时把题目评论改为正文下方的内嵌输入框，并使用 [utterances](https://github.com/apps/utterances) 显示 GitHub Issue 回复。这段只用于识别旧副本：该方案已经退役，不要再为新副本安装评论应用。旧 Issue 和回复仍保留在 GitHub，但不会自动出现在新的站内评论数据库中。
 
 ## 升级到下一版本的站内评论（尚未发布）
@@ -41,7 +45,7 @@
 
 每个模板副本或 Fork 都必须在自己的 Cloudflare 账号中创建 Worker 和 D1，并在自己的仓库 Actions Variables 中设置 `COMMENTS_API_URL`。不要复制上游仓库构建出的运行时地址；变量留空时页面不会连接任何后端，也不会回退到原作者的评论库。Private / Internal 题库应保持评论关闭。
 
-旧 GitHub Issue 评论不会自动迁移到 D1。需要保留时，应由题库主人先导出、确认作者授权和隐私边界，再制定单独迁移方案；不要把 GitHub 用户名直接冒充为新站内昵称。公开增加题目仍使用 GitHub Issue Form，因此 Public 题库若保留公开补题功能，Issues 仍需开启；这与正式题目下方的站内评论是两条独立路径。
+旧 GitHub Issue 评论不会自动迁移到 D1。需要保留时，应由题库主人先导出、确认作者授权和隐私边界，再制定单独迁移方案；不要把 GitHub 用户名直接冒充为新站内昵称。1.9.0 起公开题也使用共享 Worker 直接发布，但题目数据与评论数据仍是两套独立表和开关。
 
 ## 推荐升级方法
 

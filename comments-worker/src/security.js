@@ -40,7 +40,7 @@ export async function dailyActorKey(env, request, scope, now = new Date()) {
 export async function verifyTurnstile({ env, token, requestId, action, request }) {
   const config = normalizeSiteConfig(env);
   if (!config.writeEnabled) {
-    throw new HttpError(503, "write_disabled", "评论服务尚未完成写入配置");
+    throw new HttpError(503, "write_disabled", "共享服务尚未完成写入配置");
   }
 
   const form = new URLSearchParams({

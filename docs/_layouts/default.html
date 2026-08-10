@@ -8,12 +8,16 @@
     {% assign comments_enabled = site.data.settings.comments_enabled %}
     {% if comments_enabled == nil %}{% assign comments_enabled = false %}{% endif %}
     {% assign comments_api_url = site.data.comment_runtime.api_url | default: '' | strip %}
+    {% assign questions_api_url = site.data.question_runtime.api_url | default: '' | strip %}
+    {% assign turnstile_enabled = false %}
+    {% if questions_api_url != empty %}{% assign turnstile_enabled = true %}{% endif %}
+    {% if comments_enabled and comments_api_url != empty %}{% assign turnstile_enabled = true %}{% endif %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ page.description | default: site_description | escape }}">
     <meta name="theme-color" content="#101828">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src {% if comments_enabled and comments_api_url != empty %}https://challenges.cloudflare.com{% else %}'none'{% endif %}; script-src 'self' https://cdn.jsdelivr.net{% if comments_enabled and comments_api_url != empty %} https://challenges.cloudflare.com{% endif %}; script-src-attr 'none'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://api.github.com https://cdn.jsdelivr.net{% if comments_enabled and comments_api_url != empty %} {{ comments_api_url | escape }} https://challenges.cloudflare.com{% endif %}; form-action 'self'; upgrade-insecure-requests">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src {% if turnstile_enabled %}https://challenges.cloudflare.com{% else %}'none'{% endif %}; script-src 'self' https://cdn.jsdelivr.net{% if turnstile_enabled %} https://challenges.cloudflare.com{% endif %}; script-src-attr 'none'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://api.github.com https://cdn.jsdelivr.net{% if comments_enabled and comments_api_url != empty %} {{ comments_api_url | escape }}{% endif %}{% if questions_api_url != empty %} {{ questions_api_url | escape }}{% endif %}{% if turnstile_enabled %} https://challenges.cloudflare.com{% endif %}; form-action 'self'; upgrade-insecure-requests">
     <title>{% if page.title %}{{ page.title | escape }} · {% endif %}{{ site_title | escape }}</title>
     <link rel="canonical" href="{{ canonical_url }}">
     <link rel="icon" type="image/svg+xml" href="{{ '/assets/favicon.svg' | relative_url }}">

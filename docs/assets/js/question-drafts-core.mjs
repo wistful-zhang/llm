@@ -2,7 +2,7 @@ import { validateKramdownMath } from './latex-input-core.mjs';
 
 export const QUESTION_DRAFTS_FORMAT = 'llm-question-drafts';
 export const QUESTION_DRAFTS_BACKUP_FORMAT = 'llm-question-drafts-backup';
-export const QUESTION_DRAFTS_SCHEMA_VERSION = 2;
+export const QUESTION_DRAFTS_SCHEMA_VERSION = 3;
 
 export const MAX_QUESTION_DRAFTS = 500;
 export const MAX_QUESTION_TITLE_LENGTH = 160;
@@ -28,8 +28,9 @@ export const QUESTION_VISIBILITIES = Object.freeze(['private', 'public']);
 const DIFFICULTY_SET = new Set(QUESTION_DIFFICULTIES);
 const ANSWER_STATUS_SET = new Set(QUESTION_ANSWER_STATUSES);
 const VISIBILITY_SET = new Set(QUESTION_VISIBILITIES);
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2]);
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3]);
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,119}$/;
+const REMOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const REPOSITORY_SEGMENT_PATTERN = /^[A-Za-z0-9_.-]{1,100}$/;
 
 export class QuestionDraftDataError extends Error {
@@ -206,6 +207,14 @@ const cleanVisibility = (value) => {
   return visibility;
 };
 
+const cleanRemoteId = (value) => {
+  const remoteId = cleanInlineText(requireString(value, 'remoteId', '')).toLowerCase();
+  if (remoteId && !REMOTE_ID_PATTERN.test(remoteId)) {
+    fail('remoteId 必须是有效的 UUID。', 'invalid_remote_id', 'remoteId');
+  }
+  return remoteId;
+};
+
 export function parseQuestionTags(value = []) {
   let candidates;
   if (Array.isArray(value)) {
@@ -243,13 +252,19 @@ const sanitizeQuestion = (value) => {
     fail('updatedAt 不能早于 createdAt。', 'invalid_timestamp_order', 'updatedAt');
   }
   const answer = cleanAnswer(value.answer);
+  const visibility = cleanVisibility(value.visibility);
+  const remoteId = cleanRemoteId(value.remoteId);
+  if (remoteId && visibility !== 'public') {
+    fail('私人题不能保留公开题 remoteId。', 'invalid_remote_visibility', 'remoteId');
+  }
   return {
     id: cleanId(value.id),
     title: cleanTitle(value.title),
     answer,
     followUps: parseQuestionFollowUps(value.followUps),
     answerStatus: cleanAnswerStatus(value.answerStatus, answer),
-    visibility: cleanVisibility(value.visibility),
+    visibility,
+    remoteId,
     category: cleanCategory(value.category),
     difficulty: cleanDifficulty(value.difficulty),
     tags: parseQuestionTags(value.tags),
@@ -339,12 +354,18 @@ const createQuestionId = (state, idFactory) => {
 const cleanQuestionInput = (value) => {
   if (!isPlainObject(value)) fail('题目输入必须是对象。', 'invalid_question');
   const answer = cleanAnswer(value.answer);
+  const visibility = cleanVisibility(value.visibility);
+  const remoteId = cleanRemoteId(value.remoteId);
+  if (remoteId && visibility !== 'public') {
+    fail('私人题不能保留公开题 remoteId。', 'invalid_remote_visibility', 'remoteId');
+  }
   return {
     title: cleanTitle(value.title),
     answer,
     followUps: parseQuestionFollowUps(value.followUps),
     answerStatus: cleanAnswerStatus(value.answerStatus, answer),
-    visibility: cleanVisibility(value.visibility),
+    visibility,
+    remoteId,
     category: cleanCategory(value.category),
     difficulty: cleanDifficulty(value.difficulty),
     tags: parseQuestionTags(value.tags),
@@ -422,6 +443,7 @@ const comparableQuestion = (question) => JSON.stringify({
   followUps: question.followUps,
   answerStatus: question.answerStatus,
   visibility: question.visibility,
+  remoteId: question.remoteId,
   category: question.category,
   difficulty: question.difficulty,
   tags: question.tags,
@@ -582,7 +604,11 @@ export function parseQuestionDraftBackup(raw, options = {}) {
   const sourceData = sanitizeQuestionDrafts(backup.data, { repositoryId: sourceRepositoryId });
   return {
     data: crossRepository
-      ? { ...sourceData, repositoryId: targetRepositoryId }
+      ? {
+        ...sourceData,
+        repositoryId: targetRepositoryId,
+        questions: sourceData.questions.map((question) => ({ ...question, remoteId: '' })),
+      }
       : sourceData,
     exportedAt: cleanTimestamp(backup.exportedAt, 'exportedAt'),
     sourceRepositoryId,
@@ -743,7 +769,7 @@ const assertValidQuestionMath = (question) => {
     const [message] = validateKramdownMath(value);
     if (!message) continue;
     throw new QuestionDraftDataError(
-      `${label}：${message}。草稿已经保留，请补完整后再导出或同步 GitHub。`,
+      `${label}：${message}。草稿已经保留，请补完整后再导出或发布到共享题库。`,
       'invalid_math',
       field,
     );

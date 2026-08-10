@@ -1,6 +1,6 @@
-# 原生评论服务（Cloudflare Worker + D1）
+# 共享题目与原生评论服务（Cloudflare Worker + D1）
 
-这是题目页“贴吧式”评论区的独立后端。访客不需要 GitHub 账号：通过 Turnstile 后即可用昵称发布，评论会立即出现在题目下方。服务仅面向一个站点，数据保存在站点维护者自己的 Cloudflare D1 中。
+这是公开题目和题目页“贴吧式”评论区的独立后端。使用者不需要 GitHub 账号：选择公开、完成 Turnstile 后，题目立即出现在统一题库，不进入审核队列；评论同样可以用昵称直接发布。服务仅面向一个站点，数据保存在站点维护者自己的 Cloudflare D1 中。
 
 ## 能力与边界
 
@@ -9,6 +9,7 @@
 - 发布者凭浏览器生成的 `editToken` 编辑或删除自己的评论；后端只保存 HMAC。
 - 举报进入管理队列；`/admin` 提供隐藏、恢复、删除和处理举报的简单界面。
 - 评论默认立即公开。管理员可以锁定某道题的评论区。
+- 公开题创建时直接进入 `visible` 状态；发布者凭当前浏览器保存的 `editToken` 修改或删除，管理员只做事后隐藏、恢复或删除。
 - 不保存原始 IP 或 User-Agent。来源地址仅在请求期间用于生成按 UTC 日轮换的 HMAC 限流键，过期键由定时任务清理。
 - 评论是纯文本。展示端必须继续使用 `textContent`，不要把评论插入 `innerHTML`。
 
@@ -24,7 +25,7 @@ https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/REPOSITORY/t
 
 `comments-worker` 已把运行代码、`package.json`、Wrangler 配置、D1 migrations 和 secret 示例全部放在子目录内，不依赖仓库根目录，符合子目录作为独立应用部署的要求。部署页会根据 `wrangler.jsonc` 创建 D1，根据 `package.json` 的 `cloudflare.bindings` 显示六项配置说明，并从 `.dev.vars.example` 识别三个 secret。`deploy` 脚本使用 D1 binding `DB` 执行迁移，因此用户在界面中改数据库名称也不会影响迁移。
 
-部署前仍需先在 Turnstile 创建小组件，才能填写配对的 site key 和 secret。部署完成后，把 Worker 根网址配置到题库网站的 `COMMENTS_API_URL` 并重新构建网站。
+部署前仍需先在 Turnstile 创建小组件，才能填写配对的 site key 和 secret。部署完成后，把 Worker 根网址配置到题库仓库变量 `QUESTIONS_API_URL` 并重新构建网站；只有主动启用评论时才另外设置 `COMMENTS_API_URL`。
 
 ## 手动部署
 
@@ -50,7 +51,7 @@ https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/REPOSITORY/t
 4. 修改 `wrangler.jsonc` 的三个公开变量：
 
    - `SITE_URL`：网站完整地址，例如 `https://your-name.github.io/llm`。
-   - `SITE_ID`：这套评论数据的稳定标识，部署后不要随意更换。
+   - `SITE_ID`：这套公开题与评论数据的稳定标识，部署后不要随意更换。
    - `TURNSTILE_SITE_KEY`：Turnstile 的公开 site key。
 
 5. 配置三个 secret。不要把值写入 Git：
@@ -61,7 +62,7 @@ https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/REPOSITORY/t
    npx wrangler secret put ADMIN_TOKEN
    ```
 
-   `HASH_SECRET` 和 `ADMIN_TOKEN` 均应使用至少 32 个随机字符。实现会用 `HASH_SECRET` 对 `editToken` 做 HMAC-SHA-256 后再保存，因此更换它确实会让旧评论的编辑凭证失效，也会改变当日限流键；请把它作为长期密钥备份。
+   `HASH_SECRET` 和 `ADMIN_TOKEN` 均应使用至少 32 个随机字符。实现会用 `HASH_SECRET` 对公开题和评论的 `editToken` 做 HMAC-SHA-256 后再保存，因此更换它会让旧内容的作者编辑凭证失效，也会改变当日限流键；请把它作为长期密钥备份。
 
 6. 迁移并部署：
 
@@ -77,7 +78,8 @@ https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/REPOSITORY/t
    {
      "siteId": "llm-interview-notes",
      "turnstileSiteKey": "...",
-     "writeEnabled": true
+     "writeEnabled": true,
+     "questionsWriteEnabled": true
    }
    ```
 
@@ -92,11 +94,41 @@ npm run db:migrate:local
 npm run dev
 ```
 
-Turnstile 本地调试请使用 Cloudflare 提供的测试 key。题目页的发布和举报共用同一个小组件，action 固定为 `question-comment`；后端会严格核对该 action，并确认验证结果中的 hostname 等于 `SITE_URL` 的 hostname。
+Turnstile 本地调试请使用 Cloudflare 提供的测试 key。公开题 action 为 `public-question`，评论和举报 action 为 `question-comment`；后端会严格核对 action，并确认验证结果中的 hostname 等于 `SITE_URL` 的 hostname。
 
 ## 前端 API 契约
 
 所有公开 JSON 接口只允许 `SITE_URL` 所在 origin（以及 Worker 自身的同源管理页）跨域访问，不会返回 `Access-Control-Allow-Origin: *`。
+
+### 公开题目
+
+- `GET /v1/questions?cursor=0&limit=100`：只返回 `visible` 题目。
+- `GET /v1/questions/{id}`：读取一道仍公开的题目。
+- `POST /v1/questions`：通过 Turnstile 后立即发布，不存在待审核状态。
+- `PATCH /v1/questions/{id}`：使用发布时的 `editToken` 修改自己的题目。
+- `DELETE /v1/questions/{id}`：使用 `editToken` 下架并清空自己的题目正文。
+
+发布正文示例：
+
+```json
+{
+  "title": "LoRA 的微调原理是什么？",
+  "category": "微调",
+  "difficulty": "中等",
+  "answerStatus": "pending",
+  "answer": "",
+  "followUps": [],
+  "tags": ["LoRA"],
+  "source": "",
+  "localId": "question_...",
+  "requestId": "UUID",
+  "editToken": "由浏览器生成并只保存在本机的高强度随机串",
+  "turnstileToken": "Turnstile 返回值",
+  "website": ""
+}
+```
+
+`author` 可以省略，服务端会使用“匿名用户”。相同 `requestId` 和 `editToken` 的安全重试不会重复创建题目。`PATCH` 可以只提交需要修改的题目字段以及 `editToken`；`DELETE` 正文只需 `{ "editToken": "..." }`。
 
 ### 配置与读取
 
@@ -167,7 +199,7 @@ Turnstile 本地调试请使用 Cloudflare 提供的测试 key。题目页的发
 
 ## 管理
 
-部署后访问 `https://<你的-worker>/admin`。输入 `ADMIN_TOKEN` 后可查看最新评论与待处理举报，也可以下载 JSON 备份。导出包含 `threads`、`comments`、`reports` 和 `moderationLog`，明确排除评论编辑凭证摘要、举报者 HMAC、限流表和管理员令牌。令牌只写入当前标签页的 `sessionStorage`，不会写入 URL、cookie 或 `localStorage`；关闭标签页即清除。
+部署后访问 `https://<你的-worker>/admin`。输入 `ADMIN_TOKEN` 后可查看公开题、最新评论与待处理举报，也可以下载 JSON 备份。公开题正常发布时不经过这里；管理员只在发布后执行隐藏、恢复或永久删除。导出包含 `publicQuestions`、`threads`、`comments`、`reports` 和 `moderationLog`，明确排除题目与评论的编辑凭证摘要、举报者 HMAC、限流表和管理员令牌。令牌只写入当前标签页的 `sessionStorage`，不会写入 URL、cookie 或 `localStorage`；关闭标签页即清除。
 
 管理页的“最新评论”卡片可以直接锁定或重新开放对应题目的评论区。需要自动化时也可以调用同一管理 API：
 

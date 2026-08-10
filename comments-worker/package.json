@@ -19,7 +19,7 @@
         "description": "正式题库的完整网址，例如 `https://name.github.io/repository`；用于严格 CORS、Turnstile hostname 和已发布题目清单校验。"
       },
       "SITE_ID": {
-        "description": "这套评论数据的稳定标识（8–80 位字母、数字、下划线或连字符）；上线后不要随意修改。"
+        "description": "这套公开题与评论数据的稳定标识（8–80 位字母、数字、下划线或连字符）；上线后不要随意修改。"
       },
       "TURNSTILE_SITE_KEY": {
         "description": "在 [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/get-started/) 创建 Managed 小组件后取得的公开 site key。"
@@ -28,7 +28,7 @@
         "description": "与 Turnstile site key 配对的 secret key；必须作为加密 Secret 配置，不能提交到仓库。"
       },
       "HASH_SECRET": {
-        "description": "至少 32 个随机字符，用于 HMAC 限流键和评论编辑凭证摘要；可用 `openssl rand -hex 32` 生成并长期备份。"
+        "description": "至少 32 个随机字符，用于 HMAC 限流键以及公开题、评论的编辑凭证摘要；可用 `openssl rand -hex 32` 生成并长期备份。"
       },
       "ADMIN_TOKEN": {
         "description": "至少 32 个随机字符的管理令牌，用于登录 `/admin`；可用 `openssl rand -hex 32` 生成。"

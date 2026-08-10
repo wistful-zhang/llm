@@ -51,6 +51,11 @@ jobs:
           COMMENTS_API_URL: ${{ vars.COMMENTS_API_URL }}
         run: node scripts/build-comments-config.mjs
 
+      - name: 生成公开题共享服务配置
+        env:
+          QUESTIONS_API_URL: ${{ vars.QUESTIONS_API_URL }}
+        run: node scripts/build-question-config.mjs
+
       - name: 构建预览网站
         uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1
         with:
@@ -78,6 +83,11 @@ jobs:
         env:
           COMMENTS_API_URL: ${{ vars.COMMENTS_API_URL }}
         run: node scripts/build-comments-config.mjs
+
+      - name: 生成公开题共享服务配置
+        env:
+          QUESTIONS_API_URL: ${{ vars.QUESTIONS_API_URL }}
+        run: node scripts/build-question-config.mjs
 
       - name: 读取 GitHub Pages 配置
         id: pages

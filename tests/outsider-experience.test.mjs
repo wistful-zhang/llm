@@ -36,13 +36,19 @@ test('Pages CMS 提供手动检查按钮，工作流接受 CMS payload', async (
   assert.doesNotMatch(workflow, /vars\.ENABLE_PAGES/);
 });
 
-test('陌生贡献者可以只提交问题，不需要填写答案', async () => {
-  const form = await read('../.github/ISSUE_TEMPLATE/public-question.yml');
-  const answerSection = form.split('id: answer')[1]?.split('\n  - type:')[0] || '';
+test('任何使用者都能在网页只填问题并直接选择公开或私人', async () => {
+  const [page, script] = await Promise.all([
+    read('../docs/capture.html'),
+    read('../docs/assets/js/question-capture.js'),
+  ]);
+  const answerField = page.match(/<textarea[^>]+id="question-answer"[\s\S]*?<\/textarea>/)?.[0] || '';
 
-  assert.match(form, /只写问题也可以，答案可以留空/);
-  assert.match(form, /其他/);
-  assert.doesNotMatch(answerSection, /required: true/);
+  assert.match(page, /答案和追问都可以留空/);
+  assert.match(page, /value="private"/);
+  assert.match(page, /value="public"/);
+  assert.doesNotMatch(answerField, /\brequired\b/);
+  assert.match(script, /method: 'POST'/);
+  assert.doesNotMatch(script, /api\.github\.com|issues\/new|Issue #/);
 });
 
 test('公开内容页提供分享、复制链接和反馈入口', async () => {
@@ -66,20 +72,25 @@ test('公开内容页提供分享、复制链接和反馈入口', async () => {
   assert.match(experience, /反馈内容错误/);
 });
 
-test('公开 Issue 表单明确提醒内容会公开，隐私问题走私密报告', async () => {
-  const forms = await Promise.all([
+test('公开发布在站内完成并提示隐私边界，不再提供题目 Issue 表单', async () => {
+  const [forms, capture, privacy] = await Promise.all([
+    Promise.all([
     read('../.github/ISSUE_TEMPLATE/bug.yml'),
     read('../.github/ISSUE_TEMPLATE/feature.yml'),
-    read('../.github/ISSUE_TEMPLATE/public-question.yml'),
+    ]),
+    read('../docs/capture.html'),
+    read('../docs/privacy.md'),
   ]);
 
   forms.forEach((form) => {
     assert.match(form, /提交后[\s\S]{0,100}公开/);
     assert.match(form, /Security/);
   });
-  assert.match(forms[2], /统一题库/);
-  assert.match(forms[2], /不经过人工审核/);
-  assert.doesNotMatch(forms[2], /待审核|正式收录|公开补充/);
+  await assert.rejects(read('../.github/ISSUE_TEMPLATE/public-question.yml'), /ENOENT/);
+  await assert.rejects(read('../.github/ISSUE_TEMPLATE/public-question-from-web.yml'), /ENOENT/);
+  assert.match(capture, /保存成功后立即进入共享题库，所有人都能看到/);
+  assert.match(privacy, /公开题/);
+  assert.doesNotMatch(capture, /Issue|待审核|审核队列|正式收录|公开补充/);
 });
 
 test('隐私说明准确描述浏览器存储而不是账号级私有', async () => {
@@ -119,10 +130,14 @@ test('公开仓库配置自检不收集 Token，并提供可执行修复入口',
   assert.doesNotMatch(page, /type="password"/);
   assert.match(script, /api\.github\.com\/repos/);
   assert.match(script, /repo\.has_pages/);
-  assert.match(script, /repo\.has_issues/);
   assert.match(script, /repo\.default_branch/);
   assert.match(script, /actions\/workflows\/pages\.yml/);
-  assert.match(script, /actions\/workflows\/question-collaboration\.yml/);
+  assert.match(script, /inspectQuestions/);
+  assert.match(script, /questionsWriteEnabled/);
+  assert.match(script, /\/v1\/questions\?cursor=0&limit=1/);
+  assert.match(script, /Array\.isArray\(questionsPage\?\.questions\)/);
+  assert.match(script, /QUESTIONS_API_URL/);
+  assert.doesNotMatch(script, /repo\.has_issues|question-collaboration\.yml/);
   assert.match(script, /settings\/pages/);
   assert.match(script, /workflowResponse\.status === 403/);
   assert.match(script, /workflowResponse\.status === 404/);

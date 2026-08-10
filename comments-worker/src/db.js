@@ -1,6 +1,334 @@
 import { HttpError } from "./validation.js";
 
 const PUBLIC_STATUSES = "('visible', 'deleted')";
+const QUESTION_COLUMNS = `id, title, category, difficulty, answer_status, answer,
+  follow_ups_json, tags_json, source, author, local_id, status, created_at, updated_at`;
+
+export async function listPublicQuestions(db, siteId, cursor, limit) {
+  const rows = await db
+    .prepare(
+      `SELECT ${QUESTION_COLUMNS}
+       FROM public_questions
+       WHERE site_id = ? AND status = 'visible'
+       ORDER BY updated_at DESC, id DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .bind(siteId, limit + 1, cursor)
+    .all();
+  const total = await countPublicQuestions(db, siteId);
+  const hasMore = rows.results.length > limit;
+  const visibleRows = hasMore ? rows.results.slice(0, limit) : rows.results;
+  return {
+    questions: visibleRows.map(toPublicQuestion),
+    total,
+    nextCursor: hasMore ? cursor + visibleRows.length : null,
+  };
+}
+
+export async function listAdminPublicQuestions(db, siteId, cursor, limit) {
+  const rows = await db
+    .prepare(
+      `SELECT ${QUESTION_COLUMNS}
+       FROM public_questions
+       WHERE site_id = ? AND status IN ('visible', 'hidden')
+       ORDER BY updated_at DESC, id DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .bind(siteId, limit + 1, cursor)
+    .all();
+  const hasMore = rows.results.length > limit;
+  const items = hasMore ? rows.results.slice(0, limit) : rows.results;
+  return {
+    items: items.map(toPublicQuestion),
+    nextCursor: hasMore ? cursor + items.length : null,
+  };
+}
+
+export async function countPublicQuestions(db, siteId) {
+  const row = await db
+    .prepare("SELECT COUNT(*) AS total FROM public_questions WHERE site_id = ? AND status = 'visible'")
+    .bind(siteId)
+    .first();
+  return Number(row?.total || 0);
+}
+
+export async function getPublicQuestionById(db, siteId, id) {
+  const row = await db
+    .prepare(
+      `SELECT ${QUESTION_COLUMNS}
+       FROM public_questions WHERE site_id = ? AND id = ? AND status = 'visible'`,
+    )
+    .bind(siteId, id)
+    .first();
+  return row ? toPublicQuestion(row) : null;
+}
+
+export async function getOwnedQuestion(db, siteId, id, editHash) {
+  const row = await db
+    .prepare(
+      `SELECT ${QUESTION_COLUMNS}
+       FROM public_questions
+       WHERE site_id = ? AND id = ? AND edit_token_hash = ? AND status IN ('visible', 'hidden')`,
+    )
+    .bind(siteId, id, editHash)
+    .first();
+  if (!row) throw new HttpError(403, "question_edit_denied", "编辑凭证不正确，或题目已不可编辑");
+  return toQuestionRecord(row);
+}
+
+export async function getOwnedQuestionDeletionState(db, siteId, id, editHash) {
+  const row = await db
+    .prepare(
+      `SELECT id, status, updated_at
+       FROM public_questions
+       WHERE site_id = ? AND id = ? AND edit_token_hash = ?
+         AND status IN ('visible', 'hidden', 'deleted')`,
+    )
+    .bind(siteId, id, editHash)
+    .first();
+  if (!row) throw new HttpError(403, "question_delete_denied", "删除凭证不正确，或题目不存在");
+  return { id: row.id, status: row.status, updatedAt: row.updated_at };
+}
+
+export async function findIdempotentQuestion(db, siteId, requestId, editHash) {
+  const row = await db
+    .prepare(
+      `SELECT ${QUESTION_COLUMNS}
+       FROM public_questions
+       WHERE site_id = ? AND request_id = ? AND edit_token_hash = ?`,
+    )
+    .bind(siteId, requestId, editHash)
+    .first();
+  return row ? toPublicQuestion(row) : null;
+}
+
+export async function publicQuestionRequestIdExists(db, siteId, requestId) {
+  const row = await db
+    .prepare("SELECT 1 AS found FROM public_questions WHERE site_id = ? AND request_id = ?")
+    .bind(siteId, requestId)
+    .first();
+  return Boolean(row);
+}
+
+export async function findActiveQuestionByLocalId(db, siteId, localId) {
+  if (!localId) return null;
+  const row = await db
+    .prepare(
+      `SELECT ${QUESTION_COLUMNS}, edit_token_hash
+       FROM public_questions
+       WHERE site_id = ? AND local_id = ? AND status IN ('visible', 'hidden')`,
+    )
+    .bind(siteId, localId)
+    .first();
+  return row ? { ...toQuestionRecord(row), editHash: row.edit_token_hash } : null;
+}
+
+export async function insertPublicQuestion(db, question) {
+  await db
+    .prepare(
+      `INSERT INTO public_questions
+        (id, site_id, title, category, difficulty, answer_status, answer, follow_ups_json,
+         tags_json, source, author, local_id, status, edit_token_hash, request_id,
+         created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'visible', ?, ?, ?, ?)`,
+    )
+    .bind(
+      question.id,
+      question.siteId,
+      question.title,
+      question.category,
+      question.difficulty,
+      question.answerStatus,
+      question.answer,
+      JSON.stringify(question.followUps),
+      JSON.stringify(question.tags),
+      question.source,
+      question.author,
+      question.localId,
+      question.editHash,
+      question.requestId,
+      question.now,
+      question.now,
+    )
+    .run();
+  return getPublicQuestionById(db, question.siteId, question.id);
+}
+
+export async function updateOwnQuestion(db, { siteId, id, editHash, fields, now }) {
+  let result;
+  try {
+    result = await db
+      .prepare(
+        `UPDATE public_questions SET
+           title = ?, category = ?, difficulty = ?, answer_status = ?, answer = ?,
+           follow_ups_json = ?, tags_json = ?, source = ?, author = ?, local_id = ?, updated_at = ?
+         WHERE site_id = ? AND id = ? AND edit_token_hash = ? AND status = 'visible'`,
+      )
+      .bind(
+        fields.title,
+        fields.category,
+        fields.difficulty,
+        fields.answerStatus,
+        fields.answer,
+        JSON.stringify(fields.followUps),
+        JSON.stringify(fields.tags),
+        fields.source,
+        fields.author,
+        fields.localId,
+        now,
+        siteId,
+        id,
+        editHash,
+      )
+      .run();
+  } catch (error) {
+    if (fields.localId) {
+      const conflicting = await findActiveQuestionByLocalId(db, siteId, fields.localId);
+      if (conflicting && conflicting.id !== id) {
+        throw new HttpError(409, "local_id_conflict", "这道本机题目已经公开发布");
+      }
+    }
+    throw error;
+  }
+  if (Number(result.meta?.changes || 0) !== 1) {
+    throw new HttpError(403, "question_edit_denied", "编辑凭证不正确，或题目已不可编辑");
+  }
+  return getPublicQuestionById(db, siteId, id);
+}
+
+export async function deleteOwnQuestion(db, { siteId, id, editHash, now }) {
+  const result = await db
+    .prepare(
+      `UPDATE public_questions SET
+         title = '已删除', category = '待整理', difficulty = '待评估',
+         answer_status = 'pending', answer = '', follow_ups_json = '[]', tags_json = '[]',
+         source = '', author = '匿名用户', local_id = '', status = 'deleted',
+         updated_at = ?, deleted_at = ?
+       WHERE site_id = ? AND id = ? AND edit_token_hash = ? AND status IN ('visible', 'hidden')`,
+    )
+    .bind(now, now, siteId, id, editHash)
+    .run();
+  if (Number(result.meta?.changes || 0) === 1) {
+    return { id, status: "deleted", updatedAt: now };
+  }
+
+  // The first DELETE may have committed even when its response was lost. Keep the
+  // token hash on the scrubbed tombstone so the same owner can safely retry without
+  // exposing any deleted question fields.
+  const tombstone = await db
+    .prepare(
+      `SELECT id, status, updated_at
+       FROM public_questions
+       WHERE site_id = ? AND id = ? AND edit_token_hash = ? AND status = 'deleted'`,
+    )
+    .bind(siteId, id, editHash)
+    .first();
+  if (tombstone) {
+    return { id: tombstone.id, status: "deleted", updatedAt: tombstone.updated_at };
+  }
+  throw new HttpError(403, "question_delete_denied", "删除凭证不正确，或题目不存在");
+}
+
+export async function moderatePublicQuestion(db, { siteId, id, action, reason, now }) {
+  let statement;
+  if (action === "hide") {
+    statement = db
+      .prepare(
+        "UPDATE public_questions SET status = 'hidden', updated_at = ? WHERE site_id = ? AND id = ? AND status = 'visible'",
+      )
+      .bind(now, siteId, id);
+  } else if (action === "show") {
+    statement = db
+      .prepare(
+        "UPDATE public_questions SET status = 'visible', updated_at = ? WHERE site_id = ? AND id = ? AND status = 'hidden'",
+      )
+      .bind(now, siteId, id);
+  } else if (action === "delete") {
+    statement = db
+      .prepare(
+        `UPDATE public_questions SET
+           title = '已删除', category = '待整理', difficulty = '待评估',
+           answer_status = 'pending', answer = '', follow_ups_json = '[]', tags_json = '[]',
+           source = '', author = '匿名用户', local_id = '', status = 'deleted',
+           updated_at = ?, deleted_at = ?
+         WHERE site_id = ? AND id = ? AND status IN ('visible', 'hidden')`,
+      )
+      .bind(now, now, siteId, id);
+  } else {
+    throw new HttpError(400, "invalid_action", "管理操作不合法");
+  }
+  const log = db
+    .prepare(
+      `INSERT INTO moderation_log (id, site_id, action, target_type, target_id, reason, created_at)
+       SELECT ?, ?, ?, 'question', ?, ?, ? WHERE changes() = 1`,
+    )
+    .bind(crypto.randomUUID(), siteId, action, id, reason, now);
+  const [result] = await db.batch([statement, log]);
+  if (Number(result.meta?.changes || 0) !== 1) {
+    throw new HttpError(409, "question_moderation_conflict", "题目状态已经变化，请刷新后重试");
+  }
+  if (action === "delete") return { id, status: "deleted", updatedAt: now };
+  const row = await getQuestionRecordById(db, siteId, id);
+  return toPublicQuestion(row);
+}
+
+async function getQuestionRecordById(db, siteId, id) {
+  return db
+    .prepare(`SELECT ${QUESTION_COLUMNS} FROM public_questions WHERE site_id = ? AND id = ?`)
+    .bind(siteId, id)
+    .first();
+}
+
+export function toPublicQuestion(row) {
+  if (row.status === "deleted") {
+    return { id: row.id, status: "deleted", updatedAt: row.updated_at };
+  }
+  const question = toQuestionRecord(row);
+  return {
+    id: question.id,
+    title: question.title,
+    category: question.category,
+    difficulty: question.difficulty,
+    answerStatus: question.answerStatus,
+    answer: question.answer,
+    followUps: question.followUps,
+    tags: question.tags,
+    source: question.source,
+    author: question.author,
+    localId: question.localId,
+    createdAt: question.createdAt,
+    updatedAt: question.updatedAt,
+    status: question.status,
+  };
+}
+
+function toQuestionRecord(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    difficulty: row.difficulty,
+    answerStatus: row.answer_status,
+    answer: row.answer,
+    followUps: parseStoredStringList(row.follow_ups_json),
+    tags: parseStoredStringList(row.tags_json),
+    source: row.source,
+    author: row.author,
+    localId: row.local_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    status: row.status,
+  };
+}
+
+function parseStoredStringList(value) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function getThread(db, siteId, slug) {
   return db

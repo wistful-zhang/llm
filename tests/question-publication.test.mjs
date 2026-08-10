@@ -88,13 +88,13 @@ test('公开现场追问接受隐私扫描，未发布草稿仍可留作本地�
   assert.deepEqual(privateResult.errors, []);
 });
 
-test('Pages CMS、模板、题目页、搜索索引和公开投稿接通现场追问', async () => {
-  const [pages, template, layout, searchIndex, issueForm] = await Promise.all([
+test('Pages CMS、模板、题目页、搜索索引和共享题 API 接通现场追问', async () => {
+  const [pages, template, layout, searchIndex, captureScript] = await Promise.all([
     readFile(new URL('../.pages.yml', import.meta.url), 'utf8'),
     readFile(new URL('../docs/_templates/question.md', import.meta.url), 'utf8'),
     readFile(new URL('../docs/_layouts/question.html', import.meta.url), 'utf8'),
     readFile(new URL('../docs/search-index.json', import.meta.url), 'utf8'),
-    readFile(new URL('../.github/ISSUE_TEMPLATE/public-question.yml', import.meta.url), 'utf8'),
+    readFile(new URL('../docs/assets/js/question-capture.js', import.meta.url), 'utf8'),
   ]);
 
   assert.match(pages, /search: \[[^\]]*followups[^\]]*\]/);
@@ -103,7 +103,10 @@ test('Pages CMS、模板、题目页、搜索索引和公开投稿接通现场�
   assert.match(layout, /for followup in page\.followups[\s\S]*?\{\{ followup \| escape \}\}/);
   assert.match(searchIndex, /question\.followups \| join: ' '/);
   assert.match(searchIndex, /search_text \| downcase \| jsonify/);
-  assert.match(issueForm, /id: followups[\s\S]*?最多 10 条、每条不超过 300 字/);
+  assert.match(captureScript, /followUps: question\.followUps/);
+  assert.match(captureScript, /buildPublicQuestionsCollectionApiUrl\(questionsApiUrl\)[\s\S]*?method: 'POST'/);
+  assert.match(captureScript, /body: JSON\.stringify\(\{[\s\S]*?\.\.\.publicQuestionPayload\(question\)/);
+  assert.doesNotMatch(captureScript, /ISSUE_TEMPLATE|issues\/new|open-issue/i);
 });
 
 test('网页后台新建题目时 verified 可以省略并按未核验处理', () => {

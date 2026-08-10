@@ -3,16 +3,27 @@ import { handleAdminApi } from "./admin.js";
 import {
   consumeRateLimit,
   countPublicComments,
+  countPublicQuestions,
   createReport,
   deleteOwnComment,
+  deleteOwnQuestion,
   editOwnComment,
+  findActiveQuestionByLocalId,
   findIdempotentComment,
+  findIdempotentQuestion,
   findIdempotentReport,
+  getOwnedQuestion,
+  getOwnedQuestionDeletionState,
+  getPublicQuestionById,
   getReplyParent,
   getThread,
   insertCommentWithFloor,
+  insertPublicQuestion,
   listComments,
+  listPublicQuestions,
+  publicQuestionRequestIdExists,
   requestIdExists,
+  updateOwnQuestion,
 } from "./db.js";
 import { assertPublishedQuestion } from "./manifest.js";
 import {
@@ -24,16 +35,22 @@ import {
   jsonResponse,
   readJson,
   retryAfterUtcMidnight,
+  constantTimeEqual,
   verifyTurnstile,
 } from "./security.js";
 import {
   HttpError,
+  normalizeQuestionFields,
   normalizeSiteConfig,
   parseCommentInput,
   parseDeleteInput,
   parseEditInput,
   parsePagination,
+  parseQuestionInput,
+  parseQuestionPagination,
+  parseQuestionUpdateInput,
   parseReportInput,
+  validateQuestionId,
   validateRequestId,
   validateSlug,
 } from "./validation.js";
@@ -43,6 +60,8 @@ const RATE_LIMITS = Object.freeze({
   commentsPerQuestionDay: 10,
   editsPerDay: 60,
   reportsPerDay: 10,
+  questionsPerSiteDay: 10,
+  questionMutationsPerDay: 60,
 });
 
 export default {
@@ -76,7 +95,7 @@ async function route(request, env) {
 
   const config = normalizeSiteConfig(env);
   if (!config.readable) {
-    throw new HttpError(503, "service_unconfigured", "评论服务尚未完成配置");
+    throw new HttpError(503, "service_unconfigured", "共享服务尚未完成配置");
   }
   assertCors(request, env, { mutation: !["GET", "HEAD"].includes(method) });
 
@@ -89,7 +108,13 @@ async function route(request, env) {
       siteId: config.siteId,
       turnstileSiteKey: config.turnstileSiteKey,
       writeEnabled: config.writeEnabled,
+      questionsWriteEnabled: config.writeEnabled,
     });
+  }
+
+  if (url.pathname === "/v1/questions") {
+    if (method === "GET") return getQuestions(request, env, url);
+    if (method === "POST") return postQuestion(request, env, config);
   }
 
   const questionMatch = url.pathname.match(/^\/v1\/questions\/([^/]+)\/comments$/);
@@ -97,6 +122,14 @@ async function route(request, env) {
     const slug = decodeAndValidateSlug(questionMatch[1]);
     if (method === "GET") return getQuestionComments(request, env, url, slug);
     if (method === "POST") return postQuestionComment(request, env, slug, config);
+  }
+
+  const questionItemMatch = url.pathname.match(/^\/v1\/questions\/([^/]+)$/);
+  if (questionItemMatch) {
+    const id = decodeAndValidateQuestionId(questionItemMatch[1]);
+    if (method === "GET") return getQuestion(request, env, id);
+    if (method === "PATCH") return patchQuestion(request, env, id, config);
+    if (method === "DELETE") return deleteQuestion(request, env, id, config);
   }
 
   const reportMatch = url.pathname.match(/^\/v1\/comments\/([^/]+)\/reports$/);
@@ -112,6 +145,130 @@ async function route(request, env) {
   }
 
   throw new HttpError(404, "not_found", "接口不存在");
+}
+
+async function getQuestions(request, env, url) {
+  const { cursor, limit } = parseQuestionPagination(url.searchParams);
+  return jsonResponse(request, env, await listPublicQuestions(env.DB, env.SITE_ID, cursor, limit));
+}
+
+async function getQuestion(request, env, id) {
+  const question = await getPublicQuestionById(env.DB, env.SITE_ID, id);
+  if (!question) throw new HttpError(404, "question_not_found", "公开题目不存在或已下架");
+  return jsonResponse(request, env, { question });
+}
+
+async function postQuestion(request, env, config) {
+  requireWrites(config);
+  const input = parseQuestionInput(await readJson(request));
+  if (input.website !== "") return honeypotResponse(request, env, input.requestId);
+
+  const editHash = await editTokenHash(env, input.editToken);
+  const existing = await findIdempotentQuestion(env.DB, env.SITE_ID, input.requestId, editHash);
+  if (existing) {
+    return jsonResponse(request, env, {
+      question: existing,
+      total: await countPublicQuestions(env.DB, env.SITE_ID),
+      idempotent: true,
+    });
+  }
+  if (await publicQuestionRequestIdExists(env.DB, env.SITE_ID, input.requestId)) {
+    throw new HttpError(409, "request_id_conflict", "requestId 已被其他公开题目使用");
+  }
+  if (input.localId) {
+    const sameLocalQuestion = await findActiveQuestionByLocalId(env.DB, env.SITE_ID, input.localId);
+    if (sameLocalQuestion) {
+      if (await constantTimeEqual(sameLocalQuestion.editHash, editHash)) {
+        const { editHash: _editHash, ...question } = sameLocalQuestion;
+        return jsonResponse(request, env, {
+          question,
+          total: await countPublicQuestions(env.DB, env.SITE_ID),
+          idempotent: true,
+        });
+      }
+      throw new HttpError(409, "local_id_conflict", "这道本机题目已经公开发布");
+    }
+  }
+
+  await verifyTurnstile({
+    env,
+    token: input.turnstileToken,
+    requestId: input.requestId,
+    action: "public-question",
+    request,
+  });
+  const now = new Date();
+  await applyRateLimit(env, request, "question-create", RATE_LIMITS.questionsPerSiteDay, now);
+
+  let question;
+  try {
+    question = await insertPublicQuestion(env.DB, {
+      ...input,
+      id: crypto.randomUUID(),
+      siteId: env.SITE_ID,
+      editHash,
+      now: now.toISOString(),
+    });
+  } catch (error) {
+    const retry = await findIdempotentQuestion(env.DB, env.SITE_ID, input.requestId, editHash);
+    if (retry) {
+      return jsonResponse(request, env, {
+        question: retry,
+        total: await countPublicQuestions(env.DB, env.SITE_ID),
+        idempotent: true,
+      });
+    }
+    if (input.localId) {
+      const conflicting = await findActiveQuestionByLocalId(env.DB, env.SITE_ID, input.localId);
+      if (conflicting) throw new HttpError(409, "local_id_conflict", "这道本机题目已经公开发布");
+    }
+    throw error;
+  }
+  return jsonResponse(request, env, {
+    question,
+    total: await countPublicQuestions(env.DB, env.SITE_ID),
+    idempotent: false,
+  }, 201);
+}
+
+async function patchQuestion(request, env, id, config) {
+  requireWrites(config);
+  const input = parseQuestionUpdateInput(await readJson(request));
+  const editHash = await editTokenHash(env, input.editToken);
+  const current = await getOwnedQuestion(env.DB, env.SITE_ID, id, editHash);
+  if (current.status !== "visible") {
+    throw new HttpError(423, "question_hidden", "题目已由管理员下架，暂时不能修改");
+  }
+  const fields = normalizeQuestionFields({ ...current, ...input.patch });
+  const now = new Date();
+  await applyRateLimit(env, request, "question-mutation", RATE_LIMITS.questionMutationsPerDay, now);
+  const question = await updateOwnQuestion(env.DB, {
+    siteId: env.SITE_ID,
+    id,
+    editHash,
+    fields,
+    now: now.toISOString(),
+  });
+  return jsonResponse(request, env, { question });
+}
+
+async function deleteQuestion(request, env, id, config) {
+  requireWrites(config);
+  const input = parseDeleteInput(await readJson(request));
+  const editHash = await editTokenHash(env, input.editToken);
+  const owned = await getOwnedQuestionDeletionState(env.DB, env.SITE_ID, id, editHash);
+  if (owned.status === "deleted") {
+    return jsonResponse(request, env, { question: owned });
+  }
+  const now = new Date();
+  await applyRateLimit(env, request, "question-mutation", RATE_LIMITS.questionMutationsPerDay, now);
+  const question = await deleteOwnQuestion(env.DB, {
+    siteId: env.SITE_ID,
+    id,
+    editHash,
+    now: now.toISOString(),
+  });
+  return jsonResponse(request, env, { question });
 }
 
 async function getQuestionComments(request, env, url, slug) {
@@ -270,7 +427,7 @@ async function applyRateLimit(env, request, scope, limit, now) {
 
 function requireWrites(config) {
   if (!config.writeEnabled) {
-    throw new HttpError(503, "write_disabled", "评论服务暂未开放发布");
+    throw new HttpError(503, "write_disabled", "共享服务暂未开放发布");
   }
 }
 
@@ -289,6 +446,15 @@ function decodeAndValidateId(value) {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError(400, "invalid_id", "ID 不合法");
+  }
+}
+
+function decodeAndValidateQuestionId(value) {
+  try {
+    return validateQuestionId(decodeURIComponent(value));
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError(400, "invalid_question_id", "题目 ID 不合法");
   }
 }
 
