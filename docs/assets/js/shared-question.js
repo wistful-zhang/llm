@@ -124,11 +124,6 @@ if (root) {
 
   const renderQuestion = (question, revision) => {
     if (revision !== requestRevision) return;
-    const activeElement = document.activeElement;
-    const shouldFocusTitle = !activeElement
-      || activeElement === document.body
-      || activeElement === document.documentElement
-      || loading.contains(activeElement);
     eyebrow.textContent = question.difficulty === '待评估'
       ? (question.category === '待整理' ? '未分类' : question.category)
       : `${question.category === '待整理' ? '未分类' : question.category} · ${question.difficulty}`;
@@ -192,7 +187,6 @@ if (root) {
     loading.hidden = true;
     errorPanel.hidden = true;
     content.hidden = false;
-    if (shouldFocusTitle) title.focus({ preventScroll: true });
     mathRoots.forEach((element) => { void renderMath(element); });
   };
 
