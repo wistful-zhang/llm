@@ -1,0 +1,113 @@
+---
+title: 公开题详情
+description: 查看使用者直接发布的大模型面试题、答案与追问。
+permalink: /shared-question/
+---
+<article
+  class="container question-page shared-question-page"
+  data-shared-question
+  data-site-title="{{ site.data.settings.title | default: site.title | escape }}"
+  data-repository-id="{{ site.github.repository_nwo | default: 'local/llm-interview-notes' | escape }}"
+  data-questions-api-url="{{ site.data.question_runtime.api_url | default: '' | escape }}"
+  data-capture-url="{{ '/capture/' | relative_url }}">
+  <a class="back-link" href="{{ '/' | relative_url }}">← 返回题库</a>
+
+  <section class="shared-question-state" data-shared-question-loading role="status" aria-live="polite">
+    <strong>正在读取这道公开题…</strong>
+    <span>题目、答案和追问会在这里完整显示。</span>
+  </section>
+
+  <section class="shared-question-state shared-question-error" data-shared-question-error role="alert" hidden>
+    <strong data-shared-question-error-title>暂时无法打开这道题</strong>
+    <span data-shared-question-error-message>请稍后重试，或者返回题库选择其他题目。</span>
+    <div class="shared-question-state-actions">
+      <button class="secondary-button" type="button" data-shared-question-retry>重新加载</button>
+      <a class="text-link" href="{{ '/' | relative_url }}">返回题库</a>
+    </div>
+  </section>
+
+  <div data-shared-question-content hidden>
+    <header class="question-header">
+      <div class="eyebrow" data-shared-question-eyebrow></div>
+      <h1 data-shared-question-title tabindex="-1"></h1>
+      <div class="question-study-tier">
+        <span class="study-tier-badge study-tier-unclassified">用户发布</span>
+        <span class="review-pending-badge" data-shared-question-answer-badge></span>
+      </div>
+      <div class="question-provenance">
+        <span data-shared-question-author></span>
+        <span data-shared-question-source hidden></span>
+        <time data-shared-question-time hidden></time>
+      </div>
+      <div class="tag-list" data-shared-question-tags role="list" aria-label="标签"></div>
+    </header>
+
+    <section class="prose question-followups" data-shared-question-followups aria-labelledby="shared-question-followups-title" hidden>
+      <h2 id="shared-question-followups-title">现场追问</h2>
+      <ol data-shared-question-followup-list></ol>
+    </section>
+
+    <section class="answer-coach" data-question-coach aria-labelledby="shared-answer-coach-title" hidden>
+      <div class="answer-coach-copy">
+        <span class="answer-coach-kicker">口述训练</span>
+        <h2 id="shared-answer-coach-title">先用自己的话答，再看参考说法</h2>
+        <p>60 秒是练习上限，不是必须凑满。原理题讲清因果，设计题讲清约束，项目题只讲真实证据。</p>
+      </div>
+      <p class="answer-coach-tip"><strong>这是一份用户提供的答案。</strong>适合用来对照思路，不代表已经过资料核验。</p>
+      <div class="answer-coach-actions" data-coach-controls hidden>
+        <button class="primary-button" type="button" data-coach-start>开始口述（最多 60 秒）</button>
+        <button class="secondary-button" type="button" data-coach-reveal hidden>看参考说法</button>
+        <output class="answer-coach-timer" data-coach-timer role="timer" aria-label="剩余口述时间">01:00</output>
+      </div>
+      <p class="answer-coach-status" data-coach-status aria-live="polite" hidden>参考内容当前已显示；开始口述后会暂时隐藏。</p>
+    </section>
+
+    <aside class="shared-answer-note" data-shared-question-draft-note hidden>
+      <span class="answer-state-badge">思路未完成</span>
+      <p>下面是发布者目前记录的思路，还没有标记为完整答案。</p>
+    </aside>
+
+    <div class="prose question-answer shared-question-answer" data-question-answer hidden>
+      <h2 data-shared-question-answer-title>面试时怎么答</h2>
+      <blockquote><p class="shared-question-answer-text" data-shared-question-answer-content></p></blockquote>
+    </div>
+
+    <section class="unanswered-panel" data-shared-question-unanswered hidden>
+      <span class="answer-state-badge">待解答</span>
+      <h2>这道题目前只发布了问题</h2>
+      <p>发布者可以稍后补充答案；你也可以先自己口述一遍，再记录自己的解法。</p>
+    </section>
+
+    <aside class="answer-edit-bar" data-shared-question-owner-actions hidden>
+      <div class="answer-edit-bar-copy">
+        <strong>这是你在当前浏览器发布的题目</strong>
+        <span>可以继续修改问题、答案、追问和分类；保存后公开页会立即更新。</span>
+      </div>
+      <div class="answer-edit-bar-actions">
+        <a class="secondary-button" data-shared-question-edit>编辑这道题</a>
+      </div>
+    </aside>
+
+    <aside class="content-utility" aria-label="分享公开题">
+      <div class="content-utility-copy">
+        <strong>分享这道公开题</strong>
+        <span>复制当前链接后，其他人可以直接打开完整问题、答案和追问。</span>
+      </div>
+      <div class="content-utility-actions" data-share-controls data-share-title="" hidden>
+        <button class="secondary-button" type="button" data-share-page>分享题目</button>
+        <button class="text-button" type="button" data-copy-page-link>复制链接</button>
+      </div>
+      <p class="content-utility-status" data-share-status role="status" aria-live="polite"></p>
+    </aside>
+  </div>
+  <noscript>
+    <style>[data-shared-question-loading] { display: none !important; }</style>
+    <section class="shared-question-state shared-question-error" role="alert">
+      <strong>需要开启 JavaScript 才能读取这道公开题</strong>
+      <span>内置题可以直接浏览；使用者发布的公开题保存在共享题库中，需要浏览器读取。</span>
+    </section>
+  </noscript>
+</article>
+<script type="module" src="{{ '/assets/js/shared-question.js' | relative_url }}"></script>
+<script type="module" src="{{ '/assets/js/question-coach.js' | relative_url }}"></script>
+<script type="module" src="{{ '/assets/js/share.js' | relative_url }}"></script>

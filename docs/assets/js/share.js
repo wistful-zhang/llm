@@ -27,8 +27,8 @@ controls.forEach((root) => {
   const shareButton = root.querySelector('[data-share-page]');
   const copyButton = root.querySelector('[data-copy-page-link]');
   const status = root.parentElement?.querySelector('[data-share-status]');
-  const title = root.dataset.shareTitle || document.title;
-  const url = window.location.href;
+  const currentTitle = () => root.dataset.shareTitle || document.title;
+  const currentUrl = () => window.location.href;
 
   const announce = (message) => {
     if (!status) return;
@@ -39,7 +39,7 @@ controls.forEach((root) => {
 
   copyButton?.addEventListener('click', async () => {
     try {
-      const copied = await copyText(url);
+      const copied = await copyText(currentUrl());
       announce(copied ? '链接已复制，可以粘贴给其他人。' : '浏览器没有允许自动复制，请从地址栏复制链接。');
     } catch {
       announce('浏览器没有允许自动复制，请从地址栏复制链接。');
@@ -53,7 +53,7 @@ controls.forEach((root) => {
     }
 
     try {
-      await navigator.share({ title, url });
+      await navigator.share({ title: currentTitle(), url: currentUrl() });
       announce('分享操作已完成。');
     } catch (error) {
       if (error?.name !== 'AbortError') announce('暂时无法打开分享面板，可以改用“复制链接”。');

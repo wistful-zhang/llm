@@ -18,6 +18,8 @@ const [
   questionLayout,
   draftsCore,
   publicQuestionsScript,
+  sharedQuestionScript,
+  sharedQuestionPage,
 ] = await Promise.all([
   read('../docs/capture.html'),
   read('../docs/assets/js/question-capture.js'),
@@ -29,6 +31,8 @@ const [
   read('../docs/_layouts/question.html'),
   read('../docs/assets/js/question-drafts-core.mjs'),
   read('../docs/assets/js/public-questions.js'),
+  read('../docs/assets/js/shared-question.js'),
+  read('../docs/shared-question.html'),
 ]);
 
 const questionDirectory = new URL('../docs/_questions/', import.meta.url);
@@ -158,7 +162,7 @@ test('答案输入支持安全的 LaTeX 插入、即时预览和失败兜底', (
   assert.match(stylesheet, /\.question-latex-help summary \{[^}]*min-height: 44px/);
 });
 
-test('正式题目、本机口述练习和共享公开题都会安全渲染答案、标题和追问中的公式', () => {
+test('正式题目、本机口述练习和共享公开题详情都会安全渲染答案、标题和追问中的公式', () => {
   assert.match(questionMath, /prepareKramdownMath\(title, \{ forceInline: true \}\)/);
   assert.match(questionMath, /\.question-followups li/);
   assert.match(questionMath, /void renderMath\(article\)/);
@@ -169,12 +173,21 @@ test('正式题目、本机口述练习和共享公开题都会安全渲染答�
   assert.match(publicQuestionsScript, /import \{ validateKramdownMath \} from '\.\/latex-input-core\.mjs'/);
   assert.match(publicQuestionsScript, /import \{ clearMath, prepareKramdownMath, renderMath \} from '\.\/math-render\.mjs'/);
   assert.match(publicQuestionsScript, /const source = element\.textContent \|\| ''/);
-  assert.match(publicQuestionsScript, /validateKramdownMath\(source\)\.length === 0/);
-  assert.match(publicQuestionsScript, /card\.querySelector\('h2'\), \{ forceInline: true \}/);
-  assert.match(publicQuestionsScript, /\.public-question-answer/);
-  assert.match(publicQuestionsScript, /\.public-question-details-content li/);
-  assert.match(publicQuestionsScript, /clearMath\(list\);[\s\S]*list\.replaceChildren[\s\S]*void renderMath\(list\)/);
+  assert.match(publicQuestionsScript, /validateKramdownMath\(source\)\.length > 0/);
+  assert.match(publicQuestionsScript, /const cardTitle = card\.querySelector\('h2'\)/);
+  assert.match(publicQuestionsScript, /prepareSafeMath\(cardTitle, \{ forceInline: true \}\)/);
+  assert.match(publicQuestionsScript, /clearMath\(list\);[\s\S]*list\.replaceChildren\(\.\.\.cards\)/);
+  assert.match(publicQuestionsScript, /prepareSafeMath\(cardTitle, \{ forceInline: true \}\)[\s\S]*void renderMath\(cardTitle\)/);
+  assert.match(sharedQuestionPage, /data-shared-question-title/);
+  assert.match(sharedQuestionPage, /data-question-answer/);
+  assert.match(sharedQuestionPage, /data-shared-question-followup-list/);
+  assert.match(sharedQuestionScript, /validateKramdownMath\(value\)\.length > 0/);
+  assert.match(sharedQuestionScript, /prepareSafeMath\(title, \{ forceInline: true \}\)/);
+  assert.match(sharedQuestionScript, /followUpList\.querySelectorAll\('li'\)/);
+  assert.match(sharedQuestionScript, /prepareSafeMath\(answerContent\)/);
+  assert.match(sharedQuestionScript, /content\.hidden = false;[\s\S]*mathRoots\.forEach[\s\S]*void renderMath\(element\)/);
   assert.doesNotMatch(publicQuestionsScript, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
+  assert.doesNotMatch(sharedQuestionScript, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
 });
 
 test('网页与 Pages CMS 使用同一组当前已有分类下拉选项', () => {

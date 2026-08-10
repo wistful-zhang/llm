@@ -55,13 +55,13 @@ test('共享 API 公开题直接显示在统一题库，不再存在 Issue 或�
   assert.match(publicScript, /question-card question-card-public/);
   assert.match(publicScript, /question-library:public-loaded/);
   assert.match(publicScript, /remoteIds:/);
-  assert.match(publicScript, /getPendingQuestionPublication\(publicationTokens, question\.id\)/);
+  assert.match(publicScript, /getRecoverableQuestionPublicationToken\(publicationTokens/);
   assert.match(localScript, /publishedRemoteIds/);
   assert.match(localScript, /question\.remoteId/);
   assert.match(localScript, /公开失败 · 仅此浏览器/);
-  assert.match(publicScript, /validateKramdownMath\(source\)\.length === 0/);
+  assert.match(publicScript, /validateKramdownMath\(source\)\.length > 0/);
   assert.match(publicScript, /prepareKramdownMath\(element, options\)/);
-  assert.match(publicScript, /void renderMath\(list\)/);
+  assert.match(publicScript, /void renderMath\(cardTitle\)/);
   assert.doesNotMatch(`${publicScript}\n${captureScript}`, /api\.github\.com|issues\/new|buildIssueLaunch|loadPublicIssueMatches|open-submitted-issue|open-issue/);
   assert.doesNotMatch(`${publicScript}\n${localScript}`, /\.innerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
 });
