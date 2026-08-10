@@ -8,6 +8,11 @@ import {
   parseQuestionDraftsJson,
   questionDraftsStorageKey,
 } from './question-drafts-core.mjs';
+import {
+  getRecoverableQuestionPublicationToken,
+  parseQuestionPublicationTokens,
+  questionPublicationTokensStorageKey,
+} from './question-publication-tokens.mjs';
 import { validateKramdownMath } from './latex-input-core.mjs';
 import { prepareKramdownMath, renderMath } from './math-render.mjs';
 
@@ -37,11 +42,14 @@ if (root) {
   const coach = root.querySelector('[data-question-coach]');
   const draftNote = root.querySelector('[data-shared-question-draft-note]');
   const answer = root.querySelector('[data-question-answer]');
+  const answerTitle = root.querySelector('[data-shared-question-answer-title]');
+  const answerContent = root.querySelector('[data-shared-question-answer-content]');
   const unanswered = root.querySelector('[data-shared-question-unanswered]');
   const ownerActions = root.querySelector('[data-shared-question-owner-actions]');
   const editLink = root.querySelector('[data-shared-question-edit]');
   const shareControls = root.querySelector('[data-share-controls]');
   let requestRevision = 0;
+  let activeController = null;
 
   const makeElement = (tag, className = '', text = '') => {
     const element = document.createElement(tag);
@@ -51,9 +59,11 @@ if (root) {
   };
 
   const prepareSafeMath = (element, options = {}) => {
-    if (!element) return;
+    if (!element) return false;
     const value = element.textContent || '';
-    if (validateKramdownMath(value).length === 0) prepareKramdownMath(element, options);
+    if (validateKramdownMath(value).length > 0) return false;
+    prepareKramdownMath(element, options);
+    return true;
   };
 
   const editUrl = (localId) => {
@@ -63,12 +73,26 @@ if (root) {
     return url.toString();
   };
 
-  const findOwnedQuestion = (remoteId) => {
+  const findOwnedQuestion = (question) => {
     try {
       const raw = window.localStorage.getItem(questionDraftsStorageKey(repositoryId)) || '';
       if (!raw) return null;
       const state = parseQuestionDraftsJson(raw, { repositoryId });
-      return state.questions.find((question) => question.remoteId === remoteId) || null;
+      const publicationTokens = parseQuestionPublicationTokens(
+        window.localStorage.getItem(questionPublicationTokensStorageKey(repositoryId)) || '',
+        { repositoryId },
+      );
+      const owned = state.questions.find((candidate) => candidate.remoteId === question.id)
+        || (question.localId
+          ? state.questions.find((candidate) => (
+            candidate.id === question.localId && candidate.visibility === 'public'
+          ))
+          : null);
+      if (!owned) return null;
+      return getRecoverableQuestionPublicationToken(publicationTokens, {
+        remoteId: question.id,
+        localId: owned.id,
+      }) ? owned : null;
     } catch {
       return null;
     }
@@ -99,6 +123,12 @@ if (root) {
   };
 
   const renderQuestion = (question, revision) => {
+    if (revision !== requestRevision) return;
+    const activeElement = document.activeElement;
+    const shouldFocusTitle = !activeElement
+      || activeElement === document.body
+      || activeElement === document.documentElement
+      || loading.contains(activeElement);
     eyebrow.textContent = question.difficulty === '待评估'
       ? (question.category === '待整理' ? '未分类' : question.category)
       : `${question.category === '待整理' ? '未分类' : question.category} · ${question.difficulty}`;
@@ -114,10 +144,10 @@ if (root) {
     if (openGraphTitle) openGraphTitle.content = document.title;
 
     author.textContent = question.author && !genericAuthors.has(question.author)
-      ? `发布者：${question.author}`
+      ? `发布者（用户填写）：${question.author}`
       : '由题库使用者公开发布';
     source.hidden = !question.source;
-    source.textContent = question.source ? `面试场景：${question.source}` : '';
+    source.textContent = question.source ? `面试场景（用户填写）：${question.source}` : '';
     const dateLabel = formatDate(question.updatedAt || question.createdAt);
     publishedTime.hidden = !dateLabel;
     publishedTime.dateTime = question.updatedAt || question.createdAt || '';
@@ -132,9 +162,9 @@ if (root) {
     followUpList.replaceChildren(...question.followUps.map((item) => makeElement('li', '', item)));
     followUps.hidden = question.followUps.length === 0;
 
-    answer.replaceChildren();
     const hasAnswer = Boolean(question.answer);
-    if (hasAnswer) answer.append(makeElement('p', 'shared-question-answer-text', question.answer));
+    answerTitle.textContent = question.answerStatus === 'complete' ? '面试时怎么答' : '当前思路';
+    answerContent.textContent = question.answer;
     answer.hidden = !hasAnswer;
     coach.hidden = !hasAnswer || question.answerStatus !== 'complete';
     draftNote.hidden = !hasAnswer || question.answerStatus === 'complete';
@@ -147,25 +177,29 @@ if (root) {
       setAnswerBadge('待解答', 'answer-state-badge');
     }
 
-    const owned = findOwnedQuestion(question.id);
+    const owned = findOwnedQuestion(question);
     ownerActions.hidden = !owned;
     if (owned) editLink.href = editUrl(owned.id);
 
     shareControls.dataset.shareTitle = question.title;
-    prepareSafeMath(title, { forceInline: true });
-    followUpList.querySelectorAll('li').forEach((item) => prepareSafeMath(item, { forceInline: true }));
-    prepareSafeMath(answer);
-    if (revision !== requestRevision) return;
+    const mathRoots = [];
+    if (prepareSafeMath(title, { forceInline: true })) mathRoots.push(title);
+    followUpList.querySelectorAll('li').forEach((item) => {
+      if (prepareSafeMath(item, { forceInline: true })) mathRoots.push(item);
+    });
+    if (prepareSafeMath(answerContent)) mathRoots.push(answerContent);
 
     loading.hidden = true;
     errorPanel.hidden = true;
     content.hidden = false;
-    title.focus({ preventScroll: true });
-    void renderMath(content);
+    if (shouldFocusTitle) title.focus({ preventScroll: true });
+    mathRoots.forEach((element) => { void renderMath(element); });
   };
 
   const loadQuestion = async () => {
     const revision = ++requestRevision;
+    activeController?.abort();
+    activeController = null;
     loading.hidden = false;
     errorPanel.hidden = true;
     content.hidden = true;
@@ -201,6 +235,7 @@ if (root) {
     }
 
     const controller = new AbortController();
+    activeController = controller;
     const timeoutId = window.setTimeout(() => controller.abort(), PUBLIC_QUESTIONS_TIMEOUT_MS);
     try {
       const response = await fetch(apiUrl, {
@@ -208,6 +243,7 @@ if (root) {
         cache: 'no-store',
         signal: controller.signal,
       });
+      if (revision !== requestRevision) return;
       if (!response.ok) {
         if (response.status === 404) {
           showError('这道公开题已不存在', '它可能已被发布者删除或由站主下架。你可以返回题库继续浏览。', { retry: false });
@@ -216,17 +252,24 @@ if (root) {
         throw new Error(await readQuestionsApiError(response, `公开题共享服务 ${response.status}`));
       }
       const question = normalizePublicQuestionResponse(await response.json());
+      if (revision !== requestRevision) return;
       if (!question) throw new Error('共享题库返回了无法识别的题目数据。');
       renderQuestion(question, revision);
     } catch (caught) {
       if (revision !== requestRevision) return;
       const timedOut = caught?.name === 'AbortError';
+      const serviceMessage = String(caught?.message || '');
       showError(
         timedOut ? '读取这道题超时了' : '暂时无法打开这道题',
-        timedOut ? '网络响应较慢，可以重新加载。' : '共享题库暂时没有响应，请稍后重试。',
+        timedOut
+          ? '网络响应较慢，可以重新加载。'
+          : (/^(?:公开题共享服务|共享题库)/.test(serviceMessage)
+            ? serviceMessage
+            : '共享题库暂时没有响应，请稍后重试。'),
       );
     } finally {
       window.clearTimeout(timeoutId);
+      if (activeController === controller) activeController = null;
     }
   };
 

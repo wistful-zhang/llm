@@ -128,7 +128,7 @@ const normalizeQuestion = (candidate) => {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
   const id = String(candidate.id || '').trim().toLowerCase();
   const title = cleanInline(candidate.title, 160);
-  if (!UUID_PATTERN.test(id) || !title || candidate.status === 'deleted') return null;
+  if (!UUID_PATTERN.test(id) || !title || candidate.status !== 'visible') return null;
   const answer = cleanText(candidate.answer, 50_000);
   const rawAnswerStatus = cleanInline(candidate.answerStatus, 20);
   const answerStatus = answer && rawAnswerStatus === 'complete' ? 'complete' : 'pending';

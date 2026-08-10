@@ -32,7 +32,7 @@ permalink: /shared-question/
       <div class="eyebrow" data-shared-question-eyebrow></div>
       <h1 data-shared-question-title tabindex="-1"></h1>
       <div class="question-study-tier">
-        <span class="question-visibility-badge question-visibility-public">公开题</span>
+        <span class="study-tier-badge study-tier-unclassified">用户发布</span>
         <span class="review-pending-badge" data-shared-question-answer-badge></span>
       </div>
       <div class="question-provenance">
@@ -52,7 +52,7 @@ permalink: /shared-question/
       <div class="answer-coach-copy">
         <span class="answer-coach-kicker">口述训练</span>
         <h2 id="shared-answer-coach-title">先用自己的话答，再看参考说法</h2>
-        <p>60 秒是练习上限，不是必须凑满。先讲结论，再补原理、取舍和适用边界。</p>
+        <p>60 秒是练习上限，不是必须凑满。原理题讲清因果，设计题讲清约束，项目题只讲真实证据。</p>
       </div>
       <p class="answer-coach-tip"><strong>这是一份用户提供的答案。</strong>适合用来对照思路，不代表已经过资料核验。</p>
       <div class="answer-coach-actions" data-coach-controls hidden>
@@ -68,7 +68,10 @@ permalink: /shared-question/
       <p>下面是发布者目前记录的思路，还没有标记为完整答案。</p>
     </aside>
 
-    <div class="prose question-answer shared-question-answer" data-question-answer hidden></div>
+    <div class="prose question-answer shared-question-answer" data-question-answer hidden>
+      <h2 data-shared-question-answer-title>面试时怎么答</h2>
+      <blockquote><p class="shared-question-answer-text" data-shared-question-answer-content></p></blockquote>
+    </div>
 
     <section class="unanswered-panel" data-shared-question-unanswered hidden>
       <span class="answer-state-badge">待解答</span>
@@ -98,6 +101,13 @@ permalink: /shared-question/
       <p class="content-utility-status" data-share-status role="status" aria-live="polite"></p>
     </aside>
   </div>
+  <noscript>
+    <style>[data-shared-question-loading] { display: none !important; }</style>
+    <section class="shared-question-state shared-question-error" role="alert">
+      <strong>需要开启 JavaScript 才能读取这道公开题</strong>
+      <span>内置题可以直接浏览；使用者发布的公开题保存在共享题库中，需要浏览器读取。</span>
+    </section>
+  </noscript>
 </article>
 <script type="module" src="{{ '/assets/js/shared-question.js' | relative_url }}"></script>
 <script type="module" src="{{ '/assets/js/question-coach.js' | relative_url }}"></script>

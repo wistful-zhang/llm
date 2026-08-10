@@ -43,6 +43,13 @@ test('使用者公开题不会伪装成待重整层级或资料已核验题', ()
   });
   assert.equal(question.studyTier, 'unclassified');
   assert.equal(question.verified, false);
+  assert.equal(normalizePublicQuestions({
+    questions: [
+      { id: '123e4567-e89b-42d3-a456-426614174001', title: '已隐藏', status: 'hidden' },
+      { id: '123e4567-e89b-42d3-a456-426614174002', title: '缺少状态' },
+      { id: '123e4567-e89b-42d3-a456-426614174003', title: '未知状态', status: 'pending' },
+    ],
+  }).length, 0);
 });
 
 test('首页公开题整卡进入稳定详情页，记题页也提供查看入口', async () => {
@@ -64,8 +71,9 @@ test('首页公开题整卡进入稳定详情页，记题页也提供查看入�
 });
 
 test('公开题详情壳覆盖加载、成功、下架、重试、公式、编辑和分享状态', async () => {
-  const [page, script, share, stylesheet] = await Promise.all([
+  const [page, builtInLayout, script, share, stylesheet] = await Promise.all([
     read('../docs/shared-question.html'),
+    read('../docs/_layouts/question.html'),
     read('../docs/assets/js/shared-question.js'),
     read('../docs/assets/js/share.js'),
     read('../docs/assets/css/style.css'),
@@ -76,9 +84,26 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(page, /data-shared-question-error/);
   assert.match(page, /data-shared-question-content hidden/);
   assert.match(page, /data-shared-question-owner-actions hidden/);
+  assert.match(page, /data-shared-question-answer-title>面试时怎么答/);
+  assert.match(page, /data-shared-question-answer-content/);
+  assert.match(page, /需要开启 JavaScript 才能读取这道公开题/);
   assert.match(page, /assets\/js\/shared-question\.js/);
   assert.match(page, /assets\/js\/question-coach\.js/);
   assert.match(page, /assets\/js\/share\.js/);
+  for (const className of [
+    'question-page',
+    'question-header',
+    'question-study-tier',
+    'question-provenance',
+    'question-followups',
+    'answer-coach',
+    'prose question-answer',
+    'answer-edit-bar',
+    'content-utility',
+  ]) {
+    assert.match(page, new RegExp(className.replace(' ', '\\s+')));
+    assert.match(builtInLayout, new RegExp(className.replace(' ', '\\s+')));
+  }
 
   assert.match(script, /new URLSearchParams\(window\.location\.search\)\.get\('id'\)/);
   assert.match(script, /buildPublicQuestionApiUrl\(apiBaseUrl, questionId\)/);
@@ -90,14 +115,20 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(script, /retryButton\.addEventListener/);
   assert.match(script, /window\.history\.replaceState/);
   assert.match(script, /link\[rel="canonical"\]/);
-  assert.match(script, /question\.remoteId === remoteId/);
+  assert.match(script, /candidate\.remoteId === question\.id/);
+  assert.match(script, /candidate\.id === question\.localId/);
+  assert.match(script, /getRecoverableQuestionPublicationToken\(publicationTokens/);
   assert.match(script, /editLink\.href = editUrl\(owned\.id\)/);
   assert.match(script, /网友答法 · 未核验/);
-  assert.match(script, /面试场景：/);
+  assert.match(script, /面试场景（用户填写）：/);
   assert.match(script, /\.textContent\s*=/);
   assert.match(script, /\.replaceChildren\(/);
   assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
-  assert.doesNotMatch(script, /editToken|Authorization|question\.localId/);
+  assert.doesNotMatch(script, /Authorization/);
+  assert.match(script, /activeController\?\.abort\(\)/);
+  assert.match(script, /if \(revision !== requestRevision\) return/);
+  assert.match(script, /mathRoots\.forEach\(\(element\) => \{ void renderMath\(element\); \}\)/);
+  assert.doesNotMatch(script, /renderMath\(content\)/);
   assert.match(share, /const currentTitle = \(\)/);
   assert.match(share, /const currentUrl = \(\)/);
   assert.match(stylesheet, /\.shared-question-state \{/);

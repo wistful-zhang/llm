@@ -40,7 +40,7 @@
           <span class="brand-name">{{ site_title | escape }}</span>
         </a>
         <nav aria-label="主导航">
-          <a href="{{ '/' | relative_url }}"{% if page.url == '/' or page.collection == 'questions' %} aria-current="page"{% endif %}>题库</a>
+          <a href="{{ '/' | relative_url }}"{% if page.url == '/' or page.url == '/shared-question/' or page.collection == 'questions' %} aria-current="page"{% endif %}>题库</a>
           <a class="practice-link" href="{{ '/practice/' | relative_url }}"{% if page.url == '/practice/' %} aria-current="page"{% endif %}>模拟</a>
           <a class="capture-link" href="{{ '/capture/' | relative_url }}"{% if page.url == '/capture/' %} aria-current="page"{% endif %}>＋题目</a>
           <a class="tracker-link" href="{{ '/interviews/' | relative_url }}"{% if page.url == '/interviews/' %} aria-current="page"{% endif %}>记录</a>

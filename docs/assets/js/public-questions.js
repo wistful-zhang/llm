@@ -10,7 +10,7 @@ import {
   questionDraftsStorageKey,
 } from './question-drafts-core.mjs';
 import {
-  getPendingQuestionPublication,
+  getRecoverableQuestionPublicationToken,
   parseQuestionPublicationTokens,
   questionPublicationTokensStorageKey,
 } from './question-publication-tokens.mjs';
@@ -38,13 +38,11 @@ if (root) {
   };
 
   const prepareSafeMath = (element, options = {}) => {
-    if (!element) return;
+    if (!element) return false;
     const source = element.textContent || '';
-    if (validateKramdownMath(source).length === 0) prepareKramdownMath(element, options);
-  };
-
-  const prepareQuestionMath = (card) => {
-    prepareSafeMath(card.querySelector('h2'), { forceInline: true });
+    if (validateKramdownMath(source).length > 0) return false;
+    prepareKramdownMath(element, options);
+    return true;
   };
 
   const setStatus = (message) => {
@@ -68,12 +66,21 @@ if (root) {
       );
       return {
         byRemoteId: new Map(state.questions
-        .filter((question) => question.remoteId)
+          .filter((question) => (
+            question.remoteId
+              && getRecoverableQuestionPublicationToken(publicationTokens, {
+                remoteId: question.remoteId,
+                localId: question.id,
+              })
+          ))
           .map((question) => [question.remoteId, question])),
         byLocalId: new Map(state.questions
           .filter((question) => (
             question.visibility === 'public'
-              && getPendingQuestionPublication(publicationTokens, question.id)
+              && getRecoverableQuestionPublicationToken(publicationTokens, {
+                remoteId: question.remoteId,
+                localId: question.id,
+              })
           ))
           .map((question) => [question.id, question])),
       };
@@ -143,7 +150,6 @@ if (root) {
     const action = makeElement('span', 'card-arrow', '↗');
     action.setAttribute('aria-hidden', 'true');
     card.append(body, action);
-    prepareQuestionMath(card);
     return card;
   };
 
@@ -194,9 +200,13 @@ if (root) {
       try {
         const questions = await fetchAllQuestions(controller.signal);
         const ownedByRemoteId = ownedQuestions();
+        const cards = questions.map((question) => createQuestion(question, ownedByRemoteId));
         clearMath(list);
-        list.replaceChildren(...questions.map((question) => createQuestion(question, ownedByRemoteId)));
-        void renderMath(list);
+        list.replaceChildren(...cards);
+        cards.forEach((card) => {
+          const cardTitle = card.querySelector('h2');
+          if (prepareSafeMath(cardTitle, { forceInline: true })) void renderMath(cardTitle);
+        });
         list.hidden = questions.length === 0;
         if (fallback) fallback.hidden = true;
         setStatus(questions.length > 0

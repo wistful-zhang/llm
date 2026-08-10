@@ -163,7 +163,9 @@ test('仓库题、本机题和共享公开题共用一个题目列表与同类�
   assert.match(publicScript, /if \(question\.localId\) card\.dataset\.localId = question\.localId/);
   assert.match(publicScript, /remoteIds: questions\.map\(\(question\) => question\.id\)/);
   assert.match(publicScript, /localIds: questions\.map\(\(question\) => question\.localId\)\.filter\(Boolean\)/);
-  assert.match(publicScript, /list\.replaceChildren\(\.\.\.questions\.map\(\(question\) => createQuestion\(question, ownedByRemoteId\)\)\)/);
+  assert.match(publicScript, /const cards = questions\.map\(\(question\) => createQuestion\(question, ownedByRemoteId\)\)/);
+  assert.match(publicScript, /list\.replaceChildren\(\.\.\.cards\)/);
+  assert.match(publicScript, /getRecoverableQuestionPublicationToken\(publicationTokens/);
 
   assert.match(searchScript, /questionList \? \[\.\.\.questionList\.querySelectorAll\('\.question-card'\)\] : \[\]/);
   assert.match(searchScript, /document\.addEventListener\('question-library:changed'/);
