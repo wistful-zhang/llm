@@ -84,6 +84,7 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(page, /data-shared-question-error/);
   assert.match(page, /data-shared-question-content hidden/);
   assert.doesNotMatch(page, /data-public-question="true"/);
+  assert.doesNotMatch(page, /data-shared-question-title tabindex/);
   assert.match(page, /data-shared-question-owner-actions hidden/);
   assert.match(page, /data-shared-question-answer-title>面试时怎么答/);
   assert.match(page, /data-shared-question-answer-content/);
@@ -128,6 +129,7 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.doesNotMatch(script, /Authorization/);
   assert.match(script, /activeController\?\.abort\(\)/);
   assert.match(script, /if \(revision !== requestRevision\) return/);
+  assert.doesNotMatch(script, /title\.focus\(/);
   assert.match(script, /mathRoots\.forEach\(\(element\) => \{ void renderMath\(element\); \}\)/);
   assert.doesNotMatch(script, /renderMath\(content\)/);
   assert.match(share, /const currentTitle = \(\)/);
