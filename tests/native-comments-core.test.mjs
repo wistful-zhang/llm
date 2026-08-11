@@ -52,6 +52,11 @@ test('评论草稿清理控制字符并执行昵称和正文长度限制', () =>
     errors: [],
   });
   assert.ok(validateCommentDraft({ nickname: 'A', body: '可以' }).errors.length > 0);
+  assert.deepEqual(validateCommentDraft({ nickname: '   ', body: '我的理解' }), {
+    nickname: '匿名访客',
+    body: '我的理解',
+    errors: [],
+  });
   assert.ok(validateCommentDraft({ nickname: '访客', body: 'A'.repeat(2001) }).errors.length > 0);
 });
 
@@ -103,21 +108,27 @@ test('只读评论服务无需 Turnstile site key，开放写入时必须提供�
   }), /尚未完成配置/);
 });
 
-test('评论实现保留安全 DOM，默认关闭时也不会开放外部连接', async () => {
-  const [layout, script, defaultLayout, runtime, manifest] = await Promise.all([
+test('题下评论使用安全 DOM，未配置运行时地址时不会连接上游服务', async () => {
+  const [layout, include, script, stylesheet, defaultLayout, runtime, manifest] = await Promise.all([
     read('../docs/_layouts/question.html'),
+    read('../docs/_includes/question-comments.html'),
     read('../docs/assets/js/question-comments.js'),
+    read('../docs/assets/css/style.css'),
     read('../docs/_layouts/default.html'),
     read('../docs/_data/comment_runtime.yml'),
     read('../docs/comments-manifest.json'),
   ]);
-  assert.match(layout, /data-comment-form/);
-  assert.match(layout, /data-comment-list/);
-  assert.match(layout, /data-comment-reply-context/);
-  assert.match(layout, /无需注册 · 原地交流/);
-  assert.match(layout, /不需要 GitHub 账号/);
-  assert.match(layout, /站内评论尚未开通/);
-  assert.doesNotMatch(layout, /utteranc|data-comment-issue-term|登录 GitHub/);
+  assert.match(layout, /comments_available = false/);
+  assert.match(layout, /comments_enabled and comments_api_url != empty/);
+  assert.match(layout, /include question-comments\.html question_slug=page\.slug/);
+  assert.match(include, /data-comment-form/);
+  assert.match(include, /data-comment-list/);
+  assert.match(include, /data-comment-reply-context/);
+  assert.match(include, /无需账号 · 原地交流/);
+  assert.match(include, /不需要 GitHub 账号/);
+  assert.match(include, /昵称 <small>可不填/);
+  assert.doesNotMatch(include, /data-comment-nickname[^>]*(?:required|minlength)/);
+  assert.doesNotMatch(`${layout}\n${include}`, /utteranc|data-comment-issue-term|登录 GitHub|站内评论尚未开通/);
   assert.match(script, /textContent = comment\.body/);
   assert.match(script, /data-comment-report|reportComment/);
   assert.match(script, /comment\.status === 'visible' && state\.writeEnabled/);
@@ -128,6 +139,11 @@ test('评论实现保留安全 DOM，默认关闭时也不会开放外部连接'
   assert.match(script, /MAX_SAVED_EDIT_TOKENS = 1000/);
   assert.match(script, /if \(state\.pendingReport\) \{[\s\S]*submitButton\.disabled = true;[\s\S]*reportComment/);
   assert.match(script, /await loadComments\(\{ reset: true \}\);[\s\S]*await configure\(\);/);
+  assert.match(script, /appearance: 'interaction-only'/);
+  assert.match(script, /rootDraft/);
+  assert.match(script, /question-comments:ready/);
+  assert.match(script, /initializedRoots/);
+  assert.match(stylesheet, /\.comment-turnstile \{[^}]*min-height: 0/);
   assert.doesNotMatch(script, /\.innerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
   assert.doesNotMatch(script, /api\.github\.com|utteranc|\b(?:password|personal access token|PAT)\b/i);
   assert.doesNotMatch(defaultLayout, /utteranc\.es/);

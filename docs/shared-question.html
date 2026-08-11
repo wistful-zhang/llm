@@ -3,6 +3,11 @@ title: 公开题详情
 description: 查看使用者直接发布的大模型面试题、答案与追问。
 permalink: /shared-question/
 ---
+{% assign comments_enabled = site.data.settings.comments_enabled %}
+{% if comments_enabled == nil %}{% assign comments_enabled = false %}{% endif %}
+{% assign comments_api_url = site.data.comment_runtime.api_url | default: '' | strip %}
+{% assign comments_available = false %}
+{% if comments_enabled and comments_api_url != empty %}{% assign comments_available = true %}{% endif %}
 <article
   class="container question-page shared-question-page"
   data-shared-question
@@ -40,6 +45,7 @@ permalink: /shared-question/
         <time data-shared-question-time hidden></time>
       </div>
       <div class="tag-list" data-shared-question-tags role="list" aria-label="标签"></div>
+      {% if comments_available %}<a class="text-link question-comments-jump" data-question-comments-jump href="#question-comments">评论与补充 ↓</a>{% endif %}
     </header>
 
     <section class="answer-coach" data-question-coach aria-labelledby="shared-answer-coach-title" hidden>
@@ -87,6 +93,8 @@ permalink: /shared-question/
       </div>
     </aside>
 
+    {% if comments_available %}{% include question-comments.html question_slug='' hidden=true %}{% endif %}
+
     <aside class="content-utility" aria-label="分享公开题">
       <div class="content-utility-copy">
         <strong>分享这道公开题</strong>
@@ -110,3 +118,4 @@ permalink: /shared-question/
 <script type="module" src="{{ '/assets/js/shared-question.js' | relative_url }}"></script>
 <script type="module" src="{{ '/assets/js/question-coach.js' | relative_url }}"></script>
 <script type="module" src="{{ '/assets/js/share.js' | relative_url }}"></script>
+{% if comments_available %}<script type="module" src="{{ '/assets/js/question-comments.js' | relative_url }}"></script>{% endif %}

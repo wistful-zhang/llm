@@ -12,7 +12,7 @@ permalink: /setup-check/
 
 输入公开仓库的 `账号/仓库名`，系统会读取 GitHub 的公开状态，检查可见性、默认分支、Pages、共享题目服务和最近一次发布。它不会登录 GitHub，也不会读取 Private 仓库、私人题或浏览器面试记录。
 
-本站当前默认关闭题目评论，自检会直接显示“已关闭”。公开题不再使用 GitHub Issues；自检会单独确认 `QUESTIONS_API_URL` 指向的共享服务是否可以读取和直接发布。
+自检会分别确认公开题与题下评论是否已打开和连通。两者启用时应让 `QUESTIONS_API_URL` 与 `COMMENTS_API_URL` 指向同一个当前题库 Worker；公开题和评论都不再使用 GitHub Issues。
 
 <form class="setup-check-form" data-setup-check-form>
   <label for="setup-repository"><strong>GitHub 仓库</strong><span>例如：your-name/llm-notes</span></label>

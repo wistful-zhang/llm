@@ -25,7 +25,7 @@ https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/REPOSITORY/t
 
 `comments-worker` 已把运行代码、`package.json`、Wrangler 配置、D1 migrations 和 secret 示例全部放在子目录内，不依赖仓库根目录，符合子目录作为独立应用部署的要求。部署页会根据 `wrangler.jsonc` 创建 D1，根据 `package.json` 的 `cloudflare.bindings` 显示六项配置说明，并从 `.dev.vars.example` 识别三个 secret。`deploy` 脚本使用 D1 binding `DB` 执行迁移，因此用户在界面中改数据库名称也不会影响迁移。
 
-部署前仍需先在 Turnstile 创建小组件，才能填写配对的 site key 和 secret。部署完成后，把 Worker 根网址配置到题库仓库变量 `QUESTIONS_API_URL` 并重新构建网站；只有主动启用评论时才另外设置 `COMMENTS_API_URL`。
+部署前仍需先在 Turnstile 创建小组件，才能填写配对的 site key 和 secret。部署完成后，把 Worker 根网址配置到题库仓库变量 `QUESTIONS_API_URL` 并重新构建网站；主动启用评论时，再把**同一个根网址**写入 `COMMENTS_API_URL`。公开题和评论必须复用这一套 Worker + D1，不能分别部署，否则使用者公开题的 UUID 无法通过评论可见性校验。
 
 ## 手动部署
 
@@ -134,6 +134,8 @@ Turnstile 本地调试请使用 Cloudflare 提供的测试 key。公开题 actio
 
 - `GET /v1/config`
 - `GET /v1/questions/{slug}/comments?cursor=<floor>&limit=20`
+
+`slug` 可以是构建清单中的内置题 slug，也可以是仍处于 `visible` 状态的使用者公开题 UUID；题目撤回、删除或被管理员下架后，服务会停止读取和新增该题评论。
 
 读取响应：
 

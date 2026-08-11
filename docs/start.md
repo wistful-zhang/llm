@@ -99,7 +99,7 @@ permalink: /start/
       <li>进入 <strong>Actions → 内容检查与网站发布 → Run workflow</strong>，Branch 选择仓库默认分支（通常是 <code>main</code>），手动运行第一次部署。</li>
       <li>工作流变为绿色后，回到 <strong>Settings → Pages</strong> 点击 <strong>Visit site</strong>。</li>
       <li>如果只自己记私人题，到这里即可；如果要让任何人都能在网页直接发布公开题，再完成一次[共享题目服务设置]({{ '/questions/setup/' | relative_url }})。以后发布者不需要 GitHub 登录或 Issue。</li>
-      <li>题目评论默认关闭，不影响建题、补答案、公开发布和模拟面试。</li>
+      <li>如果要开放题下评论，把 <code>COMMENTS_API_URL</code> 设为第五步中同一个 Worker 根网址；不需要再部署第二套服务。</li>
     </ol>
     <figure class="guide-figure guide-wide">
       <a href="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" target="_blank" rel="noopener noreferrer" aria-label="放大查看 GitHub Pages 设置示意图（在新窗口打开）"><img src="{{ '/assets/guides/03-enable-pages.svg' | relative_url }}" loading="lazy" alt="GitHub Settings Pages 中选择 GitHub Actions 的操作示意图"></a>
@@ -117,7 +117,7 @@ permalink: /start/
       <li>需要共同编辑时，在 GitHub 仓库中邀请协作者，并在 Pages CMS 中补充仓库授权。</li>
       <li>每次保存会先更新私有仓库，再执行内容校验，不会部署公开网页。</li>
     </ol>
-    <p class="mode-outcome"><strong>Private repository 不等于 private Pages。</strong> 真正带访问控制的私有 Pages 主要面向 GitHub Enterprise Cloud；机密内容不要发布到 Pages。项目默认关闭题目评论，但这也不能替代仓库和网站本身的访问控制。</p>
+    <p class="mode-outcome"><strong>Private repository 不等于 private Pages。</strong> 真正带访问控制的私有 Pages 主要面向 GitHub Enterprise Cloud；机密内容不要发布到 Pages。Private / Internal 题库不要启用公共匿名评论，关闭评论也不能替代仓库和网站本身的访问控制。</p>
   </div>
 </details>
 
@@ -197,7 +197,7 @@ permalink: /start/
       <li>在 <strong>Settings → General → Danger Zone</strong> 修改 Visibility。</li>
       <li>按上面的公开流程启用 Pages。</li>
       <li>手动运行一次部署工作流。</li>
-      <li>评论默认保持关闭，不需要复制或配置原仓库的外部服务。</li>
+      <li>模板副本不会复制原仓库的 Worker 或变量；需要评论时只连接自己的服务。</li>
     </ol>
   </div>
   <div class="result-card result-private">
@@ -235,7 +235,7 @@ permalink: /start/
 - **保存时提示错误**：确认所有 Required 字段都已填写；题目至少 2 个字符。
 - **为什么草稿也能在 GitHub 看到**：发布开关只控制阅读网站。仓库是 Public 时，所有源文件都公开；真正需要私密请使用 Private 仓库。
 - **公开题库保存后网页没更新**：打开 GitHub Actions，查看校验或部署是否出现红色错误。
-- **题目下方为什么没有评论入口**：本站当前默认关闭题目评论。增加题目、补答案、公开发布和模拟面试不受影响；发现内容错误时，请使用题目页底部的反馈入口。
+- **题目下方为什么没有评论入口**：评论只有在站点设置已开启且仓库变量 `COMMENTS_API_URL` 指向当前题库自己的 Worker 时显示；若已配置公开题服务，应直接复用同一个 Worker，不要另建服务。
 - **私有题库没有阅读网址或随机模拟**：这是当前模式的明确限制；请收藏 [Pages CMS](https://app.pagescms.org/) 作为编辑入口。在线浏览和模拟只能使用可公开的 Public 题库内容。
 - **组织账号没有某个按钮**：可能被组织策略限制，需要组织管理员批准。
 - **模板副本会自动收到更新吗**：不会。模板创建的是独立仓库；升级前请先阅读仓库中的 `UPGRADING.md`，保护自己的题目、公开面经和站点设置。

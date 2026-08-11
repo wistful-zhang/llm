@@ -1,0 +1,55 @@
+<section id="question-comments"
+         class="question-comments"
+         data-question-comments
+         data-question-slug="{{ include.question_slug | default: '' | escape }}"
+         data-comments-api="{{ site.data.comment_runtime.api_url | default: '' | strip | escape }}"
+         aria-labelledby="question-comments-title"
+         {% if include.hidden %}hidden{% endif %}>
+  <div class="question-comments-heading">
+    <div>
+      <span class="eyebrow">无需账号 · 原地交流</span>
+      <h2 id="question-comments-title">评论与补充<span data-comment-count></span></h2>
+    </div>
+  </div>
+  <p class="question-comments-intro">评论会直接显示在这道题下面。可以写自己的答法、继续追问或指出错误，不需要 GitHub 账号，也不会跳转到 Issue；内容会公开，请勿填写个人隐私、公司机密或受保密约束的材料。</p>
+  <form class="comment-composer" data-comment-form hidden>
+    <p id="comment-reply-context" class="comment-reply-context" data-comment-reply-context role="status" aria-live="polite" hidden></p>
+    <div class="comment-composer-fields">
+      <label class="comment-nickname-field">
+        <span>昵称 <small>可不填</small></span>
+        <input type="text" data-comment-nickname name="nickname" maxlength="24" autocomplete="nickname" placeholder="留空则显示为匿名访客">
+      </label>
+      <label class="comment-body-field">
+        <span>评论内容</span>
+        <textarea data-comment-body name="body" minlength="2" maxlength="2000" rows="5" required aria-describedby="comment-reply-context comment-body-counter comment-publish-note" placeholder="写下你的答法、追问或修改建议…"></textarea>
+      </label>
+    </div>
+    <label class="comment-honeypot" aria-hidden="true">请勿填写<input type="text" data-comment-website name="website" tabindex="-1" autocomplete="off"></label>
+    <div class="comment-composer-footer">
+      <div class="comment-turnstile" data-comment-turnstile aria-label="人机验证"></div>
+      <div class="comment-composer-submit">
+        <span id="comment-body-counter" data-comment-counter>0 / 2000</span>
+        <button class="text-button" type="button" data-comment-cancel hidden>取消</button>
+        <button class="primary-button" type="submit" data-comment-submit disabled>发布评论</button>
+      </div>
+    </div>
+    <p id="comment-publish-note" class="comment-publish-note">无需账号；发布后立即公开。本站只显示纯文本，昵称不代表身份认证；只有当前浏览器保存修改和删除凭据。</p>
+  </form>
+  <div class="comment-form-feedback">
+    <p class="comment-form-status" data-comment-form-status role="status" aria-live="polite">正在连接站内评论服务…</p>
+    <button class="text-button" type="button" data-comment-config-retry hidden>重新连接评论服务</button>
+  </div>
+  <div class="comment-list-region" data-comment-list-region aria-busy="true">
+    <p class="question-comments-status" data-comment-list-status role="status" aria-live="polite">正在加载评论…</p>
+    <div class="comment-load-error" data-comment-load-error hidden>
+      <span>评论暂时没有加载出来。</span>
+      <button class="text-button" type="button" data-comment-retry hidden>重新加载</button>
+    </div>
+    <p class="comment-empty" data-comment-empty hidden>还没有评论，你可以先写下自己的理解或追问。</p>
+    <ol class="question-comments-list" data-comment-list hidden></ol>
+    <button class="secondary-button comment-load-more" type="button" data-comment-load-more hidden>加载更多评论</button>
+  </div>
+  <noscript>
+    <p>请开启 JavaScript，才能在本页查看和发表公开评论；评论不会跳转到 GitHub。</p>
+  </noscript>
+</section>

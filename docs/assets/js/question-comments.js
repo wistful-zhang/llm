@@ -35,10 +35,16 @@ const loadTurnstile = () => {
     const script = existing || document.createElement('script');
     const handleReady = () => {
       if (window.turnstile) resolve(window.turnstile);
-      else reject(new Error('Turnstile 未正确加载'));
+      else {
+        script.remove();
+        reject(new Error('Turnstile 未正确加载'));
+      }
     };
     script.addEventListener('load', handleReady, { once: true });
-    script.addEventListener('error', () => reject(new Error('Turnstile 加载失败')), { once: true });
+    script.addEventListener('error', () => {
+      script.remove();
+      reject(new Error('Turnstile 加载失败'));
+    }, { once: true });
     if (!existing) {
       script.src = TURNSTILE_SCRIPT_URL;
       script.async = true;
@@ -46,6 +52,9 @@ const loadTurnstile = () => {
       script.crossOrigin = 'anonymous';
       document.head.append(script);
     }
+  }).catch((error) => {
+    turnstileLoader = null;
+    throw error;
   });
   return turnstileLoader;
 };
@@ -124,16 +133,20 @@ const storageFor = (apiUrl) => {
   return { read, write };
 };
 
-const createButton = (label, className, handler) => {
+const createButton = (label, className, handler, ariaLabel = '') => {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = className;
   button.textContent = label;
+  if (ariaLabel) button.setAttribute('aria-label', ariaLabel);
   button.addEventListener('click', handler);
   return button;
 };
 
-document.querySelectorAll('[data-question-comments]').forEach((root) => {
+const initializedRoots = new WeakSet();
+
+const initializeQuestionComments = (root) => {
+  if (!root || initializedRoots.has(root)) return;
   const api = validateApiUrl(root.dataset.commentsApi || '', window.location.href);
   const questionSlug = validateQuestionSlug(root.dataset.questionSlug || '');
   const form = root.querySelector('[data-comment-form]');
@@ -145,6 +158,7 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
   const cancelButton = root.querySelector('[data-comment-cancel]');
   const replyContext = root.querySelector('[data-comment-reply-context]');
   const formStatus = root.querySelector('[data-comment-form-status]');
+  const configRetryButton = root.querySelector('[data-comment-config-retry]');
   const turnstileRoot = root.querySelector('[data-comment-turnstile]');
   const listRegion = root.querySelector('[data-comment-list-region]');
   const list = root.querySelector('[data-comment-list]');
@@ -158,7 +172,9 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
 
   if (!api || !questionSlug || !form || !nicknameInput || !bodyInput || !submitButton
     || !listRegion || !list || !listStatus || !emptyState || !loadError || !retryButton
-    || !loadMoreButton || !counter || !formStatus || !turnstileRoot || !replyContext) return;
+    || !loadMoreButton || !counter || !formStatus || !configRetryButton || !turnstileRoot
+    || !replyContext) return;
+  initializedRoots.add(root);
 
   const apiRoot = api.href.replace(/\/+$/, '');
   const storage = storageFor(apiRoot);
@@ -174,10 +190,12 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
     turnstile: null,
     widgetId: null,
     captchaBusy: false,
+    configBusy: false,
     replyTo: null,
     editing: null,
     pendingCreate: null,
     pendingReport: null,
+    rootDraft: '',
     saved,
   };
   nicknameInput.value = saved.nickname;
@@ -231,7 +249,7 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
     state.replyTo = null;
     state.editing = null;
     state.pendingCreate = null;
-    bodyInput.value = '';
+    bodyInput.value = state.rootDraft;
     updateCounter();
     updateComposer();
     if (state.captchaToken) submitButton.disabled = state.locked;
@@ -239,13 +257,14 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
   };
 
   const saveProfile = () => {
-    state.saved.nickname = nicknameInput.value.slice(0, COMMENT_LIMITS.nicknameMax);
+    state.saved.nickname = nicknameInput.value.trim().replace(/\s+/g, ' ')
+      .slice(0, COMMENT_LIMITS.nicknameMax);
     storage.write(state.saved);
   };
 
   const updateCount = (total) => {
     if (count) count.textContent = `（${total}）`;
-    if (jump) jump.textContent = total > 0 ? `讨论（${total}）↓` : '参与讨论 ↓';
+    if (jump) jump.textContent = total > 0 ? `评论与补充（${total}）↓` : '评论与补充 ↓';
   };
 
   const renderAllComments = () => {
@@ -361,26 +380,40 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
       actions.className = 'question-comment-actions';
       if (!state.locked) {
         actions.append(createButton('回复', 'text-button', () => {
+          if (!state.replyTo && !state.editing) state.rootDraft = bodyInput.value;
           state.editing = null;
           state.replyTo = comment;
+          state.pendingCreate = null;
           bodyInput.value = '';
           updateCounter();
           updateComposer();
           bodyInput.focus();
-        }));
+        }, `回复 ${comment.floor} 楼 @${comment.nickname}`));
       }
-      actions.append(createButton('举报', 'text-button subtle-button', () => void reportComment(comment)));
+      actions.append(createButton(
+        '举报',
+        'text-button subtle-button',
+        () => void reportComment(comment),
+        `举报 ${comment.floor} 楼`,
+      ));
       if (isEditToken(state.saved.tokens[comment.id])) {
         actions.append(createButton('编辑', 'text-button', () => {
+          if (!state.replyTo && !state.editing) state.rootDraft = bodyInput.value;
           state.replyTo = null;
           state.editing = comment;
+          state.pendingCreate = null;
           bodyInput.value = comment.body;
           updateCounter();
           updateComposer();
           submitButton.disabled = false;
           bodyInput.focus();
-        }));
-        actions.append(createButton('删除', 'text-button danger-text-button', () => void deleteComment(comment)));
+        }, `编辑自己发布的 ${comment.floor} 楼`));
+        actions.append(createButton(
+          '删除',
+          'text-button danger-text-button',
+          () => void deleteComment(comment),
+          `删除自己发布的 ${comment.floor} 楼`,
+        ));
       }
       item.append(actions);
     }
@@ -394,7 +427,7 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
     loadError.hidden = true;
     retryButton.hidden = true;
     loadMoreButton.disabled = true;
-    listStatus.textContent = reset ? '正在加载讨论…' : '正在加载更多评论…';
+    listStatus.textContent = reset ? '正在加载评论…' : '正在加载更多评论…';
     if (reset) {
       state.cursor = 0;
       state.nextCursor = null;
@@ -421,7 +454,7 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
       emptyState.hidden = page.total !== 0;
       list.hidden = comments.size === 0;
       loadMoreButton.hidden = !page.nextCursor;
-      listStatus.textContent = page.total === 0 ? '' : `已显示 ${comments.size} 条，共 ${page.total} 条。`;
+      listStatus.textContent = page.total === 0 ? '' : `已显示 ${comments.size} 条评论，共 ${page.total} 条。`;
       updateCount(page.total);
       if (page.locked) {
         setFormStatus('评论区已锁定；仍可举报，自己发布的内容仍可编辑或删除。', 'pending');
@@ -482,7 +515,6 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
     }
     const created = normalizeComment(payload?.comment);
     if (!created) throw new Error('评论服务返回了无效内容');
-    state.saved.nickname = draft.nickname;
     state.saved.tokens[created.id] = pending.editToken;
     const savedTokenIds = Object.keys(state.saved.tokens);
     savedTokenIds.slice(0, -MAX_SAVED_EDIT_TOKENS).forEach((id) => {
@@ -494,8 +526,10 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
     emptyState.hidden = true;
     list.hidden = false;
     state.pendingCreate = null;
+    const wasReply = Boolean(state.replyTo);
     state.replyTo = null;
-    bodyInput.value = '';
+    if (!wasReply) state.rootDraft = '';
+    bodyInput.value = wasReply ? state.rootDraft : '';
     updateCounter();
     updateComposer();
     setFormStatus(`发布成功，显示在 ${created.floor} 楼。`, 'success');
@@ -537,6 +571,7 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
   });
   bodyInput.addEventListener('input', () => {
     state.pendingCreate = null;
+    if (!state.replyTo && !state.editing) state.rootDraft = bodyInput.value;
     updateCounter();
   });
   cancelButton?.addEventListener('click', cancelComposerMode);
@@ -546,6 +581,10 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
   updateComposer();
 
   const configure = async () => {
+    if (state.configBusy) return;
+    state.configBusy = true;
+    configRetryButton.hidden = true;
+    setFormStatus('正在连接站内评论服务…', 'pending');
     try {
       const config = normalizeCommentsConfig(await requestJson(buildConfigUrl(apiRoot)));
       state.writeEnabled = config.writeEnabled;
@@ -562,6 +601,7 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
         action: 'question-comment',
         language: 'zh-CN',
         size: 'flexible',
+        appearance: 'interaction-only',
         callback: (token) => {
           state.captchaToken = token;
           if (state.pendingReport) {
@@ -590,13 +630,25 @@ document.querySelectorAll('[data-question-comments]').forEach((root) => {
     } catch (error) {
       state.writeEnabled = false;
       form.hidden = true;
+      configRetryButton.hidden = false;
       renderAllComments();
       setFormStatus(readableError(error, '评论发表功能暂时不可用。'), 'error');
+    } finally {
+      state.configBusy = false;
     }
   };
+
+  configRetryButton.addEventListener('click', () => { void configure(); });
 
   void (async () => {
     await loadComments({ reset: true });
     await configure();
   })();
+};
+
+document.querySelectorAll('[data-question-comments]').forEach(initializeQuestionComments);
+document.addEventListener('question-comments:ready', (event) => {
+  if (event.target?.matches?.('[data-question-comments]')) {
+    initializeQuestionComments(event.target);
+  }
 });

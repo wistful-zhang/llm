@@ -40,6 +40,7 @@ import {
 } from "./security.js";
 import {
   HttpError,
+  isUuid,
   normalizeQuestionFields,
   normalizeSiteConfig,
   parseCommentInput,
@@ -272,6 +273,7 @@ async function deleteQuestion(request, env, id, config) {
 }
 
 async function getQuestionComments(request, env, url, slug) {
+  await assertCommentableQuestion(env, slug);
   const { cursor, limit } = parsePagination(url.searchParams);
   const result = await listComments(env.DB, env.SITE_ID, slug, cursor, limit);
   return jsonResponse(request, env, result);
@@ -297,7 +299,7 @@ async function postQuestionComment(request, env, slug, config) {
   if (await requestIdExists(env.DB, env.SITE_ID, input.requestId)) {
     throw new HttpError(409, "request_id_conflict", "requestId 已被其他请求使用");
   }
-  await assertPublishedQuestion(env, slug);
+  await assertCommentableQuestion(env, slug);
 
   const thread = await getThread(env.DB, env.SITE_ID, slug);
   if (thread?.locked) throw new HttpError(423, "thread_locked", "这道题的评论区已锁定");
@@ -347,6 +349,17 @@ async function postQuestionComment(request, env, slug, config) {
   }
   const total = await countPublicComments(env.DB, env.SITE_ID, slug);
   return jsonResponse(request, env, { comment, total, idempotent: false }, 201);
+}
+
+async function assertCommentableQuestion(env, slug) {
+  if (!isUuid(slug)) {
+    await assertPublishedQuestion(env, slug);
+    return;
+  }
+  const question = await getPublicQuestionById(env.DB, env.SITE_ID, slug);
+  if (!question) {
+    throw new HttpError(404, "question_not_published", "题目不存在或尚未公开，不能发表评论");
+  }
 }
 
 async function patchComment(request, env, id, config) {

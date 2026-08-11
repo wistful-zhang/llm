@@ -231,3 +231,43 @@ test("新评论按 SITE_URL 清单核对 published slug，并短时复用清单"
   );
   assert.equal(calls, 1);
 });
+
+test("发布清单可以跟随站内跳转，但最终地址不能离开题库 origin", async () => {
+  clearManifestCacheForTests();
+  let redirectMode = "";
+  await assertPublishedQuestion(
+    { SITE_ID: "redirect-test", SITE_URL: "https://example.com/notes" },
+    "published-question",
+    {
+      now: 2_000,
+      fetchImpl: async (url, options) => {
+        redirectMode = options.redirect;
+        return {
+          ok: true,
+          url: url.href,
+          headers: new Headers({ "content-type": "application/json" }),
+          text: async () => JSON.stringify({ version: 1, questions: ["published-question"] }),
+        };
+      },
+    },
+  );
+  assert.equal(redirectMode, "follow");
+
+  clearManifestCacheForTests();
+  await assert.rejects(
+    assertPublishedQuestion(
+      { SITE_ID: "redirect-escape-test", SITE_URL: "https://example.com/notes" },
+      "published-question",
+      {
+        now: 2_001,
+        fetchImpl: async () => ({
+          ok: true,
+          url: "https://attacker.example/comments-manifest.json",
+          headers: new Headers({ "content-type": "application/json" }),
+          text: async () => JSON.stringify({ version: 1, questions: ["published-question"] }),
+        }),
+      },
+    ),
+    (error) => error instanceof HttpError && error.code === "manifest_unavailable",
+  );
+});

@@ -291,12 +291,13 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
   };
   const originalFetch = globalThis.fetch;
   let turnstileCalls = 0;
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, options = {}) => {
     if (String(url).includes("challenges.cloudflare.com/turnstile")) {
       turnstileCalls += 1;
+      const token = new URLSearchParams(options.body).get("response");
       return Response.json({
         success: true,
-        action: "public-question",
+        action: token === "comment-turnstile-token" ? "question-comment" : "public-question",
         hostname: "notes.example.com",
       });
     }
@@ -362,6 +363,34 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
     assert.equal(listed.total, 1);
     assert.equal(listed.questions[0].id, questionId);
 
+    const commentResponse = await worker.fetch(new Request(
+      `https://api.example.workers.dev/v1/questions/${questionId}/comments`,
+      {
+        method: "POST",
+        headers: siteHeaders,
+        body: JSON.stringify({
+          nickname: "匿名访客",
+          body: "这条评论直接显示在公开题下面。",
+          parentId: null,
+          turnstileToken: "comment-turnstile-token",
+          requestId: "550e8400-e29b-41d4-a716-446655440020",
+          editToken: "zyxwvutsrqponmlkjihgfedcbaABCDEF0123456789_-",
+          website: "",
+        }),
+      },
+    ), env);
+    assert.equal(commentResponse.status, 201);
+    const createdComment = await commentResponse.json();
+    assert.equal(createdComment.comment.floor, 1);
+    assert.equal(createdComment.comment.nickname, "匿名访客");
+
+    const publicComments = await worker.fetch(new Request(
+      `https://api.example.workers.dev/v1/questions/${questionId}/comments`,
+      { headers: { origin: "https://notes.example.com" } },
+    ), env);
+    assert.equal(publicComments.status, 200);
+    assert.equal((await publicComments.json()).total, 1);
+
     const wrongToken = await worker.fetch(new Request(
       `https://api.example.workers.dev/v1/questions/${questionId}`,
       {
@@ -403,6 +432,12 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
       { headers: { origin: "https://notes.example.com" } },
     ), env);
     assert.equal(hiddenItem.status, 404);
+
+    const hiddenComments = await worker.fetch(new Request(
+      `https://api.example.workers.dev/v1/questions/${questionId}/comments`,
+      { headers: { origin: "https://notes.example.com" } },
+    ), env);
+    assert.equal(hiddenComments.status, 404);
 
     const hiddenList = await worker.fetch(new Request("https://api.example.workers.dev/v1/questions", {
       headers: { origin: "https://notes.example.com" },

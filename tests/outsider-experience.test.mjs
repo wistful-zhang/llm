@@ -1,8 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { parseWorkerRoot, workerRootsMatch } from '../docs/assets/js/setup-check-core.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
+
+test('配置自检要求公开题与评论复用同一个 Worker 根网址', () => {
+  assert.equal(workerRootsMatch(
+    'https://service.example.workers.dev',
+    'https://service.example.workers.dev/',
+  ), true);
+  assert.equal(workerRootsMatch(
+    'https://questions.example.workers.dev',
+    'https://comments.example.workers.dev',
+  ), false);
+  assert.equal(parseWorkerRoot('https://service.example.workers.dev/').pathname, '/');
+  assert.throws(() => parseWorkerRoot('https://service.example.workers.dev/v1'), /根网址/);
+  assert.throws(() => parseWorkerRoot('http://service.example.workers.dev/'), /HTTPS/);
+});
 
 test('创建入口会区分当前模板、基础模板和 Fork 当前题库', async () => {
   const [start, home, script] = await Promise.all([

@@ -37,7 +37,7 @@ GitHub Pages 只能读取文件，不能接收访客写入。项目因此提供�
    `HASH_SECRET` 和 `ADMIN_TOKEN` 至少使用 32 个随机字符。不要把任何 Secret、Token 或密码写入仓库。
 
 6. 执行 `npm run deploy`。命令会先应用 D1 migration，再发布 Worker。记下返回的 `https://...workers.dev` 根网址。
-7. 在 GitHub 仓库打开 **Settings → Secrets and variables → Actions → Variables**，新增 `QUESTIONS_API_URL`，值只填写 Worker 根网址。
+7. 在 GitHub 仓库打开 **Settings → Secrets and variables → Actions → Variables**，新增 `QUESTIONS_API_URL`，值只填写 Worker 根网址。还要开放题下评论时，再新增 `COMMENTS_API_URL` 并填写**同一个**根网址；不要为公开题和评论各建一套数据库。
 8. 在 **Actions → 内容检查与网站发布** 手动运行一次。发布完成后，到网站的“＋题目”选择“公开”做一次测试。
 
 ## 发布后如何管理
@@ -46,7 +46,7 @@ GitHub Pages 只能读取文件，不能接收访客写入。项目因此提供�
 - 题库主人：访问 Worker 根网址后的 `/admin`，使用 `ADMIN_TOKEN` 处理需要事后下架的内容。
 - 所有人：发布成功后立即可见，不需要等待题库主人批准。
 
-公开题服务使用 Turnstile、蜜罐、幂等请求和按日限流减少滥用。管理员下架是事后治理，不是发布前审核。清除浏览器数据会丢失发布者的修改凭据；JSON 备份只保存题目内容，不包含这些凭据，因此不能用于在另一台设备接管公开题。
+这一个 Worker 同时提供公开题和题下评论。公开题服务使用 Turnstile、蜜罐、幂等请求和按日限流减少滥用。管理员下架是事后治理，不是发布前审核。清除浏览器数据会丢失发布者的修改凭据；JSON 备份只保存题目内容，不包含这些凭据，因此不能用于在另一台设备接管公开题。
 
 ## 没有配置时
 

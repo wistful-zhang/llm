@@ -5,22 +5,34 @@ import { readFile } from 'node:fs/promises';
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const importCore = () => import('../docs/assets/js/question-collaboration-core.mjs');
 
-test('评论实现保留但站点默认关闭，共享题服务可独立加入 CSP', async () => {
-  const [layout, defaultLayout, script, settings, cms] = await Promise.all([
+test('主站题下评论已开启，副本仍需自己的运行时服务才会显示', async () => {
+  const [layout, include, shared, defaultLayout, script, sharedScript, setupCheck, settings, cms] = await Promise.all([
     read('../docs/_layouts/question.html'),
+    read('../docs/_includes/question-comments.html'),
+    read('../docs/shared-question.html'),
     read('../docs/_layouts/default.html'),
     read('../docs/assets/js/question-comments.js'),
+    read('../docs/assets/js/shared-question.js'),
+    read('../docs/assets/js/setup-check.js'),
     read('../docs/_data/settings.yml'),
     read('../.pages.yml'),
   ]);
 
-  assert.match(layout, /data-question-comments/);
-  assert.match(layout, /\{%\s*if comments_enabled\s*%\}[\s\S]*<section id="question-comments"/);
-  assert.match(layout, /data-comments-api="{{\s*comments_api_url\s*\|\s*escape\s*}}"/);
-  assert.match(settings, /^comments_enabled:\s*false$/m);
+  assert.match(layout, /comments_available[\s\S]*include question-comments\.html question_slug=page\.slug/);
+  assert.match(include, /data-question-comments/);
+  assert.match(include, /data-comments-api="{{ site\.data\.comment_runtime\.api_url/);
+  assert.match(shared, /include question-comments\.html question_slug='' hidden=true/);
+  assert.match(shared, /assets\/js\/question-comments\.js/);
+  assert.match(sharedScript, /commentsRoot\.dataset\.questionSlug = question\.id/);
+  assert.match(sharedScript, /question-comments:ready/);
+  assert.match(settings, /^comments_enabled:\s*true$/m);
   assert.match(cms, /name:\s*comments_enabled[\s\S]*default:\s*false/);
-  assert.match(script, /turnstile\.render|state\.turnstile\.render/);
+  assert.match(script, /state\.turnstile\.render/);
+  assert.match(script, /appearance: 'interaction-only'/);
   assert.doesNotMatch(script, /api\.github\.com|utteranc/i);
+  assert.match(setupCheck, /value: '未连接（可选）'[\s\S]*healthy: true/);
+  assert.match(setupCheck, /workerRootsMatch\(questionsApiUrl, commentsApiUrl\)/);
+  assert.match(setupCheck, /QUESTIONS_API_URL 与 COMMENTS_API_URL 必须填写同一个 Worker 根网址/);
 
   const csp = defaultLayout.match(/Content-Security-Policy" content="([^"]+)"/)?.[1] || '';
   assert.match(defaultLayout, /assign questions_api_url = site\.data\.question_runtime\.api_url/);
