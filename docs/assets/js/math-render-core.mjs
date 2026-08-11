@@ -16,7 +16,7 @@ export const MATH_SKIP_TAGS = Object.freeze([
 
 const MATH_DELIMITER_PATTERN = /(?:\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])/;
 const skippedTags = new Set(MATH_SKIP_TAGS);
-const BLOCKED_TEX_PACKAGES = Object.freeze(['autoload', 'require', 'texhtml']);
+const BLOCKED_TEX_PACKAGES = Object.freeze(['autoload', 'require', 'texhtml', 'newcommand']);
 
 const unique = (values) => [...new Set(values)];
 
@@ -70,6 +70,8 @@ export const createMathJaxConfig = (current = {}) => ({
     processEnvironments: false,
     processRefs: false,
     maxBuffer: 5 * 1024,
+    maxMacros: 1000,
+    // MathJax 4.1.3's runtime option keeps this historical spelling.
     maxTemplateSubtitutions: 1000,
   },
   options: {

@@ -39,6 +39,10 @@
 
 1.6.0 当时把题目评论改为正文下方的内嵌输入框，并使用 [utterances](https://github.com/apps/utterances) 显示 GitHub Issue 回复。这段只用于识别旧副本：该方案已经退役，不要再为新副本安装评论应用。旧 Issue 和回复仍保留在 GitHub，但不会自动出现在新的站内评论数据库中。
 
+## 升级到 1.9.4 的评论公式
+
+1.9.4 不修改 D1、Worker API 或已有评论数据。升级时一起合并 `comment-math-core.mjs`、`latex-input-core.mjs`、`question-comments.js`、`question-math.js`、`math-render.mjs`、`math-render-core.mjs`、`public-questions.js`、`shared-question.js`、`question-capture.js`、`scripts/math-format.mjs`、`scripts/validate-content.mjs`、评论 include、样式和相关测试；已有纯文字评论保持不变，已有正文中的合法 `$$...$$` 会自动按公式显示。若公式不完整或超出评论专用预算，网页会继续按原文显示，不会丢弃内容。
+
 ## 升级到 1.9.3 的站内评论
 
 1.9.3 把正式题目的评论从 GitHub Issues 迁移为题库主人自行部署的 Cloudflare Worker + D1 + Turnstile，并让内置题和使用者公开题共用题下评论区。升级时需要一起合并 `comments-worker/`、`docs/comment-setup.md`、`docs/assets/js/question-comments.js`、`docs/assets/js/native-comments-core.mjs`、`docs/_includes/question-comments.html`、两个题目详情模板、`docs/_layouts/default.html`、`docs/_data/comment_runtime.yml`、`scripts/build-comments-config.mjs`、发布工作流、CSP、样式和相关测试，再按“站内评论开通”页面完成部署。

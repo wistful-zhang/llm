@@ -146,6 +146,7 @@ test('答案输入支持安全的 LaTeX 插入、即时预览和失败兜底', (
   assert.match(script, /insertLatexTemplate,/);
   assert.match(script, /parseKramdownMath,/);
   assert.match(script, /validateKramdownMath,/);
+  assert.match(script, /validatePlainTextMath,/);
   assert.match(script, /import \{ clearMath, renderMath \} from '\.\/math-render\.mjs'/);
   assert.match(script, /answerInput\.dispatchEvent\(new Event\('input', \{ bubbles: true \}\)\)/);
   assert.match(script, /window\.setTimeout\(\(\) => \{[\s\S]*?latexPreviewRenderQueue = latexPreviewRenderQueue\.then\([\s\S]*?\}, 280\)/);
@@ -163,17 +164,21 @@ test('答案输入支持安全的 LaTeX 插入、即时预览和失败兜底', (
 });
 
 test('正式题目、本机口述练习和共享公开题详情都会安全渲染答案、标题和追问中的公式', () => {
+  assert.match(questionMath, /import \{ validatePlainTextMath \} from '\.\/latex-input-core\.mjs'/);
+  assert.match(questionMath, /validatePlainTextMath\(title\.textContent \|\| ''\)\.length === 0/);
   assert.match(questionMath, /prepareKramdownMath\(title, \{ forceInline: true \}\)/);
   assert.match(questionMath, /\.question-followups li/);
-  assert.match(questionMath, /void renderMath\(article\)/);
+  assert.match(questionMath, /validatePlainTextMath\(followUp\.textContent \|\| ''\)\.length === 0/);
+  assert.match(questionMath, /renderMathElements\(mathRoots\)/);
+  assert.doesNotMatch(questionMath, /renderMath(?:Elements)?\(article\)/);
   assert.match(questionLayout, /\{% endif %\}\s*<script type="module" src="\{\{ '\/assets\/js\/question-math\.js'/);
   assert.match(script, /kramdownMathToMathJax\(question\.answer\)/);
   assert.match(script, /\(value\) => kramdownMathToMathJax\(value, \{ forceInline: true \}\)/);
   assert.match(script, /void renderMath\(practice\)/);
-  assert.match(publicQuestionsScript, /import \{ validateKramdownMath \} from '\.\/latex-input-core\.mjs'/);
+  assert.match(publicQuestionsScript, /import \{ validatePlainTextMath \} from '\.\/latex-input-core\.mjs'/);
   assert.match(publicQuestionsScript, /import \{ clearMath, prepareKramdownMath, renderMath \} from '\.\/math-render\.mjs'/);
   assert.match(publicQuestionsScript, /const source = element\.textContent \|\| ''/);
-  assert.match(publicQuestionsScript, /validateKramdownMath\(source\)\.length > 0/);
+  assert.match(publicQuestionsScript, /validatePlainTextMath\(source\)\.length > 0/);
   assert.match(publicQuestionsScript, /const cardTitle = card\.querySelector\('h2'\)/);
   assert.match(publicQuestionsScript, /prepareSafeMath\(cardTitle, \{ forceInline: true \}\)/);
   assert.match(publicQuestionsScript, /clearMath\(list\);[\s\S]*list\.replaceChildren\(\.\.\.cards\)/);
@@ -181,7 +186,7 @@ test('正式题目、本机口述练习和共享公开题详情都会安全渲�
   assert.match(sharedQuestionPage, /data-shared-question-title/);
   assert.match(sharedQuestionPage, /data-question-answer/);
   assert.match(sharedQuestionPage, /data-shared-question-followup-list/);
-  assert.match(sharedQuestionScript, /validateKramdownMath\(value\)\.length > 0/);
+  assert.match(sharedQuestionScript, /validatePlainTextMath\(value\)\.length > 0/);
   assert.match(sharedQuestionScript, /prepareSafeMath\(title, \{ forceInline: true \}\)/);
   assert.match(sharedQuestionScript, /followUpList\.querySelectorAll\('li'\)/);
   assert.match(sharedQuestionScript, /prepareSafeMath\(answerContent\)/);

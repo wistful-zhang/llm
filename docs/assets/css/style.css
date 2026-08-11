@@ -115,6 +115,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .comment-composer textarea { min-height: 132px; padding: 11px 13px; line-height: 1.65; resize: vertical; }
 .comment-composer input::placeholder, .comment-composer textarea::placeholder { color: #98a2b3; }
 .comment-composer input:disabled, .comment-composer textarea:disabled { color: var(--muted); background: #f2f4f7; cursor: not-allowed; }
+.comment-composer textarea[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 4px rgba(180, 35, 24, .08); }
+.comment-latex-assist { grid-column: 2; padding: 0; border: 0; background: transparent; }
+.comment-latex-assist .question-latex-note { margin: 6px 0 0; }
+.comment-latex-assist .question-latex-preview { background: var(--white); }
 .comment-reply-context { display: flex; align-items: center; min-height: 36px; margin: -4px 0 14px; padding: 7px 11px; border-left: 3px solid var(--accent); color: var(--accent-strong); background: var(--accent-soft); font-size: .84rem; font-weight: 700; }
 .comment-honeypot { position: absolute !important; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .comment-composer-footer { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-top: 16px; }
@@ -122,6 +126,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .comment-composer-submit { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; }
 .comment-composer-submit > span { color: var(--muted); font-size: .78rem; }
 .comment-publish-note { margin: 12px 0 0; color: var(--muted); font-size: .76rem; }
+.comment-publish-note code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; }
 .comment-form-feedback { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -18px 0 24px; }
 .comment-form-status { min-height: 1.6em; margin: 0; color: var(--muted); font-size: .84rem; }
 .comment-form-status[data-state="error"] { color: var(--red); }
@@ -138,7 +143,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .question-comment-floor { color: var(--accent-strong); font-size: .76rem; font-weight: 750; }
 .question-comment-reply-reference { display: inline-block; margin: 10px 0 0; color: var(--muted); font-size: .8rem; text-decoration: none; }
 .question-comment-reply-reference:hover { color: var(--accent-strong); text-decoration: underline; }
-.question-comment-body { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.question-comment-body { min-width: 0; margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.question-comment-math-wrap { position: relative; display: inline; max-width: 100%; min-width: 0; }
+.question-comment-math-wrap.is-display { display: block; max-width: 100%; margin-block: 8px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+.question-comment-math-source { display: inline-block; max-width: 100%; min-width: 0; overflow-x: auto; overflow-y: hidden; color: #475467; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: .9em; vertical-align: middle; white-space: pre; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+.question-comment-math-source[hidden] { display: none; }
+.question-comment-math-wrap.is-display .question-comment-math-source { display: block; }
+.question-comment-math { display: inline-block; max-width: 100%; min-width: 0; overflow-x: auto; overflow-y: hidden; vertical-align: middle; white-space: normal; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+.question-comment-math.is-display { display: block; max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+.question-comment-math.is-pending { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.question-comment-math mjx-container[jax="CHTML"] { max-width: 100%; color: var(--ink); }
+.question-comment-math mjx-container[jax="CHTML"][display="true"] { margin: 0 !important; padding-block: 4px; }
+.question-comment-math-wrap.is-fallback .question-comment-math-source { white-space: pre-wrap; }
 .question-comment-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 12px; margin-top: 10px; }
 .question-comment-actions .text-button { padding: 3px 0; font-size: .8rem; }
 .question-comment-actions .subtle-button { color: var(--muted); }
@@ -194,6 +210,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .question-comments-heading { align-items: stretch; flex-direction: column; gap: 14px; }
   .comment-composer { padding: 18px 16px; }
   .comment-composer-fields { grid-template-columns: 1fr; }
+  .comment-latex-assist { grid-column: auto; }
   .comment-composer input, .comment-composer textarea { font-size: 16px; }
   .comment-composer-footer { align-items: stretch; flex-direction: column; }
   .comment-composer-submit { justify-content: space-between; }

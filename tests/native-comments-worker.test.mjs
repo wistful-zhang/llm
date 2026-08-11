@@ -36,6 +36,15 @@ test("评论输入按公开契约规范化，并保持正文为纯文本数据",
   assert.equal(input.body, "第一行\n<script>alert(1)</script>");
   assert.equal(input.parentId, null);
   assert.equal(input.website, "");
+
+  const formula = String.raw`除以 $$\sqrt{d_k}$$ 可以避免 Softmax 过早饱和。`;
+  assert.equal(parseCommentInput({
+    ...input,
+    body: formula,
+    turnstileToken: "turnstile-token",
+    requestId: "550e8400-e29b-41d4-a716-446655440002",
+    editToken: "abcdefghijklmnopqrstuvwxyzABCDEF0123456789_-",
+  }).body, formula);
 });
 
 test("评论输入拒绝弱编辑凭证、非法 UUID 和控制字符", () => {

@@ -1,6 +1,7 @@
 import {
   extractKramdownMathSegments,
   validateKramdownMath,
+  validatePlainTextMath,
 } from '../docs/assets/js/latex-input-core.mjs';
 
 const fencedTextBlocks = (source) => (
@@ -16,9 +17,9 @@ const looksLikeFormulaBlock = (source) => {
 
 export const extractMathSegments = extractKramdownMathSegments;
 
-export function validateMathFormatting(source = '') {
+const validateFormatting = (source, validator) => {
   const content = String(source);
-  const errors = validateKramdownMath(content);
+  const errors = validator(content);
   if (errors.includes('公式分隔符 $$ 未成对')) return errors;
 
   for (const block of fencedTextBlocks(content)) {
@@ -29,4 +30,12 @@ export function validateMathFormatting(source = '') {
   }
 
   return errors;
-}
+};
+
+export const validateMathFormatting = (source = '') => (
+  validateFormatting(source, validateKramdownMath)
+);
+
+export const validatePlainTextMathFormatting = (source = '') => (
+  validateFormatting(source, validatePlainTextMath)
+);

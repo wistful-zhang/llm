@@ -13,6 +13,12 @@ import {
   validateCommentDraft,
   validateQuestionSlug,
 } from './native-comments-core.mjs';
+import {
+  analyzeCommentMath,
+  splitCommentMath,
+} from './comment-math-core.mjs';
+import { insertLatexTemplate } from './latex-input-core.mjs';
+import { updateMathElements } from './math-render.mjs';
 
 const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 const REQUEST_TIMEOUT_MS = 10000;
@@ -168,6 +174,12 @@ const initializeQuestionComments = (root) => {
   const retryButton = root.querySelector('[data-comment-retry]');
   const loadMoreButton = root.querySelector('[data-comment-load-more]');
   const count = root.querySelector('[data-comment-count]');
+  const latexAssist = root.querySelector('[data-comment-latex-assist]');
+  const latexInlineButton = root.querySelector('[data-comment-latex-inline]');
+  const latexDisplayButton = root.querySelector('[data-comment-latex-display]');
+  const latexPreviewRegion = root.querySelector('[data-comment-latex-preview-region]');
+  const latexPreview = root.querySelector('[data-comment-latex-preview]');
+  const latexStatus = root.querySelector('[data-comment-latex-status]');
   const jump = document.querySelector('[data-question-comments-jump]');
 
   if (!api || !questionSlug || !form || !nicknameInput || !bodyInput || !submitButton
@@ -176,10 +188,19 @@ const initializeQuestionComments = (root) => {
     || !replyContext) return;
   initializedRoots.add(root);
 
+  const formulaEnabled = Boolean(
+    latexAssist && latexInlineButton && latexDisplayButton
+    && latexPreviewRegion && latexPreview && latexStatus,
+  );
+  if (formulaEnabled) latexAssist.hidden = false;
+
   const apiRoot = api.href.replace(/\/+$/, '');
   const storage = storageFor(apiRoot);
   const saved = storage.read();
   const comments = new Map();
+  let latexPreviewTimer = 0;
+  let latexPreviewRevision = 0;
+  let commentRenderRevision = 0;
   const state = {
     cursor: 0,
     nextCursor: null,
@@ -195,48 +216,235 @@ const initializeQuestionComments = (root) => {
     editing: null,
     pendingCreate: null,
     pendingReport: null,
+    submitting: false,
     rootDraft: '',
+    replyDrafts: new Map(),
+    editDrafts: new Map(),
     saved,
   };
   nicknameInput.value = saved.nickname;
 
-  const setFormStatus = (message, kind = '') => {
+  const setFormStatus = (message, kind = '', source = '') => {
     formStatus.textContent = message;
     formStatus.dataset.state = kind;
+    formStatus.dataset.source = source;
   };
 
   const updateCounter = () => {
     counter.textContent = `${bodyInput.value.length} / ${COMMENT_LIMITS.bodyMax}`;
   };
 
+  const setLatexStatus = (message, stateName = '') => {
+    if (!formulaEnabled) return;
+    latexStatus.textContent = message;
+    latexStatus.classList.toggle('is-error', stateName === 'error');
+    latexStatus.classList.toggle('is-warning', stateName === 'warning');
+  };
+
+  const previewFormulaRoots = () => (
+    formulaEnabled
+      ? [...latexPreview.querySelectorAll('.question-latex-preview-formula')]
+      : []
+  );
+
+  const setLatexBusy = (busy) => {
+    if (formulaEnabled) latexPreviewRegion.setAttribute('aria-busy', String(busy));
+  };
+
+  const latexPreviewItem = (segment, index, renderable = true) => {
+    const item = document.createElement('div');
+    item.className = 'question-latex-preview-item';
+    const kind = document.createElement('span');
+    kind.className = 'question-latex-preview-kind';
+    kind.textContent = `${segment.display ? '独立公式' : '行内公式'} ${index + 1}`;
+    const source = document.createElement('code');
+    source.className = 'question-latex-preview-source';
+    source.textContent = `$$${segment.content}$$`;
+    item.append(kind, source);
+    if (!renderable) return item;
+
+    const formula = document.createElement('div');
+    formula.className = 'question-latex-preview-formula is-pending';
+    formula.setAttribute('aria-hidden', 'true');
+    formula.textContent = segment.display
+      ? `\\[${segment.content}\\]`
+      : `\\(${segment.content}\\)`;
+    item.append(formula);
+    return item;
+  };
+
+  const refreshLatexPreview = () => {
+    const analysis = analyzeCommentMath(bodyInput.value);
+    if (!formulaEnabled) {
+      if (formStatus.dataset.source === 'math') {
+        if (analysis.errors.length > 0) {
+          bodyInput.setAttribute('aria-invalid', 'true');
+          setFormStatus(`${analysis.errors[0]}。请根据提示修正后再发布。`, 'error', 'math');
+        } else {
+          bodyInput.removeAttribute('aria-invalid');
+          setFormStatus('');
+        }
+      }
+      return;
+    }
+    const revision = ++latexPreviewRevision;
+    window.clearTimeout(latexPreviewTimer);
+    const visibleSegments = analysis.segments.slice(0, 8);
+
+    const replacePreview = (items, {
+      hidden = false,
+      busy = false,
+      message = null,
+      messageState = '',
+    } = {}) => (
+      updateMathElements({
+        scope: latexPreview,
+        clear: previewFormulaRoots,
+        mutate: () => {
+          if (revision !== latexPreviewRevision) return false;
+          latexPreview.replaceChildren(...items);
+          latexPreviewRegion.hidden = hidden;
+          setLatexBusy(busy);
+          if (message !== null) setLatexStatus(message, messageState);
+          return true;
+        },
+      })
+    );
+
+    if (analysis.delimiterCount === 0 && analysis.errors.length === 0) {
+      void replacePreview([], { hidden: true, message: '' });
+      bodyInput.removeAttribute('aria-invalid');
+      if (formStatus.dataset.source === 'math') setFormStatus('');
+      return;
+    }
+
+    const sourceItems = visibleSegments.map((segment, index) => (
+      latexPreviewItem(segment, index, false)
+    ));
+    if (analysis.errors.length > 0) {
+      bodyInput.setAttribute('aria-invalid', 'true');
+      void replacePreview(sourceItems, {
+        message: `${analysis.errors[0]}。请根据提示修正后再发布，其他文字不会丢失。`,
+        messageState: 'error',
+      });
+      return;
+    }
+
+    bodyInput.removeAttribute('aria-invalid');
+    if (formStatus.dataset.source === 'math') setFormStatus('');
+    void replacePreview(sourceItems, {
+      busy: true,
+      message: '正在更新公式预览…',
+    });
+    latexPreviewTimer = window.setTimeout(() => {
+      void (async () => {
+        let applied = false;
+        const rendered = await updateMathElements({
+          scope: latexPreview,
+          clear: previewFormulaRoots,
+          mutate: () => {
+            if (revision !== latexPreviewRevision) return false;
+            latexPreview.replaceChildren(...visibleSegments.map(latexPreviewItem));
+            latexPreviewRegion.hidden = false;
+            setLatexBusy(true);
+            applied = true;
+            return true;
+          },
+          render: (didApply) => (didApply ? previewFormulaRoots() : []),
+        });
+        if (!applied || revision !== latexPreviewRevision) return;
+        if (!rendered) {
+          await replacePreview(visibleSegments.map((segment, index) => (
+            latexPreviewItem(segment, index, false)
+          )), {
+            message: '公式预览暂时不可用；内容已原样保留，仍可发布。',
+            messageState: 'warning',
+          });
+          return;
+        }
+        latexPreview.querySelectorAll('.question-latex-preview-source')
+          .forEach((source) => { source.hidden = true; });
+        latexPreview.querySelectorAll('.question-latex-preview-formula')
+          .forEach((formula) => {
+            formula.classList.remove('is-pending');
+            formula.removeAttribute('aria-hidden');
+          });
+        setLatexBusy(false);
+        setLatexStatus(`已识别 ${analysis.segments.length} 个公式；发布后会保留原始 LaTeX。`);
+      })();
+    }, 280);
+  };
+
+  const insertLatex = (mode) => {
+    if (!formulaEnabled || bodyInput.disabled) return;
+    const result = insertLatexTemplate(
+      bodyInput.value,
+      bodyInput.selectionStart,
+      bodyInput.selectionEnd,
+      mode,
+    );
+    if (bodyInput.maxLength > 0 && result.value.length > bodyInput.maxLength) {
+      latexPreviewRegion.hidden = false;
+      setLatexStatus(`评论最多 ${bodyInput.maxLength} 个字符，请先删减内容再插入公式。`, 'warning');
+      bodyInput.focus();
+      return;
+    }
+    bodyInput.value = result.value;
+    bodyInput.focus();
+    bodyInput.setSelectionRange(result.selectionStart, result.selectionEnd);
+    bodyInput.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  const setFormulaControlsDisabled = (disabled) => {
+    if (!formulaEnabled) return;
+    latexInlineButton.disabled = disabled;
+    latexDisplayButton.disabled = disabled;
+  };
+
   const updateComposer = () => {
     if (state.editing) {
       replyContext.hidden = false;
       replyContext.textContent = `正在修改 ${state.editing.floor} 楼的评论`;
-      submitButton.textContent = '保存修改';
+      submitButton.textContent = state.submitting ? '正在保存…' : '保存修改';
       nicknameInput.disabled = true;
-      bodyInput.disabled = false;
-      submitButton.disabled = false;
-      if (cancelButton) cancelButton.hidden = false;
+      bodyInput.disabled = state.submitting;
+      setFormulaControlsDisabled(state.submitting);
+      submitButton.disabled = state.submitting || state.captchaBusy;
+      if (cancelButton) {
+        cancelButton.hidden = false;
+        cancelButton.disabled = state.submitting;
+      }
       return;
     }
     if (state.replyTo) {
       replyContext.hidden = false;
       replyContext.textContent = `回复 ${state.replyTo.floor} 楼 @${state.replyTo.nickname}`;
-      submitButton.textContent = '发布回复';
-      nicknameInput.disabled = state.locked;
-      bodyInput.disabled = state.locked;
-      submitButton.disabled = state.locked || !state.captchaToken;
-      if (cancelButton) cancelButton.hidden = false;
+      submitButton.textContent = state.submitting ? '正在发布…' : '发布回复';
+      nicknameInput.disabled = state.locked || state.submitting;
+      bodyInput.disabled = state.locked || state.submitting;
+      setFormulaControlsDisabled(state.locked || state.submitting);
+      submitButton.disabled = state.locked || state.submitting
+        || state.captchaBusy || !state.captchaToken;
+      if (cancelButton) {
+        cancelButton.hidden = false;
+        cancelButton.disabled = state.submitting;
+      }
       return;
     }
     replyContext.hidden = true;
     replyContext.textContent = '';
-    submitButton.textContent = state.locked ? '评论区已锁定' : '发布评论';
-    nicknameInput.disabled = state.locked;
-    bodyInput.disabled = state.locked;
-    submitButton.disabled = state.locked || !state.captchaToken;
-    if (cancelButton) cancelButton.hidden = true;
+    submitButton.textContent = state.submitting
+      ? '正在发布…'
+      : (state.locked ? '评论区已锁定' : '发布评论');
+    nicknameInput.disabled = state.locked || state.submitting;
+    bodyInput.disabled = state.locked || state.submitting;
+    setFormulaControlsDisabled(state.locked || state.submitting);
+    submitButton.disabled = state.locked || state.submitting
+      || state.captchaBusy || !state.captchaToken;
+    if (cancelButton) {
+      cancelButton.hidden = true;
+      cancelButton.disabled = state.submitting;
+    }
   };
 
   const resetCaptcha = () => {
@@ -245,14 +453,50 @@ const initializeQuestionComments = (root) => {
     if (!state.editing) submitButton.disabled = true;
   };
 
+  const saveActiveComposerDraft = () => {
+    if (state.editing) {
+      state.editDrafts.set(state.editing.id, bodyInput.value);
+    } else if (state.replyTo) {
+      state.replyDrafts.set(state.replyTo.id, bodyInput.value);
+    } else {
+      state.rootDraft = bodyInput.value;
+    }
+  };
+
+  const switchComposerMode = (mode, comment) => {
+    if (state.submitting) {
+      setFormStatus('当前评论正在发布或保存，请完成后再切换。', 'pending');
+      return;
+    }
+    saveActiveComposerDraft();
+    state.pendingCreate = null;
+    if (mode === 'reply') {
+      state.editing = null;
+      state.replyTo = comment;
+      bodyInput.value = state.replyDrafts.get(comment.id) || '';
+    } else {
+      state.replyTo = null;
+      state.editing = comment;
+      bodyInput.value = state.editDrafts.has(comment.id)
+        ? state.editDrafts.get(comment.id)
+        : comment.body;
+    }
+    updateCounter();
+    refreshLatexPreview();
+    updateComposer();
+    bodyInput.focus();
+  };
+
   const cancelComposerMode = () => {
+    if (state.replyTo) state.replyDrafts.delete(state.replyTo.id);
+    if (state.editing) state.editDrafts.delete(state.editing.id);
     state.replyTo = null;
     state.editing = null;
     state.pendingCreate = null;
     bodyInput.value = state.rootDraft;
     updateCounter();
+    refreshLatexPreview();
     updateComposer();
-    if (state.captchaToken) submitButton.disabled = state.locked;
     setFormStatus(state.locked ? '评论区已锁定；仍可举报，自己发布的内容仍可编辑或删除。' : '');
   };
 
@@ -268,8 +512,56 @@ const initializeQuestionComments = (root) => {
   };
 
   const renderAllComments = () => {
+    const revision = ++commentRenderRevision;
     const ordered = [...comments.values()].sort((left, right) => left.floor - right.floor);
-    list.replaceChildren(...ordered.map((comment) => renderComment(comment)));
+    const renderedComments = ordered.map((comment) => renderComment(comment));
+    const mathEntries = renderedComments.flatMap(({ mathEntries: entries }) => entries);
+
+    const renderCurrentComments = async () => {
+      let applied = false;
+      const rendered = await updateMathElements({
+        scope: list,
+        clear: () => [...list.querySelectorAll('.question-comment-math')],
+        mutate: () => {
+          if (revision !== commentRenderRevision) return false;
+          list.replaceChildren(...renderedComments.map(({ item }) => item));
+          applied = true;
+          return true;
+        },
+        render: (didApply) => (
+          didApply
+            ? mathEntries.map(({ root: mathRoot }) => mathRoot)
+            : []
+        ),
+      });
+      if (!applied || revision !== commentRenderRevision || mathEntries.length === 0) {
+        return;
+      }
+      if (rendered) {
+        mathEntries.forEach(({ root: mathRoot, sourceNode }) => {
+          sourceNode.hidden = true;
+          mathRoot.classList.remove('is-pending');
+          mathRoot.removeAttribute('aria-hidden');
+        });
+        return;
+      }
+
+      await updateMathElements({
+        scope: list,
+        clear: () => mathEntries.map(({ root: mathRoot }) => mathRoot),
+        mutate: () => {
+          if (revision !== commentRenderRevision) return false;
+          mathEntries.forEach(({ root: mathRoot, sourceNode, wrapper }) => {
+            sourceNode.hidden = false;
+            mathRoot.classList.add('is-pending');
+            mathRoot.setAttribute('aria-hidden', 'true');
+            wrapper.classList.add('is-fallback');
+          });
+          return true;
+        },
+      });
+    };
+    void renderCurrentComments();
   };
 
   const replaceComment = (comment) => {
@@ -278,6 +570,10 @@ const initializeQuestionComments = (root) => {
   };
 
   const reportComment = async (comment, alreadyConfirmed = false) => {
+    if (state.submitting) {
+      setFormStatus('当前评论正在发布或保存，请完成后再举报。', 'pending');
+      return;
+    }
     if (!alreadyConfirmed
       && !window.confirm(`匿名举报 ${comment.floor} 楼？管理员会核对后处理，举报不会自动隐藏评论。`)) return;
     if (state.captchaBusy) {
@@ -313,10 +609,15 @@ const initializeQuestionComments = (root) => {
     } finally {
       state.captchaBusy = false;
       resetCaptcha();
+      updateComposer();
     }
   };
 
   const deleteComment = async (comment) => {
+    if (state.submitting) {
+      setFormStatus('当前评论正在发布或保存，请完成后再删除。', 'pending');
+      return;
+    }
     const editToken = state.saved.tokens[comment.id];
     if (!isEditToken(editToken) || !window.confirm(`删除自己发布的 ${comment.floor} 楼评论？删除后楼层会保留，但正文不能恢复。`)) return;
     setFormStatus(`正在删除 ${comment.floor} 楼…`, 'pending');
@@ -330,6 +631,7 @@ const initializeQuestionComments = (root) => {
       delete state.saved.tokens[comment.id];
       storage.write(state.saved);
       replaceComment(deleted);
+      if (state.editing?.id === comment.id) cancelComposerMode();
       setFormStatus('评论已删除，楼层已保留。', 'success');
     } catch (error) {
       setFormStatus(readableError(error, '删除失败，请稍后重试。'), 'error');
@@ -338,6 +640,7 @@ const initializeQuestionComments = (root) => {
 
   const renderComment = (comment) => {
     const item = document.createElement('li');
+    const mathEntries = [];
     item.className = `question-comment${comment.status === 'deleted' ? ' is-deleted' : ''}`;
     item.id = `comment-${comment.id}`;
     item.dataset.commentId = comment.id;
@@ -370,9 +673,33 @@ const initializeQuestionComments = (root) => {
       item.append(reply);
     }
 
-    const body = document.createElement('p');
+    const body = document.createElement('div');
     body.className = 'question-comment-body';
-    body.textContent = comment.body;
+    const split = splitCommentMath(comment.body);
+    if (!split.renderable) {
+      body.textContent = comment.body;
+    } else {
+      split.parts.forEach((part) => {
+        if (part.type === 'text') {
+          body.append(document.createTextNode(part.value));
+          return;
+        }
+        const wrapper = document.createElement('span');
+        wrapper.className = `question-comment-math-wrap${part.display ? ' is-display' : ''}`;
+        const sourceNode = document.createElement('code');
+        sourceNode.className = 'question-comment-math-source';
+        sourceNode.textContent = part.value;
+        const formula = document.createElement('span');
+        formula.className = `question-comment-math is-pending${part.display ? ' is-display' : ''}`;
+        formula.setAttribute('aria-hidden', 'true');
+        formula.textContent = part.display
+          ? `\\[${part.content}\\]`
+          : `\\(${part.content}\\)`;
+        wrapper.append(sourceNode, formula);
+        body.append(wrapper);
+        mathEntries.push({ root: formula, sourceNode, wrapper });
+      });
+    }
     item.append(body);
 
     if (comment.status === 'visible' && state.writeEnabled) {
@@ -380,14 +707,7 @@ const initializeQuestionComments = (root) => {
       actions.className = 'question-comment-actions';
       if (!state.locked) {
         actions.append(createButton('回复', 'text-button', () => {
-          if (!state.replyTo && !state.editing) state.rootDraft = bodyInput.value;
-          state.editing = null;
-          state.replyTo = comment;
-          state.pendingCreate = null;
-          bodyInput.value = '';
-          updateCounter();
-          updateComposer();
-          bodyInput.focus();
+          switchComposerMode('reply', comment);
         }, `回复 ${comment.floor} 楼 @${comment.nickname}`));
       }
       actions.append(createButton(
@@ -398,15 +718,7 @@ const initializeQuestionComments = (root) => {
       ));
       if (isEditToken(state.saved.tokens[comment.id])) {
         actions.append(createButton('编辑', 'text-button', () => {
-          if (!state.replyTo && !state.editing) state.rootDraft = bodyInput.value;
-          state.replyTo = null;
-          state.editing = comment;
-          state.pendingCreate = null;
-          bodyInput.value = comment.body;
-          updateCounter();
-          updateComposer();
-          submitButton.disabled = false;
-          bodyInput.focus();
+          switchComposerMode('edit', comment);
         }, `编辑自己发布的 ${comment.floor} 楼`));
         actions.append(createButton(
           '删除',
@@ -417,7 +729,7 @@ const initializeQuestionComments = (root) => {
       }
       item.append(actions);
     }
-    return item;
+    return { item, mathEntries };
   };
 
   const loadComments = async ({ reset = false } = {}) => {
@@ -432,7 +744,16 @@ const initializeQuestionComments = (root) => {
       state.cursor = 0;
       state.nextCursor = null;
       comments.clear();
-      list.replaceChildren();
+      const revision = ++commentRenderRevision;
+      void updateMathElements({
+        scope: list,
+        clear: () => [...list.querySelectorAll('.question-comment-math')],
+        mutate: () => {
+          if (revision !== commentRenderRevision) return false;
+          list.replaceChildren();
+          return true;
+        },
+      });
     }
 
     try {
@@ -526,17 +847,21 @@ const initializeQuestionComments = (root) => {
     emptyState.hidden = true;
     list.hidden = false;
     state.pendingCreate = null;
-    const wasReply = Boolean(state.replyTo);
+    const repliedTo = state.replyTo;
+    const wasReply = Boolean(repliedTo);
+    if (repliedTo) state.replyDrafts.delete(repliedTo.id);
     state.replyTo = null;
     if (!wasReply) state.rootDraft = '';
     bodyInput.value = wasReply ? state.rootDraft : '';
     updateCounter();
+    refreshLatexPreview();
     updateComposer();
     setFormStatus(`发布成功，显示在 ${created.floor} 楼。`, 'success');
   };
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (state.submitting) return;
     if (state.locked && !state.editing) {
       setFormStatus('评论区已锁定，暂时不能发布新内容。', 'pending');
       return;
@@ -548,10 +873,22 @@ const initializeQuestionComments = (root) => {
     const draft = validateCommentDraft({ nickname: nicknameInput.value, body: bodyInput.value });
     if (draft.errors.length > 0) {
       setFormStatus(draft.errors[0], 'error');
+      bodyInput.focus();
       return;
     }
-    submitButton.disabled = true;
-    submitButton.textContent = state.editing ? '正在保存…' : '正在发布…';
+    const math = analyzeCommentMath(draft.body);
+    if (math.errors.length > 0) {
+      refreshLatexPreview();
+      setFormStatus(formulaEnabled
+        ? '公式暂时不能发布，请查看输入框下方的提示。'
+        : `${math.errors[0]}。请根据提示修正后再发布。`, 'error', 'math');
+      bodyInput.setAttribute('aria-invalid', 'true');
+      bodyInput.focus();
+      return;
+    }
+    state.submitting = true;
+    form.setAttribute('aria-busy', 'true');
+    updateComposer();
     setFormStatus(state.editing ? '正在保存修改…' : '正在发布评论…', 'pending');
     try {
       if (state.editing) await submitEdit(draft);
@@ -560,6 +897,8 @@ const initializeQuestionComments = (root) => {
     } catch (error) {
       setFormStatus(readableError(error, '发布失败，内容已保留，请重试。'), 'error');
     } finally {
+      state.submitting = false;
+      form.setAttribute('aria-busy', 'false');
       if (!state.editing) resetCaptcha();
       updateComposer();
     }
@@ -571,13 +910,19 @@ const initializeQuestionComments = (root) => {
   });
   bodyInput.addEventListener('input', () => {
     state.pendingCreate = null;
-    if (!state.replyTo && !state.editing) state.rootDraft = bodyInput.value;
+    saveActiveComposerDraft();
     updateCounter();
+    refreshLatexPreview();
   });
+  if (formulaEnabled) {
+    latexInlineButton.addEventListener('click', () => insertLatex('inline'));
+    latexDisplayButton.addEventListener('click', () => insertLatex('display'));
+  }
   cancelButton?.addEventListener('click', cancelComposerMode);
   retryButton.addEventListener('click', () => void loadComments({ reset: true }));
   loadMoreButton.addEventListener('click', () => void loadComments());
   updateCounter();
+  refreshLatexPreview();
   updateComposer();
 
   const configure = async () => {
@@ -608,7 +953,7 @@ const initializeQuestionComments = (root) => {
             submitButton.disabled = true;
             void reportComment(state.pendingReport, true);
           } else {
-            submitButton.disabled = state.locked;
+            updateComposer();
           }
         },
         'expired-callback': () => {

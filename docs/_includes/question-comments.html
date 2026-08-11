@@ -21,8 +21,28 @@
       </label>
       <label class="comment-body-field">
         <span>评论内容</span>
-        <textarea data-comment-body name="body" minlength="2" maxlength="2000" rows="5" required aria-describedby="comment-reply-context comment-body-counter comment-publish-note" placeholder="写下你的答法、追问或修改建议…"></textarea>
+        <textarea id="comment-body-input" data-comment-body name="body" minlength="2" maxlength="2000" rows="5" required aria-describedby="comment-reply-context comment-body-counter comment-latex-help comment-latex-status comment-publish-note" placeholder="写下你的答法、追问或修改建议…"></textarea>
       </label>
+      <section class="question-latex-assist comment-latex-assist" data-comment-latex-assist aria-labelledby="comment-latex-title" hidden>
+        <div class="question-latex-heading">
+          <div>
+            <strong id="comment-latex-title">公式（可选）</strong>
+            <span>普通评论不用公式；预览不会改写保存内容。</span>
+          </div>
+          <div class="question-latex-actions" role="group" aria-label="插入 LaTeX 公式">
+            <button class="text-button" type="button" data-comment-latex-inline aria-controls="comment-body-input">＋ 行内公式</button>
+            <button class="text-button" type="button" data-comment-latex-display aria-controls="comment-body-input">＋ 独立公式</button>
+          </div>
+        </div>
+        <p id="comment-latex-help" class="question-latex-note">使用成对的 <code>$$</code> 包住公式，例如 <code>$$\sqrt{d_k}$$</code>；单个 <code>$</code> 仍按普通文字显示。</p>
+        <div class="question-latex-preview" data-comment-latex-preview-region role="region" aria-labelledby="comment-latex-preview-title" aria-busy="false" hidden>
+          <div class="question-latex-preview-heading">
+            <strong id="comment-latex-preview-title">公式预览</strong>
+            <span id="comment-latex-status" data-comment-latex-status aria-live="polite"></span>
+          </div>
+          <div class="question-latex-preview-list" data-comment-latex-preview></div>
+        </div>
+      </section>
     </div>
     <label class="comment-honeypot" aria-hidden="true">请勿填写<input type="text" data-comment-website name="website" tabindex="-1" autocomplete="off"></label>
     <div class="comment-composer-footer">
@@ -33,7 +53,7 @@
         <button class="primary-button" type="submit" data-comment-submit disabled>发布评论</button>
       </div>
     </div>
-    <p id="comment-publish-note" class="comment-publish-note">无需账号；发布后立即公开。本站只显示纯文本，昵称不代表身份认证；只有当前浏览器保存修改和删除凭据。</p>
+    <p id="comment-publish-note" class="comment-publish-note">无需账号；发布后立即公开。评论按纯文本保存，<code>$$...$$</code> 只用于公式排版，不支持 HTML 或 Markdown；昵称不代表身份认证，只有当前浏览器保存修改和删除凭据。</p>
   </form>
   <div class="comment-form-feedback">
     <p class="comment-form-status" data-comment-form-status role="status" aria-live="polite">正在连接站内评论服务…</p>

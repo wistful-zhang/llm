@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   extractMathSegments,
   validateMathFormatting,
+  validatePlainTextMathFormatting,
 } from '../scripts/math-format.mjs';
 
 test('accepts inline and display Kramdown math', () => {
@@ -20,6 +21,15 @@ $$
 
   assert.deepEqual(validateMathFormatting(source), []);
   assert.equal(extractMathSegments(source).length, 2);
+});
+
+test('纯文本标题与追问不会把反引号当成真实 code 元素', () => {
+  const source = '代码 `'
+    + String.raw`\(\DeclareMathOperator{\sqrt}{EVIL}\)`
+    + '`';
+  assert.deepEqual(validateMathFormatting(source), []);
+  assert.ok(validatePlainTextMathFormatting(source)
+    .includes('请使用 $$ 包住公式，不要直接输入 \\(...\\) 或 \\[...\\]'));
 });
 
 test('rejects unpaired delimiters, braces and environments', () => {

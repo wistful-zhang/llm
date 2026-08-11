@@ -42,6 +42,7 @@ import {
   kramdownMathToMathJax,
   parseKramdownMath,
   validateKramdownMath,
+  validatePlainTextMath,
 } from './latex-input-core.mjs';
 import { clearMath, renderMath } from './math-render.mjs';
 
@@ -635,7 +636,7 @@ if (root) {
       ...question.followUps.map((followUp, index) => [`第 ${index + 1} 条追问`, followUp]),
     ];
     for (const [label, value] of mathFields) {
-      const [mathError] = validateKramdownMath(value);
+      const [mathError] = validatePlainTextMath(value);
       if (!mathError) continue;
       status.textContent = `已阻止外发操作：${label}：${mathError}。请先编辑补完整；本机草稿不会丢失。`;
       status.focus?.();
@@ -889,7 +890,7 @@ if (root) {
     practiceTitle.focus({ preventScroll: true });
     practice.scrollIntoView({ block: 'start', behavior: 'smooth' });
     const practiceMathIsValid = [question.title, question.answer, ...question.followUps]
-      .every((value) => validateKramdownMath(value).length === 0);
+      .every((value) => validatePlainTextMath(value).length === 0);
     if (practiceMathIsValid) void renderMath(practice);
   };
 
