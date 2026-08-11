@@ -14,7 +14,7 @@ import {
   questionPublicationTokensStorageKey,
 } from './question-publication-tokens.mjs';
 import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
-import { validateKramdownMath } from './latex-input-core.mjs';
+import { validatePlainTextMath } from './latex-input-core.mjs';
 import { prepareKramdownMath, renderMath } from './math-render.mjs';
 
 const root = document.querySelector('[data-shared-question]');
@@ -72,7 +72,7 @@ if (root) {
   const prepareSafeMath = (element, options = {}) => {
     if (!element) return false;
     const value = element.textContent || '';
-    if (validateKramdownMath(value).length > 0) return false;
+    if (validatePlainTextMath(value).length > 0) return false;
     prepareKramdownMath(element, options);
     return true;
   };

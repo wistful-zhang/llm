@@ -8,6 +8,7 @@ import {
   kramdownMathToMathJax,
   parseKramdownMath,
   validateKramdownMath,
+  validatePlainTextMath,
 } from '../docs/assets/js/latex-input-core.mjs';
 
 test('识别 Kramdown 行内和独立公式，并为 MathJax 预览转换分隔符', () => {
@@ -61,6 +62,28 @@ test('公式校验提示未闭合、空公式、花括号和环境错误', () =>
   assert.ok(validateKramdownMath(String.raw`正文 $$x_{t$$`).includes('公式中的 TeX 花括号未配对'));
   assert.ok(validateKramdownMath(String.raw`$$\begin{aligned}x=1\end{matrix}$$`)
     .includes('公式中的 TeX begin/end 环境未配对'));
+  assert.deepEqual(validateKramdownMath(String.raw`$$\begin {matrix}x\end {matrix}$$`), []);
+  assert.ok(validateKramdownMath(String.raw`$$\begin {aligned}x=1\end {matrix}$$`)
+    .includes('公式中的 TeX begin/end 环境未配对'));
+  assert.ok(validateKramdownMath(String.raw`$$\begin% comment
+{matrix}x\end{matrix}$$`).includes('公式中的 TeX begin/end 环境未配对'));
+});
+
+test('拒绝会污染后续排版状态或引入外部内容的 TeX 命令', () => {
+  const message = '公式不支持定义宏、标签、链接或动态扩展命令';
+  for (const source of [
+    String.raw`$$\DeclareMathOperator{\sqrt}{EVIL}$$`,
+    String.raw`$$x\LABEL{same}$$`,
+    String.raw`$$x\tag{1}$$`,
+    String.raw`$$\href{javascript:alert(1)}{x}$$`,
+    String.raw`$$\newcommand{\x}{y}$$`,
+  ]) {
+    assert.ok(validateKramdownMath(source).includes(message), source);
+  }
+
+  assert.deepEqual(validateKramdownMath(String.raw`$$\operatorname{Attention}(Q,K,V)$$`), []);
+  assert.deepEqual(validateKramdownMath(String.raw`$$\\DeclareMathOperator+x$$`), []);
+  assert.deepEqual(validateKramdownMath('代码 `\\DeclareMathOperator`'), []);
 });
 
 test('拒绝直接输入构建后的 MathJax 分隔符，但代码示例不误报', () => {
@@ -69,6 +92,18 @@ test('拒绝直接输入构建后的 MathJax 分隔符，但代码示例不误�
   assert.ok(validateKramdownMath(String.raw`\[x_i\]`).includes(message));
   assert.ok(validateKramdownMath(String.raw`正文 \\(x_i\\)`).includes(message));
   assert.deepEqual(validateKramdownMath('代码 `\\(x_i\\)`'), []);
+});
+
+test('纯文本渲染入口不把反引号误当作真实 code 元素', () => {
+  const source = '代码 `'
+    + String.raw`\(\DeclareMathOperator{\sqrt}{EVIL}\)`
+    + '`，正常公式 '
+    + String.raw`$$\sqrt{x}$$`;
+  const message = '请使用 $$ 包住公式，不要直接输入 \\(...\\) 或 \\[...\\]';
+
+  assert.deepEqual(validateKramdownMath(source), []);
+  assert.ok(validatePlainTextMath(source).includes(message));
+  assert.deepEqual(validatePlainTextMath('代码 `\\DeclareMathOperator`，公式 $$\\sqrt{x}$$'), []);
 });
 
 test('拒绝会被 Kramdown 还原成公式分隔符的美元转义', () => {

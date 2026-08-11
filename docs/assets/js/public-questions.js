@@ -14,7 +14,7 @@ import {
   parseQuestionPublicationTokens,
   questionPublicationTokensStorageKey,
 } from './question-publication-tokens.mjs';
-import { validateKramdownMath } from './latex-input-core.mjs';
+import { validatePlainTextMath } from './latex-input-core.mjs';
 import { clearMath, prepareKramdownMath, renderMath } from './math-render.mjs';
 import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
 
@@ -41,7 +41,7 @@ if (root) {
   const prepareSafeMath = (element, options = {}) => {
     if (!element) return false;
     const source = element.textContent || '';
-    if (validateKramdownMath(source).length > 0) return false;
+    if (validatePlainTextMath(source).length > 0) return false;
     prepareKramdownMath(element, options);
     return true;
   };

@@ -12,7 +12,10 @@ import {
   hasCompleteAnswer,
   hasMeaningfulAnswer,
 } from './publication-state.mjs';
-import { validateMathFormatting } from './math-format.mjs';
+import {
+  validateMathFormatting,
+  validatePlainTextMathFormatting,
+} from './math-format.mjs';
 import {
   isExperienceDocumentPath,
   validateExperienceDocument,
@@ -130,11 +133,11 @@ for (const filename of files) {
   validateMathFormatting(body).forEach((message) => {
     errors.push(`${filename}: ${message}`);
   });
-  validateMathFormatting(title).forEach((message) => {
+  validatePlainTextMathFormatting(title).forEach((message) => {
     errors.push(`${filename}: title ${message}`);
   });
   followUps.forEach((followUp, index) => {
-    validateMathFormatting(followUp).forEach((message) => {
+    validatePlainTextMathFormatting(followUp).forEach((message) => {
       errors.push(`${filename}: followups 第 ${index + 1} 条 ${message}`);
     });
   });

@@ -1,6 +1,38 @@
 const MATH_DELIMITER = '$$';
+const RAW_MATHJAX_DELIMITER_MESSAGE = '请使用 $$ 包住公式，不要直接输入 \\(...\\) 或 \\[...\\]';
 export const MAX_LATEX_FORMULAS = 64;
 export const MAX_LATEX_FORMULA_LENGTH = 4096;
+
+const BLOCKED_TEX_COMMANDS = new Set([
+  'def',
+  'gdef',
+  'edef',
+  'xdef',
+  'let',
+  'futurelet',
+  'newcommand',
+  'renewcommand',
+  'providecommand',
+  'newenvironment',
+  'renewenvironment',
+  'declaremathoperator',
+  'label',
+  'tag',
+  'notag',
+  'ref',
+  'eqref',
+  'require',
+  'setoptions',
+  'href',
+  'url',
+  'style',
+  'class',
+  'cssid',
+  'html',
+  'includegraphics',
+  'csname',
+  'endcsname',
+]);
 
 const countBackslashesBefore = (source, index) => {
   let count = 0;
@@ -223,9 +255,17 @@ const checkBraces = (source) => {
 };
 
 const checkEnvironments = (source) => {
+  const tokens = [...source.matchAll(/\\(?:begin|end)\b/g)]
+    .filter((match) => !isEscaped(source, match.index));
+  const declarations = [...source.matchAll(/\\(begin|end)[ \t\r\n]*\{([^}\r\n]+)\}/g)]
+    .filter((match) => !isEscaped(source, match.index));
+  if (tokens.length !== declarations.length) return false;
+
   const stack = [];
-  for (const match of source.matchAll(/\\(begin|end)\{([^}]+)\}/g)) {
-    const [, action, environment] = match;
+  for (const match of declarations) {
+    const action = match[1];
+    const environment = match[2].trim();
+    if (!/^[A-Za-z][A-Za-z0-9*_-]*$/.test(environment)) return false;
     if (action === 'begin') {
       stack.push(environment);
     } else if (stack.pop() !== environment) {
@@ -235,6 +275,12 @@ const checkEnvironments = (source) => {
   return stack.length === 0;
 };
 
+const hasBlockedControlSequence = (source) => [...source.matchAll(/\\([A-Za-z@]+)/g)]
+  .some((match) => (
+    !isEscaped(source, match.index)
+    && BLOCKED_TEX_COMMANDS.has(match[1].toLowerCase())
+  ));
+
 export function validateKramdownMath(source = '') {
   const value = String(source);
   const protectedRanges = protectedCodeRanges(value);
@@ -242,7 +288,7 @@ export function validateKramdownMath(source = '') {
   const errors = [];
 
   if (hasRawMathJaxDelimiter(value, protectedRanges)) {
-    errors.push('请使用 $$ 包住公式，不要直接输入 \\(...\\) 或 \\[...\\]');
+    errors.push(RAW_MATHJAX_DELIMITER_MESSAGE);
   }
   if (hasEncodedMathCharacter(value, protectedRanges)) {
     errors.push('公式分隔符中的 $ 或 \\ 不能使用 HTML 实体编码');
@@ -274,7 +320,22 @@ export function validateKramdownMath(source = '') {
   if (parsed.segments.some((segment) => !checkEnvironments(segment.content))) {
     errors.push('公式中的 TeX begin/end 环境未配对');
   }
+  if (parsed.segments.some((segment) => hasBlockedControlSequence(segment.content))) {
+    errors.push('公式不支持定义宏、标签、链接或动态扩展命令');
+  }
 
+  return errors;
+}
+
+export function validatePlainTextMath(source = '') {
+  const value = String(source);
+  const errors = validateKramdownMath(value);
+  if (
+    hasRawMathJaxDelimiter(value, [])
+    && !errors.includes(RAW_MATHJAX_DELIMITER_MESSAGE)
+  ) {
+    errors.push(RAW_MATHJAX_DELIMITER_MESSAGE);
+  }
   return errors;
 }
 

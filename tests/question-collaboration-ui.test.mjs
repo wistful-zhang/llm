@@ -71,7 +71,7 @@ test('共享 API 公开题直接显示在统一题库，不再存在 Issue 或�
   assert.match(localScript, /publishedRemoteIds/);
   assert.match(localScript, /question\.remoteId/);
   assert.match(localScript, /公开失败 · 仅此浏览器/);
-  assert.match(publicScript, /validateKramdownMath\(source\)\.length > 0/);
+  assert.match(publicScript, /validatePlainTextMath\(source\)\.length > 0/);
   assert.match(publicScript, /prepareKramdownMath\(element, options\)/);
   assert.match(publicScript, /void renderMath\(cardTitle\)/);
   assert.doesNotMatch(`${publicScript}\n${captureScript}`, /api\.github\.com|issues\/new|buildIssueLaunch|loadPublicIssueMatches|open-submitted-issue|open-issue/);

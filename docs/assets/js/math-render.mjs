@@ -9,6 +9,9 @@ import { kramdownMathToMathJax } from './latex-input-core.mjs';
 
 let loaderPromise = null;
 let failureReported = false;
+let renderQueue = Promise.resolve();
+const defaultMutationScope = {};
+const mutationQueues = new WeakMap();
 
 const readyMathJax = () => (
   typeof window !== 'undefined' && typeof window.MathJax?.typesetPromise === 'function'
@@ -129,17 +132,93 @@ export function prepareKramdownMath(root, options = {}) {
   return changed;
 }
 
-export async function renderMath(root) {
-  if (!containsRenderableMath(root)) return false;
+const queueMathTask = (task) => {
+  const result = renderQueue.then(task, task);
+  renderQueue = result.then(() => undefined, () => undefined);
+  return result;
+};
 
-  const mathJax = await loadMathJax();
-  if (!mathJax || (root.isConnected === false)) return false;
+const resolveRoots = (roots, mutationResult) => Array.from(
+  (typeof roots === 'function' ? roots(mutationResult) : roots) || [],
+).filter(Boolean);
 
+const queueMutationTask = (scope, task) => {
+  const key = scope && (typeof scope === 'object' || typeof scope === 'function')
+    ? scope
+    : defaultMutationScope;
+  const previous = mutationQueues.get(key) || Promise.resolve();
+  const result = previous.then(task, task);
+  mutationQueues.set(key, result.then(() => undefined, () => undefined));
+  return result;
+};
+
+const clearMathElements = (roots) => {
+  if (roots.length === 0 || !readyMathJax()) return Promise.resolve();
+  return queueMathTask(async () => {
+    const mathJax = readyMathJax();
+    if (!mathJax || typeof mathJax.typesetClear !== 'function') return;
+    try {
+      mathJax.typesetClear(roots);
+    } catch (error) {
+      reportFailureOnce(error);
+    }
+  });
+};
+
+const typesetMathElements = (roots, mathJax) => queueMathTask(async () => {
+  const connected = roots.filter((root) => (
+    root.isConnected !== false && containsRenderableMath(root)
+  ));
+  if (connected.length === 0) return false;
   try {
-    await mathJax.typesetPromise([root]);
+    await mathJax.typesetPromise(connected);
     return true;
   } catch (error) {
     reportFailureOnce(error);
     return false;
   }
+});
+
+export function updateMathElements({
+  clear = [],
+  mutate = null,
+  render = [],
+  scope = null,
+} = {}) {
+  const updateDom = async () => {
+    const clearRoots = resolveRoots(clear);
+    await clearMathElements(clearRoots);
+
+    const mutationResult = typeof mutate === 'function' ? mutate() : undefined;
+    const renderRoots = resolveRoots(render, mutationResult);
+    return renderRoots.filter((root) => (
+      root.isConnected !== false && containsRenderableMath(root)
+    ));
+  };
+
+  const candidatesPromise = mutate || scope
+    ? queueMutationTask(scope, updateDom)
+    : updateDom();
+
+  return (async () => {
+    const candidates = await candidatesPromise;
+    if (candidates.length === 0) return false;
+
+    // Neither CDN startup nor an unrelated page region owns this scope lock.
+    // A newer edit can replace stale raw formula nodes while MathJax loads.
+    const mathJax = readyMathJax() || await loadMathJax();
+    if (!mathJax) return false;
+    const typeset = () => typesetMathElements(candidates, mathJax);
+    return mutate || scope
+      ? queueMutationTask(scope, typeset)
+      : typeset();
+  })();
+}
+
+export function renderMathElements(roots = []) {
+  return updateMathElements({ render: roots });
+}
+
+export function renderMath(root) {
+  return renderMathElements([root]);
 }
