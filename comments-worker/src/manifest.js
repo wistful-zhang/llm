@@ -69,7 +69,7 @@ async function loadManifest(manifestUrl, fetchImpl) {
     response = await fetchImpl(manifestUrl, {
       method: "GET",
       headers: { accept: "application/json" },
-      redirect: "error",
+      redirect: "follow",
     });
   } catch {
     throw new HttpError(503, "manifest_unavailable", "暂时无法核对题目发布状态");

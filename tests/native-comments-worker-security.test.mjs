@@ -58,13 +58,16 @@ test("公开 API 契约完整，并且跨域响应不使用通配符", async () 
   assert.match(security, /mutation && !origin/);
   assert.match(
     worker,
-    /await assertPublishedQuestion\(env, slug\);[\s\S]*comment = await insertCommentWithFloor/,
+    /await assertCommentableQuestion\(env, slug\);[\s\S]*comment = await insertCommentWithFloor/,
   );
+  assert.match(worker, /if \(!isUuid\(slug\)\)[\s\S]*assertPublishedQuestion\(env, slug\)/);
+  assert.match(worker, /getPublicQuestionById\(env\.DB, env\.SITE_ID, slug\)/);
+  assert.match(worker, /async function getQuestionComments[\s\S]*await assertCommentableQuestion\(env, slug\)/);
   const postStart = worker.indexOf("async function postQuestionComment");
   const postEnd = worker.indexOf("async function patchComment", postStart);
   const postSection = worker.slice(postStart, postEnd);
   assert.ok(
-    postSection.indexOf("findIdempotentComment") < postSection.indexOf("assertPublishedQuestion"),
+    postSection.indexOf("findIdempotentComment") < postSection.indexOf("assertCommentableQuestion"),
     "合法幂等重试应先于远程发布清单核验",
   );
 });

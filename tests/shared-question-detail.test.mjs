@@ -70,11 +70,13 @@ test('首页公开题整卡进入稳定详情页，记题页也提供查看入�
   assert.match(captureScript, /publicQuestionDetailUrl\(question\.remoteId\)/);
 });
 
-test('公开题详情壳覆盖加载、成功、下架、重试、公式、编辑和分享状态', async () => {
-  const [page, builtInLayout, script, share, stylesheet] = await Promise.all([
+test('公开题详情壳覆盖加载、成功、下架、重试、公式、编辑、评论和分享状态', async () => {
+  const [page, commentsInclude, builtInLayout, script, commentsScript, share, stylesheet] = await Promise.all([
     read('../docs/shared-question.html'),
+    read('../docs/_includes/question-comments.html'),
     read('../docs/_layouts/question.html'),
     read('../docs/assets/js/shared-question.js'),
+    read('../docs/assets/js/question-comments.js'),
     read('../docs/assets/js/share.js'),
     read('../docs/assets/css/style.css'),
   ]);
@@ -97,6 +99,10 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(page, /assets\/js\/shared-question\.js/);
   assert.match(page, /assets\/js\/question-coach\.js/);
   assert.match(page, /assets\/js\/share\.js/);
+  assert.match(page, /include question-comments\.html question_slug='' hidden=true/);
+  assert.match(page, /assets\/js\/question-comments\.js/);
+  assert.match(commentsInclude, /data-question-slug="{{ include\.question_slug/);
+  assert.match(commentsInclude, /data-comment-form/);
   for (const className of [
     'question-page',
     'question-header',
@@ -145,6 +151,10 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(script, /if \(revision !== requestRevision\) return/);
   assert.doesNotMatch(script, /title\.focus\(/);
   assert.match(script, /mathRoots\.forEach\(\(element\) => \{ void renderMath\(element\); \}\)/);
+  assert.match(script, /commentsRoot\.dataset\.questionSlug = question\.id/);
+  assert.match(script, /commentsRoot\.hidden = false/);
+  assert.match(script, /new CustomEvent\('question-comments:ready', \{ bubbles: true \}\)/);
+  assert.match(commentsScript, /document\.addEventListener\('question-comments:ready'/);
   assert.doesNotMatch(script, /renderMath\(content\)/);
   assert.match(share, /const currentTitle = \(\)/);
   assert.match(share, /const currentUrl = \(\)/);

@@ -51,6 +51,7 @@ if (root) {
   const ownerActions = root.querySelector('[data-shared-question-owner-actions]');
   const editLink = root.querySelector('[data-shared-question-edit]');
   const shareControls = root.querySelector('[data-share-controls]');
+  const commentsRoot = root.querySelector('[data-question-comments]');
   let requestRevision = 0;
   let activeController = null;
 
@@ -201,6 +202,11 @@ if (root) {
     loading.hidden = true;
     errorPanel.hidden = true;
     content.hidden = false;
+    if (commentsRoot) {
+      commentsRoot.dataset.questionSlug = question.id;
+      commentsRoot.hidden = false;
+      commentsRoot.dispatchEvent(new CustomEvent('question-comments:ready', { bubbles: true }));
+    }
     mathRoots.forEach((element) => { void renderMath(element); });
   };
 

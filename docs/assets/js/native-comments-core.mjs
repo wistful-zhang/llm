@@ -67,7 +67,7 @@ export const buildCommentActionUrl = (apiUrl, commentId, action = '') => {
 };
 
 export const validateCommentDraft = ({ nickname, body }) => {
-  const cleanNickname = normalizePlainText(nickname).replace(/\s+/g, ' ');
+  const cleanNickname = normalizePlainText(nickname).replace(/\s+/g, ' ') || '匿名访客';
   const cleanBody = normalizePlainText(body);
   const errors = [];
   if (cleanNickname.length < COMMENT_LIMITS.nicknameMin || cleanNickname.length > COMMENT_LIMITS.nicknameMax) {

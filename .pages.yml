@@ -326,7 +326,7 @@ content:
         label: 在正式题目下方显示站内评论
         type: boolean
         default: false
-        description: 当前项目默认关闭。只有以后明确部署并维护独立评论服务时才开启；关闭评论不影响建题、补答案、公开补题和模拟面试。
+        description: 主站已接通题下评论；新建副本只有部署自己的 Worker、设置 COMMENTS_API_URL 后才可开启，不会继承原作者数据库。
 
       - name: footer
         label: 页脚文字

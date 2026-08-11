@@ -10,11 +10,13 @@ permalink: /comments/setup/
 
 # 开通像论坛一样的站内评论
 
-> 当前版本默认关闭题目评论。建立个人题库不需要完成本页配置；只有以后明确决定恢复并愿意维护独立服务时，再参考以下高级说明。
+> 官方主站已经完成这项配置。模板副本不会继承主站的 Worker、D1 或仓库变量，因此评论区会保持隐藏；只有希望自己的访客也能评论时，题库主人才需要完成本页配置。
 
-完成后，访客只需要填写昵称和内容，评论就会直接显示在当前题目下面。每道题有独立楼层，支持回复、举报和本机编辑 / 删除；正常评论立即公开，不进入“待审核”。
+完成后，访客只需填写评论内容，昵称可以留空；评论会直接显示在当前题目下面。每道题有独立楼层，支持回复、举报和本机编辑 / 删除；正常评论立即公开，不进入“待审核”。
 
 GitHub Pages 本身不能保存所有人共享的评论，所以本项目把评论服务独立部署到你的 Cloudflare 账号：Worker 负责接口，D1 保存评论，Turnstile 负责防刷。每个题库副本使用自己的数据库，不会连接原作者的数据。
+
+如果你已经按“共享题目服务设置”部署过 `comments-worker`，**不要再建第二个 Worker 或 D1**。先把现有 Worker 更新到当前版本，然后让 `QUESTIONS_API_URL` 和 `COMMENTS_API_URL` 填写同一个根网址；这样使用者公开题的可见状态和评论楼层才会在同一数据库中正确关联。
 
 ## 第一步：创建无感人机验证
 
@@ -23,7 +25,7 @@ GitHub Pages 本身不能保存所有人共享的评论，所以本项目把评�
 3. Hostname 填写题库网站域名，例如 `your-name.github.io`；使用自定义域名时也要加入。
 4. 创建后保存 **Site key** 和 **Secret key**。Site key 可以公开，Secret key 只能放在 Worker 的加密变量中。
 
-## 第二步：一键部署评论服务
+## 第二步：还没有共享服务时再部署
 
 {% if site.github.repository_url %}
 {% assign comments_worker_branch = site.github.source.branch | default: 'main' %}
@@ -59,9 +61,9 @@ Cloudflare 会把仓库里的 `comments-worker` 当成独立项目，读取其�
 
 ## 第三步：把网站连到 Worker
 
-1. 复制 Cloudflare 给出的 Worker 根网址，例如 `https://llm-interview-comments.your-name.workers.dev`。
+1. 复制 Cloudflare 给出的 Worker 根网址，例如 `https://llm-interview-comments.your-name.workers.dev`；已经配置公开题服务时直接使用它的现有网址。
 2. 进入 GitHub 仓库 **Settings → Secrets and variables → Actions → Variables**。
-3. 新建变量 `COMMENTS_API_URL`，值只填写 Worker 根网址，不要附加 `/v1/config`、Token 或查询参数。
+3. 新建变量 `COMMENTS_API_URL`，值只填写 Worker 根网址，不要附加 `/v1/config`、Token 或查询参数。若已有 `QUESTIONS_API_URL`，两者必须指向同一个当前版本 Worker。
 4. 打开 **Actions → 内容检查与网站发布 → Run workflow**。
 5. 在 Pages CMS 的“站点设置”确认“在正式题目下方显示站内评论”已经开启。
 

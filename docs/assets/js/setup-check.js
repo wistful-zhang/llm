@@ -1,3 +1,5 @@
+import { parseWorkerRoot, workerRootsMatch } from './setup-check-core.mjs';
+
 const root = document.querySelector('[data-setup-check]');
 
 if (root) {
@@ -64,18 +66,33 @@ if (root) {
       healthy: true,
     };
     if (!commentsApiUrl) return {
-      value: '尚未开通',
+      value: '未连接（可选）',
       state: 'warning',
-      hint: '网站不会连接 GitHub 评论。按“开通站内评论”部署自己的 Worker 后，访客即可免登录留言。',
-      healthy: false,
+      hint: questionsApiUrl
+        ? '公开题服务已配置；需要评论时，把 COMMENTS_API_URL 设为同一个 Worker 根网址。'
+        : '题库其余功能不受影响；需要评论时再部署自己的 Worker，网站不会连接 GitHub 评论。',
+      healthy: true,
     };
 
     let api;
     try {
-      api = new URL(commentsApiUrl);
-      if (api.protocol !== 'https:' || api.username || api.password || api.search || api.hash) throw new Error();
+      api = parseWorkerRoot(commentsApiUrl);
     } catch {
       return { value: '网址无效', state: 'error', hint: 'COMMENTS_API_URL 必须是 Worker 的 HTTPS 根网址。', healthy: false };
+    }
+    if (questionsApiUrl) {
+      try {
+        if (!workerRootsMatch(questionsApiUrl, commentsApiUrl)) {
+          return {
+            value: '服务地址不一致',
+            state: 'error',
+            hint: 'QUESTIONS_API_URL 与 COMMENTS_API_URL 必须填写同一个 Worker 根网址，否则使用者公开题不能评论。',
+            healthy: false,
+          };
+        }
+      } catch {
+        // 公开题服务自己的卡片会报告无效网址；这里继续检查评论服务。
+      }
     }
 
     const controller = new AbortController();
@@ -119,8 +136,7 @@ if (root) {
 
     let api;
     try {
-      api = new URL(questionsApiUrl);
-      if (api.protocol !== 'https:' || api.username || api.password || api.search || api.hash) throw new Error();
+      api = parseWorkerRoot(questionsApiUrl);
     } catch {
       return { value: '网址无效', state: 'error', hint: 'QUESTIONS_API_URL 必须是共享服务的 HTTPS 根网址。', healthy: false };
     }

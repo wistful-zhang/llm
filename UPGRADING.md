@@ -39,11 +39,11 @@
 
 1.6.0 当时把题目评论改为正文下方的内嵌输入框，并使用 [utterances](https://github.com/apps/utterances) 显示 GitHub Issue 回复。这段只用于识别旧副本：该方案已经退役，不要再为新副本安装评论应用。旧 Issue 和回复仍保留在 GitHub，但不会自动出现在新的站内评论数据库中。
 
-## 升级到下一版本的站内评论（尚未发布）
+## 升级到 1.9.3 的站内评论
 
-下一版本把正式题目的评论从 GitHub Issues 迁移为题库主人自行部署的 Cloudflare Worker + D1 + Turnstile。升级时需要一起合并 `comments-worker/`、`docs/comment-setup.md`、`docs/assets/js/question-comments.js`、`docs/assets/js/native-comments-core.mjs`、`docs/_layouts/question.html`、`docs/_layouts/default.html`、`docs/_data/comment_runtime.yml`、`scripts/build-comments-config.mjs`、发布工作流、CSP、样式和相关测试，再按“站内评论开通”页面完成部署。
+1.9.3 把正式题目的评论从 GitHub Issues 迁移为题库主人自行部署的 Cloudflare Worker + D1 + Turnstile，并让内置题和使用者公开题共用题下评论区。升级时需要一起合并 `comments-worker/`、`docs/comment-setup.md`、`docs/assets/js/question-comments.js`、`docs/assets/js/native-comments-core.mjs`、`docs/_includes/question-comments.html`、两个题目详情模板、`docs/_layouts/default.html`、`docs/_data/comment_runtime.yml`、`scripts/build-comments-config.mjs`、发布工作流、CSP、样式和相关测试，再按“站内评论开通”页面完成部署。
 
-每个模板副本或 Fork 都必须在自己的 Cloudflare 账号中创建 Worker 和 D1，并在自己的仓库 Actions Variables 中设置 `COMMENTS_API_URL`。不要复制上游仓库构建出的运行时地址；变量留空时页面不会连接任何后端，也不会回退到原作者的评论库。Private / Internal 题库应保持评论关闭。
+每个模板副本或 Fork 都必须使用自己 Cloudflare 账号中的 Worker 和 D1，但**已有 `QUESTIONS_API_URL` 的题库不要再创建第二套服务**：先确认 `0002_public_questions.sql` 已应用，再把当前代码部署到同一个 Worker；用一个不存在的 UUID 请求评论接口，确认新版返回 404 后，将 `COMMENTS_API_URL` 设为与 `QUESTIONS_API_URL` 完全相同的根网址，最后再发布 Pages。只有从未部署共享服务的题库才新建 Worker 和 D1。不要复制上游仓库构建出的运行时地址；变量留空时页面不会连接任何后端，也不会回退到原作者的评论库。Private / Internal 题库应保持评论关闭。
 
 旧 GitHub Issue 评论不会自动迁移到 D1。需要保留时，应由题库主人先导出、确认作者授权和隐私边界，再制定单独迁移方案；不要把 GitHub 用户名直接冒充为新站内昵称。1.9.0 起公开题也使用共享 Worker 直接发布，但题目数据与评论数据仍是两套独立表和开关。
 
