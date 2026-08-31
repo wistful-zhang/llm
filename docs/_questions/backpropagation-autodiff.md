@@ -1,5 +1,6 @@
 ---
 title: "反向传播和自动微分有什么区别，计算图如何得到梯度？"
+question_number: 147
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "NLP 与机器学习"

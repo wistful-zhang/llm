@@ -1,5 +1,6 @@
 ---
 title: "如何设计可恢复、可去重的大模型离线批量推理系统？"
+question_number: 58
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "系统设计"

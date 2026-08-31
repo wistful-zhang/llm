@@ -1,5 +1,6 @@
 ---
 title: "GRPO 的核心思想是什么，与 PPO、DPO 如何比较？"
+question_number: 211
 source: "2025—2026 公开真实面试问题汇总中的 GRPO 高频题；答案依据 DeepSeekMath 与 DeepSeek-R1 论文原创整理"
 review_status: "待复习"
 category: "训练与对齐"

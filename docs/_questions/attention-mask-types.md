@@ -1,5 +1,6 @@
 ---
 title: "Causal Mask、Padding Mask 和样本边界 Mask 分别解决什么问题？"
+question_number: 217
 source: "公开大模型开发岗真实面试案例中的 Attention Mask 题；答案依据 Transformer 论文与 PyTorch 官方文档原创整理"
 review_status: "待复习"
 category: "LLM 基础"

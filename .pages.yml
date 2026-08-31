@@ -15,13 +15,13 @@ content:
         update: "更新面试题：{filename}"
         delete: "删除面试题：{filename}"
     view:
-      fields: [title, published, answer_status, study_tier, review_status, category, date]
+      fields: [question_number, title, published, answer_status, study_tier, review_status, category, date]
       primary: title
-      sort: [date, title, review_status, category, difficulty]
+      sort: [question_number, date, title, review_status, category, difficulty]
       search: [title, source, category, tags, followups, body]
       default:
-        sort: date
-        order: desc
+        sort: question_number
+        order: asc
     fields:
       - name: title
         label: 面试题目
@@ -31,6 +31,14 @@ content:
         options:
           minlength: 2
           maxlength: 160
+
+      - name: question_number
+        label: 固定题号
+        type: number
+        required: true
+        description: 题号发布后不再改动。新建仓库题时，先查看列表中的最大题号，再填写“最大题号 + 1”；删除旧题也不要复用空缺题号。
+        options:
+          min: 1
 
       - name: answer_status
         label: 答案状态

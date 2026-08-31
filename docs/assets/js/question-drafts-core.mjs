@@ -2,7 +2,7 @@ import { validateKramdownMath } from './latex-input-core.mjs';
 
 export const QUESTION_DRAFTS_FORMAT = 'llm-question-drafts';
 export const QUESTION_DRAFTS_BACKUP_FORMAT = 'llm-question-drafts-backup';
-export const QUESTION_DRAFTS_SCHEMA_VERSION = 3;
+export const QUESTION_DRAFTS_SCHEMA_VERSION = 4;
 
 export const MAX_QUESTION_DRAFTS = 500;
 export const MAX_QUESTION_TITLE_LENGTH = 160;
@@ -28,7 +28,7 @@ export const QUESTION_VISIBILITIES = Object.freeze(['private', 'public']);
 const DIFFICULTY_SET = new Set(QUESTION_DIFFICULTIES);
 const ANSWER_STATUS_SET = new Set(QUESTION_ANSWER_STATUSES);
 const VISIBILITY_SET = new Set(QUESTION_VISIBILITIES);
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3]);
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4]);
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,119}$/;
 const REMOTE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const REPOSITORY_SEGMENT_PATTERN = /^[A-Za-z0-9_.-]{1,100}$/;
@@ -215,6 +215,20 @@ const cleanRemoteId = (value) => {
   return remoteId;
 };
 
+const cleanLocalNumber = (value, field = 'localNumber') => {
+  if (!Number.isSafeInteger(value) || value < 1 || value >= Number.MAX_SAFE_INTEGER) {
+    fail(`${field} 必须是正安全整数。`, 'invalid_local_number', field);
+  }
+  return value;
+};
+
+const cleanNextLocalNumber = (value) => {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    fail('nextLocalNumber 必须是正安全整数。', 'invalid_next_local_number', 'nextLocalNumber');
+  }
+  return value;
+};
+
 export function parseQuestionTags(value = []) {
   let candidates;
   if (Array.isArray(value)) {
@@ -244,7 +258,7 @@ export function parseQuestionTags(value = []) {
   return tags;
 }
 
-const sanitizeQuestion = (value) => {
+const sanitizeQuestion = (value, { requireLocalNumber = false } = {}) => {
   if (!isPlainObject(value)) fail('题目记录必须是对象。', 'invalid_question', 'questions');
   const createdAt = cleanTimestamp(value.createdAt, 'createdAt');
   const updatedAt = cleanTimestamp(value.updatedAt, 'updatedAt');
@@ -259,6 +273,7 @@ const sanitizeQuestion = (value) => {
   }
   return {
     id: cleanId(value.id),
+    localNumber: requireLocalNumber ? cleanLocalNumber(value.localNumber) : null,
     title: cleanTitle(value.title),
     answer,
     followUps: parseQuestionFollowUps(value.followUps),
@@ -290,6 +305,7 @@ export function createEmptyQuestionDrafts(repositoryId, now = new Date().toISOSt
     repositoryId: normalizeRepositoryId(repositoryId),
     revision: 0,
     updatedAt: timestamp,
+    nextLocalNumber: 1,
     questions: [],
   };
 }
@@ -315,13 +331,47 @@ export function sanitizeQuestionDrafts(value, options = {}) {
     fail(`站内最多保存 ${MAX_QUESTION_DRAFTS} 道草稿。`, 'too_many_questions', 'questions');
   }
 
+  const legacyNumbering = value.schemaVersion < 4;
   const ids = new Set();
-  const questions = value.questions.map((candidate) => {
-    const question = sanitizeQuestion(candidate);
+  const localNumbers = new Set();
+  let questions = value.questions.map((candidate) => {
+    const question = sanitizeQuestion(candidate, { requireLocalNumber: !legacyNumbering });
     if (ids.has(question.id)) fail(`题目 id 重复：${question.id}`, 'duplicate_id', 'questions');
+    if (!legacyNumbering && localNumbers.has(question.localNumber)) {
+      fail(`本机题号重复：${question.localNumber}`, 'duplicate_local_number', 'questions');
+    }
     ids.add(question.id);
+    if (!legacyNumbering) localNumbers.add(question.localNumber);
     return question;
   });
+
+  let nextLocalNumber;
+  if (legacyNumbering) {
+    const ordered = [...questions].sort((left, right) => (
+      left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id)
+    ));
+    const migratedNumbers = new Map(
+      ordered.map((question, index) => [question.id, index + 1]),
+    );
+    questions = questions.map((question) => ({
+      ...question,
+      localNumber: migratedNumbers.get(question.id),
+    }));
+    nextLocalNumber = questions.length + 1;
+  } else {
+    nextLocalNumber = cleanNextLocalNumber(value.nextLocalNumber);
+    const highestLocalNumber = questions.reduce(
+      (highest, question) => Math.max(highest, question.localNumber),
+      0,
+    );
+    if (nextLocalNumber <= highestLocalNumber) {
+      fail(
+        'nextLocalNumber 必须大于所有已有本机题号。',
+        'invalid_next_local_number',
+        'nextLocalNumber',
+      );
+    }
+  }
 
   return {
     format: QUESTION_DRAFTS_FORMAT,
@@ -329,6 +379,7 @@ export function sanitizeQuestionDrafts(value, options = {}) {
     repositoryId,
     revision: cleanRevision(value.revision),
     updatedAt: cleanTimestamp(value.updatedAt, 'updatedAt'),
+    nextLocalNumber,
     questions,
   };
 }
@@ -373,10 +424,16 @@ const cleanQuestionInput = (value) => {
   };
 };
 
-const withMutation = (state, questions, timestamp) => ({
+const withMutation = (
+  state,
+  questions,
+  timestamp,
+  nextLocalNumber = state.nextLocalNumber,
+) => ({
   ...state,
   revision: state.revision + 1,
   updatedAt: timestamp,
+  nextLocalNumber,
   questions,
 });
 
@@ -389,15 +446,24 @@ export function addQuestionDraft(value, input, options = {}) {
   if (state.questions.some((question) => questionIdentity(question.title) === questionIdentity(fields.title))) {
     fail('这道题已经在站内草稿中。', 'duplicate_title', 'title');
   }
+  if (state.nextLocalNumber >= Number.MAX_SAFE_INTEGER) {
+    fail('本机题号已用尽，无法继续新增题目。', 'local_number_exhausted', 'nextLocalNumber');
+  }
   const timestamp = nowTimestamp(options.now);
   const question = {
     id: createQuestionId(state, options.idFactory),
+    localNumber: state.nextLocalNumber,
     ...fields,
     date: cleanLocalDate(options.localDate, timestamp.slice(0, 10), 'localDate'),
     createdAt: timestamp,
     updatedAt: timestamp,
   };
-  return withMutation(state, [...state.questions, question], timestamp);
+  return withMutation(
+    state,
+    [...state.questions, question],
+    timestamp,
+    state.nextLocalNumber + 1,
+  );
 }
 
 export function updateQuestionDraft(value, questionId, changes, options = {}) {
@@ -437,6 +503,12 @@ export function deleteQuestionDraft(value, questionId, options = {}) {
 
 export const removeQuestionDraft = deleteQuestionDraft;
 
+export function clearQuestionDrafts(value, options = {}) {
+  const state = resolveState(value, options);
+  const timestamp = nowTimestamp(options.now);
+  return withMutation(state, [], timestamp, state.nextLocalNumber);
+}
+
 const comparableQuestion = (question) => JSON.stringify({
   title: question.title,
   answer: question.answer,
@@ -454,61 +526,80 @@ const comparableQuestion = (question) => JSON.stringify({
 export function mergeQuestionDrafts(localValue, incomingValue, options = {}) {
   const local = resolveState(localValue, options);
   const incoming = sanitizeQuestionDrafts(incomingValue, { repositoryId: local.repositoryId });
+  const renumberIncoming = options.renumberIncoming === true;
   const questions = [...local.questions];
   const byId = new Map(questions.map((question) => [question.id, question]));
   const byTitle = new Map(questions.map((question) => [questionIdentity(question.title), question]));
   const addedIds = [];
   const unchangedIds = [];
   const conflicts = [];
+  let nextLocalNumber = local.nextLocalNumber;
 
-  incoming.questions.forEach((candidate) => {
-    const sameId = byId.get(candidate.id);
-    if (sameId) {
-      if (comparableQuestion(sameId) === comparableQuestion(candidate)) {
-        unchangedIds.push(candidate.id);
-      } else {
+  [...incoming.questions]
+    .sort((left, right) => (renumberIncoming
+      ? (left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))
+      : (left.localNumber - right.localNumber || left.id.localeCompare(right.id))))
+    .forEach((candidate) => {
+      const sameId = byId.get(candidate.id);
+      if (sameId) {
+        if (comparableQuestion(sameId) === comparableQuestion(candidate)) {
+          unchangedIds.push(candidate.id);
+        } else {
+          conflicts.push({
+            reason: 'id_conflict',
+            id: candidate.id,
+            title: candidate.title,
+            keptLocalId: sameId.id,
+          });
+        }
+        return;
+      }
+
+      const sameTitle = byTitle.get(questionIdentity(candidate.title));
+      if (sameTitle) {
+        if (comparableQuestion(sameTitle) === comparableQuestion(candidate)) {
+          unchangedIds.push(candidate.id);
+        } else {
+          conflicts.push({
+            reason: 'title_conflict',
+            id: candidate.id,
+            title: candidate.title,
+            keptLocalId: sameTitle.id,
+          });
+        }
+        return;
+      }
+
+      if (questions.length >= MAX_QUESTION_DRAFTS) {
         conflicts.push({
-          reason: 'id_conflict',
+          reason: 'limit_reached',
           id: candidate.id,
           title: candidate.title,
-          keptLocalId: sameId.id,
+          keptLocalId: '',
         });
+        return;
       }
-      return;
-    }
-
-    const sameTitle = byTitle.get(questionIdentity(candidate.title));
-    if (sameTitle) {
-      if (comparableQuestion(sameTitle) === comparableQuestion(candidate)) {
-        unchangedIds.push(candidate.id);
-      } else {
-        conflicts.push({
-          reason: 'title_conflict',
-          id: candidate.id,
-          title: candidate.title,
-          keptLocalId: sameTitle.id,
-        });
+      const localNumber = renumberIncoming
+        ? nextLocalNumber
+        : Math.max(candidate.localNumber, nextLocalNumber);
+      if (localNumber >= Number.MAX_SAFE_INTEGER) {
+        fail('本机题号已用尽，无法继续导入题目。', 'local_number_exhausted', 'nextLocalNumber');
       }
-      return;
-    }
+      const addedQuestion = { ...candidate, localNumber };
+      nextLocalNumber = localNumber + 1;
+      questions.push(addedQuestion);
+      byId.set(addedQuestion.id, addedQuestion);
+      byTitle.set(questionIdentity(addedQuestion.title), addedQuestion);
+      addedIds.push(candidate.id);
+    });
 
-    if (questions.length >= MAX_QUESTION_DRAFTS) {
-      conflicts.push({
-        reason: 'limit_reached',
-        id: candidate.id,
-        title: candidate.title,
-        keptLocalId: '',
-      });
-      return;
-    }
-    questions.push(candidate);
-    byId.set(candidate.id, candidate);
-    byTitle.set(questionIdentity(candidate.title), candidate);
-    addedIds.push(candidate.id);
-  });
-
-  const timestamp = addedIds.length ? nowTimestamp(options.now) : local.updatedAt;
-  const data = addedIds.length ? withMutation(local, questions, timestamp) : local;
+  if (!renumberIncoming) nextLocalNumber = Math.max(nextLocalNumber, incoming.nextLocalNumber);
+  const numberingAdvanced = nextLocalNumber !== local.nextLocalNumber;
+  const changed = addedIds.length > 0 || numberingAdvanced;
+  const timestamp = changed ? nowTimestamp(options.now) : local.updatedAt;
+  const data = changed
+    ? withMutation(local, questions, timestamp, nextLocalNumber)
+    : local;
   return {
     data,
     added: addedIds.length,
@@ -602,12 +693,24 @@ export function parseQuestionDraftBackup(raw, options = {}) {
     fail('这份备份属于另一个 GitHub 仓库，已停止导入。', 'repository_mismatch', 'repositoryId');
   }
   const sourceData = sanitizeQuestionDrafts(backup.data, { repositoryId: sourceRepositoryId });
+  const crossRepositoryQuestions = crossRepository
+    ? [...sourceData.questions]
+      .sort((left, right) => (
+        left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id)
+      ))
+      .map((question, index) => ({
+        ...question,
+        localNumber: index + 1,
+        remoteId: '',
+      }))
+    : [];
   return {
     data: crossRepository
       ? {
         ...sourceData,
         repositoryId: targetRepositoryId,
-        questions: sourceData.questions.map((question) => ({ ...question, remoteId: '' })),
+        nextLocalNumber: crossRepositoryQuestions.length + 1,
+        questions: crossRepositoryQuestions,
       }
       : sourceData,
     exportedAt: cleanTimestamp(backup.exportedAt, 'exportedAt'),
@@ -623,7 +726,10 @@ export function importQuestionDraftsJson(localValue, raw, options = {}) {
     allowCrossRepository: options.allowCrossRepository === true,
   });
   return {
-    ...mergeQuestionDrafts(local, parsed.data, options),
+    ...mergeQuestionDrafts(local, parsed.data, {
+      ...options,
+      renumberIncoming: parsed.crossRepository,
+    }),
     exportedAt: parsed.exportedAt,
     sourceRepositoryId: parsed.sourceRepositoryId,
     crossRepository: parsed.crossRepository,
@@ -800,7 +906,7 @@ difficulty: ${quoteYamlString(question.difficulty)}
 study_tier: archive
 ${followUps}
 ${tags}
-published: ${question.visibility === 'public'}
+published: false
 answer_status: ${answerStatus}
 date: ${question.date}
 ---

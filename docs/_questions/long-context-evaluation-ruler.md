@@ -1,5 +1,6 @@
 ---
 title: "为什么标称上下文长度不等于有效上下文长度，RULER 如何评测？"
+question_number: 78
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

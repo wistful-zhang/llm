@@ -496,7 +496,19 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 
 .question-card[hidden] { display: none; }
 
-.card-number { color: #667085; font-family: ui-monospace, monospace; font-size: .86rem; }
+.question-card.is-newly-added {
+  border-color: rgba(var(--accent-rgb), .55);
+  background: rgba(var(--accent-rgb), .07);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.card-number {
+  color: #667085;
+  font-family: ui-monospace, monospace;
+  font-size: .86rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .card-meta { display: flex; flex-wrap: wrap; gap: 7px 10px; align-items: center; color: var(--accent-strong); font-size: .78rem; font-weight: 700; }
 
 .difficulty {
@@ -1897,6 +1909,17 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
 .practice-progress-wrap { display: grid; width: min(440px, 58%); gap: 8px; }
 .practice-progress-wrap strong { font-size: .92rem; }
 .practice-progress-wrap progress { width: 100%; height: 9px; accent-color: var(--accent); }
+.practice-library-number {
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: ui-monospace, monospace;
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .practice-session-tools { display: flex; align-items: center; gap: 16px; }
 .practice-timer-label { color: var(--muted); font-size: .86rem; white-space: nowrap; }
 .practice-timer-label b { color: var(--ink); font-family: ui-monospace, monospace; font-size: 1rem; }
@@ -2220,8 +2243,8 @@ nav .admin-link[aria-current="page"] { color: var(--white); background: var(--ac
   .stat-card { display: grid; width: 100%; padding: 18px 0 0; border-top: 1px solid var(--line); border-left: 0; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center; }
   .stat-card strong { grid-row: 1 / 3; font-size: 2.7rem; }
   .stat-card .stat-line { display: none; }
-  .question-card { grid-template-columns: 1fr 22px; gap: 12px; padding: 18px 4px; }
-  .card-number { display: none; }
+  .question-card { grid-template-columns: 46px minmax(0, 1fr) auto; gap: 10px; padding: 18px 4px; }
+  .card-number { max-width: 46px; overflow: hidden; font-size: .72rem; }
   .card-meta { flex-wrap: wrap; }
   .question-nav { grid-template-columns: 1fr; }
   .question-nav a:last-child { text-align: left; }

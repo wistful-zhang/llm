@@ -1,5 +1,6 @@
 ---
 title: "大模型训练出现 Loss 为 NaN，应该如何排查？"
+question_number: 12
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文或官方文档整理"
 verified: true
 review_status: "待复习"

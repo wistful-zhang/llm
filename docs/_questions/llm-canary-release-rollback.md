@@ -1,5 +1,6 @@
 ---
 title: "模型或 Prompt 变更如何做灰度评测、发布与快速回滚？"
+question_number: 204
 source: "公开 AI 工程面试题库；依据 Evals 与渐进式发布官方文档原创整理"
 review_status: "待复习"
 category: "工程实践"

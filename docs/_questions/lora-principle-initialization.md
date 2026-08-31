@@ -1,5 +1,6 @@
 ---
 title: "LoRA 的低秩更新原理是什么，为什么一个矩阵常零初始化？"
+question_number: 77
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文或官方文档整理"
 verified: true
 review_status: "待复习"

@@ -1,5 +1,6 @@
 ---
 title: "网页预训练数据如何做质量过滤而不过度损失多样性？"
+question_number: 3
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "预训练与数据"

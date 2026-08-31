@@ -1,5 +1,6 @@
 ---
 title: "多模态大模型通常分哪些阶段训练？"
+question_number: 62
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据原论文整理"
 review_status: "待复习"
 category: "多模态"

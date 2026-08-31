@@ -1,5 +1,6 @@
 ---
 title: "如何防御 Agent 的间接 Prompt Injection 和工具滥用？"
+question_number: 223
 source: "Datawhale 公开真实面试题整理；答案依据安全论文和 OWASP 官方文档原创整理"
 review_status: "待复习"
 category: "Agent"

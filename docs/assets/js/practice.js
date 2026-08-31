@@ -21,6 +21,7 @@ import { clearMath, renderMath } from './math-render.mjs';
 
   const questions = [...source.querySelectorAll('[data-question-id]')].map((element) => ({
     id: element.dataset.questionId,
+    questionNumber: Number.parseInt(element.dataset.questionNumber, 10),
     title: element.dataset.title,
     category: element.dataset.category,
     difficulty: element.dataset.difficulty,
@@ -58,6 +59,7 @@ import { clearMath, renderMath } from './math-render.mjs';
   const progressText = document.querySelector('#practice-progress-text');
   const progress = document.querySelector('#practice-progress');
   const timer = document.querySelector('#practice-timer');
+  const libraryNumberBadge = document.querySelector('#practice-question-library-number');
   const categoryBadge = document.querySelector('#practice-question-category');
   const difficultyBadge = document.querySelector('#practice-question-difficulty');
   const studyTierBadge = document.querySelector('#practice-question-study-tier');
@@ -509,10 +511,20 @@ import { clearMath, renderMath } from './math-render.mjs';
     practicePage.classList.remove('is-summary');
     exitConfirm.hidden = true;
     endButton.setAttribute('aria-expanded', 'false');
-    progressText.textContent = `第 ${state.cursor + 1} 题，共 ${state.queue.length} 题`;
+    const sessionPosition = `本轮第 ${state.cursor + 1} / ${state.queue.length} 题`;
+    const hasLibraryNumber = Number.isSafeInteger(question.questionNumber)
+      && question.questionNumber > 0;
+    const libraryNumber = hasLibraryNumber
+      ? `题库 #${String(question.questionNumber).padStart(3, '0')}`
+      : '';
+    progressText.textContent = sessionPosition;
     progress.max = state.queue.length;
     progress.value = state.cursor + 1;
-    progress.setAttribute('aria-valuetext', `第 ${state.cursor + 1} 题，共 ${state.queue.length} 题`);
+    progress.setAttribute('aria-valuetext', sessionPosition);
+    if (libraryNumberBadge) {
+      libraryNumberBadge.textContent = libraryNumber;
+      libraryNumberBadge.hidden = !hasLibraryNumber;
+    }
     categoryBadge.textContent = question.category;
     difficultyBadge.textContent = question.difficulty;
     if (studyTierBadge) {
@@ -551,7 +563,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     }
 
     if (moveFocus) moveFocusTo(questionTitle);
-    announce(`第 ${state.cursor + 1} 题，共 ${state.queue.length} 题。`);
+    announce(`${sessionPosition}${libraryNumber ? `，${libraryNumber}` : ''}。`);
     persistSession();
   };
 
@@ -710,7 +722,7 @@ import { clearMath, renderMath } from './math-render.mjs';
     resumableState = restored;
     resumeCard.hidden = false;
     const stage = restored.phase === 'revealed' ? '等待自评' : '正在思考';
-    resumeText.textContent = `上次停在第 ${restored.cursor + 1} / ${restored.queue.length} 题（${stage}）。`;
+    resumeText.textContent = `上次停在本轮第 ${restored.cursor + 1} / ${restored.queue.length} 题（${stage}）。`;
     if (restored.removedCount > 0) {
       announce(`有 ${restored.removedCount} 道题已不存在，已从未完成队列中移除。`);
     }

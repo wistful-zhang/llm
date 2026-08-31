@@ -1,5 +1,6 @@
 ---
 title: "RAG 文档入库时如何处理 PDF 版面、表格、页眉页脚与 OCR？"
+question_number: 42
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "RAG"

@@ -1,5 +1,6 @@
 ---
 title: "如何设计多模型路由、升级与故障降级？"
+question_number: 198
 source: "公开 LLM 系统设计题库；依据 RouteLLM 论文原创整理"
 review_status: "待复习"
 category: "系统设计"

@@ -15,7 +15,7 @@ permalink: /practice/
   {% endif %}
   {% if answer_ready %}{% assign published_questions = published_questions | push: question %}{% endif %}
 {% endfor %}
-{% assign published_questions = published_questions | sort: 'date' | reverse %}
+{% assign published_questions = published_questions | sort: 'question_number' %}
 {% assign core_questions = published_questions | where: 'study_tier', 'core' %}
 {% assign role_questions = published_questions | where: 'study_tier', 'role' %}
 {% assign extended_questions = published_questions | where: 'study_tier', 'extended' %}
@@ -165,8 +165,8 @@ permalink: /practice/
       <h2 id="practice-session-title" class="sr-only">模拟面试进行中</h2>
       <div class="practice-session-top">
         <div class="practice-progress-wrap">
-          <strong id="practice-progress-text">第 1 题，共 1 题</strong>
-          <progress id="practice-progress" value="1" max="1" aria-label="当前题目位置"></progress>
+          <strong id="practice-progress-text">本轮第 1 / 1 题</strong>
+          <progress id="practice-progress" value="1" max="1" aria-label="本轮题目位置"></progress>
         </div>
         <div class="practice-session-tools">
           <span class="practice-timer-label">本题用时 <b id="practice-timer">00:00</b><small>不用硬凑 60 秒</small></span>
@@ -176,6 +176,7 @@ permalink: /practice/
 
       <article class="practice-question-card">
         <div class="card-meta">
+          <span id="practice-question-library-number" class="practice-library-number">题库 #001</span>
           <span id="practice-question-category"></span>
           <span id="practice-question-difficulty" class="difficulty"></span>
           <span id="practice-question-study-tier" class="study-tier-badge"></span>
@@ -248,6 +249,7 @@ permalink: /practice/
       {% for question in published_questions %}
         <span
           data-question-id="{{ question.url | escape }}"
+          data-question-number="{{ question.question_number }}"
           data-title="{{ question.title | escape }}"
           data-category="{{ question.category | escape }}"
           data-difficulty="{{ question.difficulty | escape }}"

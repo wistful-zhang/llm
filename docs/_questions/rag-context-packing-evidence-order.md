@@ -1,5 +1,6 @@
 ---
 title: "RAG 如何在 Token 预算内打包证据，证据顺序为什么重要？"
+question_number: 43
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

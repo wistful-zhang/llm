@@ -27,7 +27,7 @@ const add = (state, title, options = {}) => addQuestionDraft(state, {
   localDate: '2026-08-07',
 });
 
-test('首页本机题目摘要按更新时间展示，并保留旧摘要接口的可见性统计', () => {
+test('首页本机题目摘要按固定本机题号展示，并保留旧摘要接口的可见性统计', () => {
   let state = createEmptyQuestionDrafts('owner/repo', '2026-08-07T00:00:00.000Z');
   state = add(state, '较早的私人题', { now: '2026-08-07T01:00:00.000Z' });
   state = add(state, '较新的公开准备题', {
@@ -44,10 +44,36 @@ test('首页本机题目摘要按更新时间展示，并保留旧摘要接口�
   assert.equal(summary.complete, 1);
   assert.equal(summary.plannedPublic, 1);
   assert.deepEqual(summary.questions.map((question) => question.title), [
-    '较新的公开准备题',
     '较早的私人题',
+    '较新的公开准备题',
   ]);
-  assert.equal(summary.questions[0].visibility, 'public');
+  assert.deepEqual(summary.questions.map((question) => question.localNumber), [1, 2]);
+  assert.equal(summary.questions[1].visibility, 'public');
+});
+
+test('本机题修改时间不会改变固定的创建顺序', () => {
+  const questions = [{
+    id: 'question-first',
+    title: '第一道题',
+    visibility: 'private',
+    answerStatus: 'pending',
+    localNumber: 1,
+    createdAt: '2026-08-07T01:00:00.000Z',
+    updatedAt: '2026-08-09T09:00:00.000Z',
+  }, {
+    id: 'question-second',
+    title: '第二道题',
+    visibility: 'private',
+    answerStatus: 'complete',
+    localNumber: 2,
+    createdAt: '2026-08-07T02:00:00.000Z',
+    updatedAt: '2026-08-07T02:00:00.000Z',
+  }];
+
+  assert.deepEqual(
+    selectLocalQuestions(questions, { all: true }).questions.map((question) => question.id),
+    ['question-first', 'question-second'],
+  );
 });
 
 test('首页本机题目继续按仓库隔离，并限制首屏数量', () => {
@@ -71,6 +97,8 @@ test('首页把公开与私人本机题目放进同一个选择结果', () => {
       title: `私人题 ${index}`,
       visibility: 'private',
       answerStatus: 'pending',
+      localNumber: index + 2,
+      createdAt: `2026-08-07T${String(index + 10).padStart(2, '0')}:00:00.000Z`,
       updatedAt: `2026-08-07T${String(index + 10).padStart(2, '0')}:00:00.000Z`,
       followUps: [],
     })),
@@ -79,6 +107,8 @@ test('首页把公开与私人本机题目放进同一个选择结果', () => {
       title: '带追问的我的题目',
       visibility: 'public',
       answerStatus: 'complete',
+      localNumber: 1,
+      createdAt: '2026-08-07T01:00:00.000Z',
       updatedAt: '2026-08-07T01:00:00.000Z',
       followUps: ['追问一', '追问二'],
     },
@@ -155,6 +185,8 @@ test('仓库题、本机题和共享公开题共用一个题目列表与同类�
   assert.match(localScript, /url\.searchParams\.set\('edit', questionId\)/);
   assert.match(localScript, /url\.hash = 'question-draft-form'/);
   assert.match(localScript, /groupFollowUpsForDisplay\(question\.followUps\)\.length/);
+  assert.match(localScript, /`私\$\{String\(localNumber\)\.padStart\(3, '0'\)\}`/);
+  assert.match(localScript, /compareLocalQuestionNumber/);
 
   assert.match(publicScript, /makeElement\('a', 'question-card question-card-public'\)/);
   assert.match(publicScript, /card\.href = detailUrl\(question\.id\)/);
@@ -169,9 +201,11 @@ test('仓库题、本机题和共享公开题共用一个题目列表与同类�
   assert.match(publicScript, /getRecoverableQuestionPublicationToken\(publicationTokens/);
   assert.match(publicScript, /const followUpCount = groupFollowUpsForDisplay\(question\.followUps\)\.length/);
   assert.match(publicScript, /`\$\{followUpCount\} 条追问`/);
+  assert.match(publicScript, /`公\$\{String\(question\.libraryNumber\)\.padStart\(3, '0'\)\}`/);
 
   assert.match(searchScript, /questionList \? \[\.\.\.questionList\.querySelectorAll\('\.question-card'\)\] : \[\]/);
   assert.match(searchScript, /document\.addEventListener\('question-library:changed'/);
+  assert.doesNotMatch(searchScript, /number\.textContent\s*=\s*String\(index \+ 1\)/);
 
   for (const script of [localScript, publicScript]) {
     assert.match(script, /\.textContent\s*=/);

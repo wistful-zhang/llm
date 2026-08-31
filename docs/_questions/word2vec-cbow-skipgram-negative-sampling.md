@@ -1,5 +1,6 @@
 ---
 title: "CBOW、Skip-gram 与 Negative Sampling 有什么区别？"
+question_number: 2
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "NLP 与机器学习"

@@ -1,5 +1,6 @@
 ---
 title: "如何对大模型在线服务做容量估算？"
+question_number: 194
 source: "公开 LLM 系统设计面试题；依据服务系统论文与官方指标文档原创整理"
 review_status: "待复习"
 category: "系统设计"

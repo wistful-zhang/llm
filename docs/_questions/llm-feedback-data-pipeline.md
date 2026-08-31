@@ -1,5 +1,6 @@
 ---
 title: "如何设计大模型反馈数据闭环，并避免隐私、偏差和评测泄漏？"
+question_number: 200
 source: "公开 AI 工程面试题库；依据数据文档化论文与追踪文档原创整理"
 review_status: "待复习"
 category: "系统设计"

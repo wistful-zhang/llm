@@ -1,5 +1,6 @@
 ---
 title: "MHA、MQA 和 GQA 的区别是什么？"
+question_number: 192
 source: "公开真实面试问题汇总中的高频注意力变体题；答案依据 MQA 与 GQA 原论文原创整理"
 review_status: "待复习"
 category: "LLM 基础"

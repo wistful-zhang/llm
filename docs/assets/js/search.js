@@ -78,6 +78,9 @@
   let answerIndexPromise = null;
   let lastIndexFailureAt = 0;
   let visibleLimit = 60;
+  let requestedFocusId = '';
+  let publicQuestionsSettled = document.querySelector('[data-public-questions]')
+    ?.dataset.publicQuestionsSettled === 'true';
   const answerSearchById = new Map();
   const pageSize = 60;
   const defaultStudyTier = studyTier?.dataset.defaultTier || '';
@@ -107,6 +110,19 @@
 
   const update = () => {
     const cards = currentCards();
+    const requestedCard = requestedFocusId
+      ? cards.find((card) => card.dataset.searchId === requestedFocusId)
+      : null;
+    if (requestedCard && publicQuestionsSettled) {
+      search.value = '';
+      if (track) track.value = '';
+      if (studyTier) studyTier.value = '';
+      if (difficulty) difficulty.value = '';
+      if (reviewState) reviewState.value = '';
+      setActiveCategory();
+      visibleLimit = Math.max(visibleLimit, cards.indexOf(requestedCard) + 1);
+      requestedFocusId = '';
+    }
     const keyword = normalize(search.value);
     const activeStudyTier = studyTier?.value || '';
     const activeDifficulty = difficulty?.value || '';
@@ -169,10 +185,6 @@
       button.disabled = count === 0 && button.dataset.category !== activeCategory;
     });
 
-    cards.forEach((card, index) => {
-      const number = card.querySelector('.card-number');
-      if (number) number.textContent = String(index + 1).padStart(2, '0');
-    });
     if (total) total.textContent = String(cards.length);
 
     if (cards.length === 0) {
@@ -206,6 +218,21 @@
         ? '，正在继续搜索答案全文'
         : (keyword && answerIndexState === 'failed' ? '；答案全文暂时无法搜索' : '');
       status.textContent = `当前显示 ${visibleCount} / ${matchingCount} 道题目${scopeStatus}`;
+    }
+    if (requestedCard && publicQuestionsSettled) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('focus');
+      url.searchParams.delete('q');
+      url.searchParams.delete('track');
+      url.searchParams.delete('tier');
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+      requestedCard.classList.add('is-newly-added');
+      window.requestAnimationFrame(() => {
+        requestedCard.focus({ preventScroll: true });
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        requestedCard.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+      window.setTimeout(() => requestedCard.classList.remove('is-newly-added'), 5000);
     }
   };
 
@@ -287,6 +314,10 @@
 
   const applyInitialRoute = () => {
     const params = new URLSearchParams(window.location.search);
+    const requestedFocus = params.get('focus') || '';
+    if (/^(?:local|shared):[A-Za-z0-9:_-]{1,120}$/.test(requestedFocus)) {
+      requestedFocusId = requestedFocus;
+    }
     const requestedKeyword = params.get('q');
     if (requestedKeyword) search.value = requestedKeyword.slice(0, 160);
     let storedTrack = '';
@@ -383,7 +414,10 @@
   });
 
   document.addEventListener('question-library:changed', () => {
-    visibleLimit = pageSize;
+    update();
+  });
+  document.addEventListener('question-library:public-settled', () => {
+    publicQuestionsSettled = true;
     update();
   });
 

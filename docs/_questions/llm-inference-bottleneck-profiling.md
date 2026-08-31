@@ -1,5 +1,6 @@
 ---
 title: "如何定位大模型推理中的显存、算力与内存带宽瓶颈？"
+question_number: 199
 source: "公开 LLM 推理面试题整理；依据 Roofline 与性能分析官方文档原创整理"
 review_status: "待复习"
 category: "工程实践"

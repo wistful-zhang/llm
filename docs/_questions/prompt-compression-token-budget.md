@@ -1,5 +1,6 @@
 ---
 title: "Prompt Compression 如何减少 Token 又尽量保留指令和证据？"
+question_number: 46
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "工程实践"

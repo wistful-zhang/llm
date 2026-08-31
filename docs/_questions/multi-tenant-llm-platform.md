@@ -1,5 +1,6 @@
 ---
 title: "如何设计多租户大模型平台的权限、成本与可观测性？"
+question_number: 188
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
 verified: true
 review_status: "待复习"

@@ -1,5 +1,6 @@
 ---
 title: "GPU 大模型服务应该根据什么信号自动扩缩容？"
+question_number: 212
 source: "公开 LLM 部署面试题整理；依据 Kubernetes 与 vLLM 官方文档原创整理"
 review_status: "待复习"
 category: "系统设计"

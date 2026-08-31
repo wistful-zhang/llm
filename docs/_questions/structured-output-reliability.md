@@ -1,5 +1,6 @@
 ---
 title: "如何让大模型稳定输出结构化数据，并安全地驱动业务动作？"
+question_number: 164
 source: "公开 AI 工程面试题库；依据 JSON Schema 与模型官方文档原创整理"
 review_status: "待复习"
 category: "工程实践"

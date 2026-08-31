@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 
 import { findSensitivePublicContent } from '../docs/assets/js/public-content-privacy.mjs';
+import { resolveQuestionDeletionPlan } from '../docs/assets/js/question-capture.js';
+import { createQuestionPublicationTokens } from '../docs/assets/js/question-publication-tokens.mjs';
 import { parseQuestionDocument } from '../scripts/question-publication.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -237,10 +239,15 @@ test('脚本失效时原生表单不会把题目、答案或来源拼进网址',
   assert.doesNotMatch(script, /\.submit\s*\(|requestSubmit\s*\(/);
 });
 
-test('网页导出的 Markdown 默认待重整，并按公开或私人写入发布标记', () => {
+test('网页导出的 Markdown 一律是未发布仓库草稿，避免缺少固定题号却直接发布', () => {
   assert.match(draftsCore, /study_tier: archive/);
-  assert.match(draftsCore, /published: \$\{question\.visibility === 'public'\}/);
+  assert.match(draftsCore, /published: false/);
+  assert.doesNotMatch(draftsCore, /published: \$\{question\.visibility === 'public'\}/);
   assert.match(draftsCore, /answer_status: \$\{answerStatus\}/);
+  assert.match(page, /单题 Markdown 一律导出为未发布的仓库草稿/);
+  assert.match(page, /当前最大题号 \+ 1/);
+  assert.match(script, /未发布的仓库草稿 Markdown 已复制/);
+  assert.match(script, /未发布的仓库草稿 Markdown 已下载/);
 });
 
 test('新增题目只选择公开或私人，两种题都会进入统一题库', () => {
@@ -309,6 +316,8 @@ test('渲染本机题目只使用安全 DOM API，并在外发操作前检查隐
   assert.match(script, /findUnsafeQuestionAnswer,/);
   assert.match(script, /element\.textContent = text/);
   assert.match(script, /list\.replaceChildren\(\.\.\.filtered\.map\(createQuestionCard\)\)/);
+  assert.match(script, /`本机题 私\$\{String\(question\.localNumber\)\.padStart\(3, '0'\)\}`/);
+  assert.match(script, /left\.localNumber - right\.localNumber/);
   assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write\s*\(/);
 
   assert.match(script, /findSensitivePublicContent\(\s*question\.title,\s*question\.answer,\s*question\.followUps,\s*question\.source,\s*question\.tags,?\s*\)/);
@@ -369,7 +378,7 @@ test('公开主提交直接写入共享题库，追问随请求一并提交', ()
   assert.match(postBlock[0], /commit\(linked,[\s\S]*?requirePersistence: true/);
   assert.match(postBlock[0], /发布恢复记录仍在/);
   assert.match(postBlock[0], /编辑凭证仍以本机发布恢复记录保留/);
-  assert.match(postBlock[0], /redirectToLibrary\(\)/);
+  assert.match(postBlock[0], /redirectToLibrary\(`shared:\$\{published\.id\}`\)/);
   assert.match(postBlock[0], /公开发布失败：[\s\S]*题目仍在当前浏览器，可以重新发布/);
 
   const saveBlock = script.replace(/\r\n?/g, '\n').match(/const saveQuestion = async \(\) => \{[\s\S]*?\n  \};/);
@@ -377,6 +386,7 @@ test('公开主提交直接写入共享题库，追问随请求一并提交', ()
   assert.match(saveBlock[0], /savedQuestion\?\.visibility === 'public'/);
   assert.match(saveBlock[0], /await postPublicQuestion\(savedQuestion, formStatus\)/);
   assert.match(script, /target\.hash = 'question-list-section'/);
+  assert.match(script, /target\.searchParams\.set\('focus',/);
   assert.match(script, /if \(action === 'retry-public'\) \{[\s\S]*?await postPublicQuestion\(question, status\)/);
   assert.match(script, /button\('重新发布', 'retry-public'/);
   assert.match(script, /'从公开题库撤回并删除'/);
@@ -390,6 +400,28 @@ test('切换编辑、恢复或全删前不会静默覆盖尚未保存的表单',
   assert.match(script, /const formWarning = formDirty \? ' 当前表单中尚未保存的文字也会被清空。' : ''/);
   assert.match(script, /彻底删除当前浏览器中的 \$\{state\.questions\.length\}[\s\S]*\$\{formWarning\}/);
   assert.match(script, /formDirty && idInput\.value === question\.id[\s\S]*正在编辑的尚未保存文字也会丢失/);
+  assert.match(script, /clearQuestionDrafts\(state, \{[\s\S]*repositoryId,[\s\S]*now:/);
+  assert.doesNotMatch(script, /\.\.\.createEmptyQuestionDrafts\(repositoryId\),[\s\S]*revision: state\.revision \+ 1/);
+});
+
+test('公开题凭据丢失时可以只移除本机副本，不会误称已撤回线上题目', () => {
+  const question = {
+    id: 'question_local_copy',
+    remoteId: '123e4567-e89b-42d3-a456-426614174000',
+    visibility: 'public',
+  };
+  const plan = resolveQuestionDeletionPlan(
+    question,
+    createQuestionPublicationTokens('owner/repo'),
+  );
+
+  assert.equal(plan.deleteRemote, false);
+  assert.equal(plan.label, '只移除本机副本（线上题不变）');
+  assert.match(plan.scope, /没有这道公开题的删除凭据/);
+  assert.match(plan.scope, /线上公开题不会撤回/);
+  assert.match(plan.success, /线上公开题仍然保留/);
+  assert.match(script, /if \(deletionPlan\.deleteRemote\) await deletePublicQuestion\(question\)/);
+  assert.match(script, /commit\(next, deletionPlan\.success\)/);
 });
 
 test('本地存储按仓库隔离，写入前检测跨标签页冲突并处理损坏与容量失败', () => {
@@ -458,6 +490,7 @@ test('JSON 备份导入导出有大小限制、合并预览和用户确认', () 
   assert.match(script, /allowCrossRepository: true/);
   assert.match(script, /备份来自 \$\{report\.sourceRepositoryId\}，恢复后会归入当前题库/);
   assert.match(script, /有 \$\{report\.conflicts\.length\} 道冲突题将保留本机现有版本/);
+  assert.match(script, /已有本机题号不会改变；重复题号会自动续排/);
   assert.match(script, /if \(!window\.confirm\(`\$\{sourceText\}[\s\S]*确认恢复吗？`\)\) return/);
   assert.match(script, /commit\(report\.data, `已恢复 \$\{report\.added\} 道题/);
 });

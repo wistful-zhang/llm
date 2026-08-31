@@ -1,5 +1,6 @@
 ---
 title: "MoE 如何路由 token，并解决专家负载不均？"
+question_number: 190
 source: "公开真实面试问题汇总中的 MoE 高频题；答案依据 Switch Transformer 论文原创整理"
 review_status: "待复习"
 category: "LLM 基础"

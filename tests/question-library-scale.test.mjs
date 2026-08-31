@@ -18,6 +18,7 @@ test('较大统一题库支持动态计数、难度筛选和分批显示', async
   assert.match(page, /data-verified="{{ question\.verified \| default: false }}"/);
   assert.match(page, /id="library-result-summary"/);
   assert.match(page, /未启用 JavaScript[\s\S]*?筛选和分批显示暂不可用/);
+  assert.match(page, /<noscript>[\s\S]*?question-source-statuses,.toolbar,.library-results-bar\{display:none!important\}/);
   assert.match(page, /id="question-load-more"/);
   assert.match(page, /data-question-total/);
   assert.match(page, /data-local-questions-list/);
@@ -48,6 +49,33 @@ test('更换搜索和筛选条件会从首批题目重新显示', async () => {
   assert.match(script, /button\.addEventListener\('click',[\s\S]*?visibleLimit = pageSize/);
   assert.match(script, /difficulty\?\.addEventListener\('change',[\s\S]*?visibleLimit = pageSize/);
   assert.match(script, /reviewState\?\.addEventListener\('change',[\s\S]*?visibleLimit = pageSize/);
+});
+
+test('动态题异步刷新不会把用户已经展开的题目折回首批', async () => {
+  const script = await read('../docs/assets/js/search.js');
+  const changedHandler = script.match(
+    /document\.addEventListener\('question-library:changed',[\s\S]*?\n  \}\);/,
+  )?.[0] || '';
+
+  assert.match(changedHandler, /update\(\)/);
+  assert.doesNotMatch(changedHandler, /visibleLimit\s*=/);
+});
+
+test('保存后会展开、聚焦并高亮刚追加到末尾的动态题', async () => {
+  const [script, css] = await Promise.all([
+    read('../docs/assets/js/search.js'),
+    read('../docs/assets/css/style.css'),
+  ]);
+
+  assert.match(script, /params\.get\('focus'\)/);
+  assert.match(script, /card\.dataset\.searchId === requestedFocusId/);
+  assert.match(script, /visibleLimit = Math\.max\(visibleLimit, cards\.indexOf\(requestedCard\) \+ 1\)/);
+  assert.match(script, /requestedCard\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(script, /requestedCard\.scrollIntoView/);
+  assert.match(script, /requestedCard\.classList\.add\('is-newly-added'\)/);
+  assert.match(script, /requestedCard && publicQuestionsSettled/);
+  assert.match(script, /question-library:public-settled/);
+  assert.match(css, /\.question-card\.is-newly-added/);
 });
 
 test('首页默认显示全部题目，并保留核心与岗位专项方向路线', async () => {

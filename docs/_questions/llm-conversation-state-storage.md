@@ -1,5 +1,6 @@
 ---
 title: "多轮大模型应用的会话状态应该如何存储与裁剪？"
+question_number: 203
 source: "公开 AI 工程面试题库；依据模型平台官方会话文档原创整理"
 review_status: "待复习"
 category: "系统设计"

@@ -1,5 +1,6 @@
 ---
 title: "数据并行、张量并行和流水线并行如何组成 3D 并行？"
+question_number: 11
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文或官方文档整理"
 verified: true
 review_status: "待复习"

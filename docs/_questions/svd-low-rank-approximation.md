@@ -1,5 +1,6 @@
 ---
 title: "SVD 如何得到最佳低秩近似，它与大模型低秩压缩有什么关系？"
+question_number: 18
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "数学基础"

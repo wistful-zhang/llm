@@ -1,5 +1,6 @@
 ---
 title: "句向量的 CLS、Mean Pooling 和加权池化如何选择？"
+question_number: 28
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "NLP 与机器学习"

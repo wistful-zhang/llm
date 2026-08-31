@@ -1,5 +1,6 @@
 ---
 title: "从输入 Prompt 到生成第一个 Token，模型内部经历了什么？"
+question_number: 45
 source: "用户提供的分级面试题单；具体公司归属未独立核验，技术答案依据原论文整理"
 verified: true
 review_status: "待复习"

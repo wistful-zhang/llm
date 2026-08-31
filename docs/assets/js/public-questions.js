@@ -20,6 +20,7 @@ import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
 
 const root = document.querySelector('[data-public-questions]');
 const genericAuthors = new Set(['匿名用户', '匿名发布者']);
+const MAX_PUBLIC_QUESTION_PAGES = 500;
 
 if (root) {
   const apiBaseUrl = root.dataset.questionsApiUrl || '';
@@ -102,6 +103,7 @@ if (root) {
     card.dataset.searchId = question.searchId;
     card.dataset.source = 'shared';
     card.dataset.remoteId = question.id;
+    card.dataset.questionNumber = String(question.libraryNumber);
     if (question.localId) card.dataset.localId = question.localId;
     card.dataset.search = [
       question.title,
@@ -114,7 +116,13 @@ if (root) {
       question.source,
     ].join(' ');
 
-    card.append(makeElement('div', 'card-number', ''));
+    const number = makeElement(
+      'div',
+      'card-number card-number-public',
+      `公${String(question.libraryNumber).padStart(3, '0')}`,
+    );
+    number.setAttribute('aria-label', `公开题第 ${question.libraryNumber} 题`);
+    card.append(number);
     const body = makeElement('div', 'card-body');
     const meta = makeElement('div', 'card-meta');
     meta.append(
@@ -165,25 +173,51 @@ if (root) {
     document.dispatchEvent(new CustomEvent('question-library:changed'));
   };
 
-  const fetchAllQuestions = async (signal) => {
+  const notifySettled = () => {
+    root.dataset.publicQuestionsSettled = 'true';
+    document.dispatchEvent(new CustomEvent('question-library:public-settled'));
+  };
+
+  const fetchQuestionPage = async (cursor) => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), PUBLIC_QUESTIONS_TIMEOUT_MS);
+    try {
+      const response = await fetch(
+        buildPublicQuestionsApiUrl(apiBaseUrl, cursor, PUBLIC_QUESTIONS_PAGE_SIZE),
+        { headers: { Accept: 'application/json' }, signal: controller.signal },
+      );
+      if (!response.ok) throw new Error(`公开题共享服务 ${response.status}`);
+      return response.json();
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  };
+
+  const fetchAllQuestions = async () => {
     const questions = [];
     const seenCursors = new Set();
     let cursor = 0;
-    for (let page = 0; page < 20; page += 1) {
-      if (seenCursors.has(cursor)) break;
+    let reachedEnd = false;
+    for (let page = 0; page < MAX_PUBLIC_QUESTION_PAGES; page += 1) {
+      if (seenCursors.has(cursor)) throw new Error('公开题共享服务返回了重复分页游标');
       seenCursors.add(cursor);
-      const response = await fetch(
-        buildPublicQuestionsApiUrl(apiBaseUrl, cursor, PUBLIC_QUESTIONS_PAGE_SIZE),
-        { headers: { Accept: 'application/json' }, signal },
-      );
-      if (!response.ok) throw new Error(`公开题共享服务 ${response.status}`);
-      const payload = await response.json();
+      const payload = await fetchQuestionPage(cursor);
       questions.push(...normalizePublicQuestions(payload));
       const nextCursor = Number(payload?.nextCursor);
-      if (payload?.nextCursor === null || !Number.isSafeInteger(nextCursor) || nextCursor < 0) break;
+      if (payload?.nextCursor === null) {
+        reachedEnd = true;
+        break;
+      }
+      if (!Number.isSafeInteger(nextCursor) || nextCursor <= cursor) {
+        throw new Error('公开题共享服务返回了无效分页游标');
+      }
       cursor = nextCursor;
     }
-    return [...new Map(questions.map((question) => [question.id, question])).values()];
+    if (!reachedEnd) throw new Error('公开题数量超过单次安全读取上限');
+    return [...new Map(questions.map((question) => [question.id, question])).values()]
+      .sort((left, right) => (
+        left.libraryNumber - right.libraryNumber || left.id.localeCompare(right.id)
+      ));
   };
 
   const loadPublicQuestions = async ({ force = false } = {}) => {
@@ -191,16 +225,15 @@ if (root) {
       setStatus('当前站点尚未配置共享公开题服务；仓库题和私人题仍可正常使用。');
       if (fallback) fallback.hidden = false;
       notifyLoaded([]);
+      notifySettled();
       return;
     }
     if (!force && Date.now() - lastLoadedAt < 5000) return;
     if (loadPromise) return loadPromise;
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), PUBLIC_QUESTIONS_TIMEOUT_MS);
     loadPromise = (async () => {
       try {
-        const questions = await fetchAllQuestions(controller.signal);
+        const questions = await fetchAllQuestions();
         const ownedByRemoteId = ownedQuestions();
         const cards = questions.map((question) => createQuestion(question, ownedByRemoteId));
         clearMath(list);
@@ -221,7 +254,7 @@ if (root) {
         if (fallback) fallback.hidden = false;
         document.dispatchEvent(new CustomEvent('question-library:changed'));
       } finally {
-        window.clearTimeout(timeoutId);
+        notifySettled();
         loadPromise = null;
       }
     })();

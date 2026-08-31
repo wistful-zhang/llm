@@ -1,5 +1,6 @@
 ---
 title: "ALiBi 如何用线性偏置表示位置并外推长度？"
+question_number: 151
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "LLM 基础"

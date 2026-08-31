@@ -1,5 +1,6 @@
 ---
 title: "长任务中的 Agent 上下文应该如何管理？"
+question_number: 229
 source: "公开 Agent 面试题整理；答案依据原论文和官方工程文档原创整理"
 review_status: "待复习"
 category: "Agent"

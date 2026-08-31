@@ -1,5 +1,6 @@
 ---
 title: "GRPO 中 πθ、πold 与 Rollout 策略分别是什么，如何同步？"
+question_number: 109
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文或官方文档整理"
 verified: true
 review_status: "待复习"

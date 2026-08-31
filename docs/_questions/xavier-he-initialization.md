@@ -1,5 +1,6 @@
 ---
 title: "Xavier 与 He 初始化分别基于什么方差推导，应该如何选择？"
+question_number: 1
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练与对齐"

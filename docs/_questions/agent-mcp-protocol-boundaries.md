@@ -1,5 +1,6 @@
 ---
 title: "MCP 的 Host、Client、Server 如何协作，安全边界在哪里？"
+question_number: 155
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

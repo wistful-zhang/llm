@@ -1,5 +1,6 @@
 ---
 title: "推测解码为什么能加速生成，什么时候反而收益不大？"
+question_number: 165
 source: "公开 LLM 推理面试题整理；依据推测解码原论文原创整理"
 review_status: "待复习"
 category: "工程实践"

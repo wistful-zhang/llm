@@ -1,5 +1,6 @@
 ---
 title: "领域微调时如何识别并缓解灾难性遗忘？"
+question_number: 216
 source: "公开 AI 工程师面试复盘中的灾难性遗忘题；答案依据 InstructGPT 与 Llama 3 技术报告原创整理"
 review_status: "待复习"
 category: "训练与对齐"

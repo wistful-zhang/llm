@@ -1,5 +1,6 @@
 ---
 title: "模型、Prompt、数据和索引如何统一版本化并支持回滚？"
+question_number: 205
 source: "公开 AI 工程面试题库；依据 MLflow 官方版本与数据追踪文档原创整理"
 review_status: "待复习"
 category: "系统设计"

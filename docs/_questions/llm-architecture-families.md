@@ -1,5 +1,6 @@
 ---
 title: "Encoder-Only、Decoder-Only 和 Encoder-Decoder 架构如何选择？"
+question_number: 206
 source: "公开真实面试问题汇总中的高频架构对比题；答案依据代表性模型论文原创整理"
 review_status: "待复习"
 category: "LLM 基础"

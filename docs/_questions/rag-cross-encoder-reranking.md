@@ -1,5 +1,6 @@
 ---
 title: "为什么 RAG 常用 Cross-Encoder 做重排？"
+question_number: 180
 source: "公开真实面试题整理；答案依据原论文原创整理"
 review_status: "待复习"
 category: "RAG"

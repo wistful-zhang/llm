@@ -1,5 +1,6 @@
 ---
 title: "项目复盘：RAG 上线后答案质量下降，应该如何定位？"
+question_number: 37
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "系统设计"

@@ -1,5 +1,6 @@
 ---
 title: "LayerNorm 与 RMSNorm 有什么区别？"
+question_number: 208
 source: "公开大模型高频面试题整理中的归一化对比题；答案依据两篇归一化原论文原创整理"
 review_status: "待复习"
 category: "LLM 基础"

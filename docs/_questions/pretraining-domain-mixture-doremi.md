@@ -1,5 +1,6 @@
 ---
 title: "DoReMi 如何自动优化预训练领域配比？"
+question_number: 48
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "预训练与数据"

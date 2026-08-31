@@ -1,5 +1,6 @@
 ---
 title: "Q-Former 如何用 Learnable Query 压缩视觉信息？"
+question_number: 44
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据原论文整理"
 review_status: "待复习"
 category: "多模态"

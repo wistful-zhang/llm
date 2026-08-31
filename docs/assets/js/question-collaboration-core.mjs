@@ -128,7 +128,14 @@ const normalizeQuestion = (candidate) => {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
   const id = String(candidate.id || '').trim().toLowerCase();
   const title = cleanInline(candidate.title, 160);
-  if (!UUID_PATTERN.test(id) || !title || candidate.status !== 'visible') return null;
+  const libraryNumber = candidate.libraryNumber;
+  if (
+    !UUID_PATTERN.test(id)
+      || !title
+      || candidate.status !== 'visible'
+      || !Number.isSafeInteger(libraryNumber)
+      || libraryNumber < 1
+  ) return null;
   const answer = cleanText(candidate.answer, 50_000);
   const rawAnswerStatus = cleanInline(candidate.answerStatus, 20);
   const answerStatus = answer && rawAnswerStatus === 'complete' ? 'complete' : 'pending';
@@ -136,6 +143,7 @@ const normalizeQuestion = (candidate) => {
   const localId = cleanInline(candidate.localId, 120);
   return {
     id,
+    libraryNumber,
     searchId: `shared:${id}`,
     title,
     category: cleanInline(candidate.category, 30) || '待整理',
@@ -158,13 +166,21 @@ const normalizeQuestion = (candidate) => {
 export const normalizePublicQuestions = (payload) => {
   const candidates = Array.isArray(payload) ? payload : payload?.questions;
   if (!Array.isArray(candidates)) return [];
-  const seen = new Set();
+  const seenIds = new Set();
+  const seenLibraryNumbers = new Set();
   return candidates.flatMap((candidate) => {
     const question = normalizeQuestion(candidate);
-    if (!question || seen.has(question.id)) return [];
-    seen.add(question.id);
+    if (
+      !question
+        || seenIds.has(question.id)
+        || seenLibraryNumbers.has(question.libraryNumber)
+    ) return [];
+    seenIds.add(question.id);
+    seenLibraryNumbers.add(question.libraryNumber);
     return [question];
-  });
+  }).sort((left, right) => (
+    left.libraryNumber - right.libraryNumber || left.id.localeCompare(right.id)
+  ));
 };
 
 export const normalizePublicQuestionResponse = (payload) => normalizeQuestion(payload?.question);

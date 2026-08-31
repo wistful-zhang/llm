@@ -1,5 +1,6 @@
 ---
 title: "ZeRO-2、ZeRO-3 与 FSDP 如何切分训练显存？"
+question_number: 161
 source: "大厂公开真实面试案例中的 ZeRO/FSDP 分布式训练题；答案依据 ZeRO 论文与 PyTorch 官方文档原创整理"
 review_status: "待复习"
 category: "训练与对齐"

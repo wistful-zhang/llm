@@ -3,6 +3,7 @@ import {
   addQuestionDraft,
   buildQuestionAnswerPrompt,
   buildQuestionMarkdown,
+  clearQuestionDrafts,
   createEmptyQuestionDrafts,
   deleteQuestionDraft,
   exportQuestionDraftsJson,
@@ -46,7 +47,39 @@ import {
 } from './latex-input-core.mjs';
 import { clearMath, renderMath } from './math-render.mjs';
 
-const root = document.querySelector('[data-question-capture]');
+export const resolveQuestionDeletionPlan = (question, publicationTokens) => {
+  if (!question?.remoteId) {
+    return {
+      deleteRemote: false,
+      label: question?.visibility === 'public'
+        ? '删除这道未发布题目'
+        : '删除这道私人题',
+      scope: '此操作无法撤销。',
+      success: '这道题已从当前浏览器删除。',
+    };
+  }
+  const canDeleteRemote = Boolean(getRecoverableQuestionPublicationToken(
+    publicationTokens,
+    { remoteId: question.remoteId, localId: question.id },
+  ));
+  return canDeleteRemote
+    ? {
+      deleteRemote: true,
+      label: '从公开题库撤回并删除',
+      scope: '这会从公开题库撤回，并删除当前浏览器中的副本。',
+      success: '这道题已从公开题库撤回，并从当前浏览器删除。',
+    }
+    : {
+      deleteRemote: false,
+      label: '只移除本机副本（线上题不变）',
+      scope: '当前浏览器没有这道公开题的删除凭据；只会移除本机副本，线上公开题不会撤回。',
+      success: '本机副本已移除；由于没有删除凭据，线上公开题仍然保留。',
+    };
+};
+
+const root = typeof document === 'undefined'
+  ? null
+  : document.querySelector('[data-question-capture]');
 
 if (root) {
   const repositoryId = root.dataset.repositoryId;
@@ -667,6 +700,7 @@ if (root) {
   };
 
   const createQuestionCard = (question) => {
+    const deletionPlan = resolveQuestionDeletionPlan(question, publicationTokens);
     const card = makeElement('article', 'question-draft-card');
     card.dataset.questionId = question.id;
 
@@ -674,6 +708,7 @@ if (root) {
     const copy = document.createElement('div');
     const meta = makeElement('div', 'question-draft-card-meta');
     meta.append(
+      makeElement('span', 'tag', `本机题 私${String(question.localNumber).padStart(3, '0')}`),
       makeElement('span', 'tag', question.category),
       makeElement('span', `difficulty difficulty-${question.difficulty}`, question.difficulty),
       makeElement('span', 'answer-state-badge', question.answerStatus === 'complete' ? '答案已完成' : '待解答'),
@@ -739,23 +774,27 @@ if (root) {
       'question-draft-publish-note',
       question.visibility === 'public'
         ? (question.remoteId
-          ? '这道题已在共享题库中；编辑并保存后会立即更新。'
+          ? (deletionPlan.deleteRemote
+            ? '这道题已在共享题库中；编辑并保存后会立即更新。'
+            : '这道题仍在线上公开，但当前浏览器没有编辑凭据；可以只移除本机副本，线上题目不会改变。')
           : '公开失败。这道题目前只在这个浏览器中，可以重新发布。')
         : '这是一道私人题，也会显示在首页题库中，但只保存在当前浏览器。',
     );
     const publishActions = makeElement('div', 'question-draft-publish-actions');
     publishActions.append(
       button('只让 Codex 补答案', 'copy-answer-prompt', 'text-button', question.id),
-      button('复制 Markdown', 'copy-markdown', 'text-button', question.id),
-      button('下载 Markdown', 'download-markdown', 'text-button', question.id),
+      button('复制仓库草稿 Markdown', 'copy-markdown', 'text-button', question.id),
+      button('下载仓库草稿 Markdown', 'download-markdown', 'text-button', question.id),
     );
     if (question.visibility === 'public' && !question.remoteId) {
       publishActions.append(button('重新发布', 'retry-public', 'primary-button', question.id));
     }
-    const deleteLabel = question.remoteId
-      ? '从公开题库撤回并删除'
-      : (question.visibility === 'public' ? '删除这道未发布题目' : '删除这道私人题');
-    publishActions.append(button(deleteLabel, 'delete', 'text-button interview-danger-button', question.id));
+    publishActions.append(button(
+      deletionPlan.label,
+      'delete',
+      'text-button interview-danger-button',
+      question.id,
+    ));
     const status = makeElement('p', 'question-draft-card-status');
     status.tabIndex = -1;
     status.setAttribute('role', 'status');
@@ -768,7 +807,9 @@ if (root) {
   function render() {
     const normalizeSearch = (value) => String(value).normalize('NFKC').toLocaleLowerCase('zh-CN');
     const keyword = normalizeSearch(searchInput.value.trim());
-    const sorted = [...state.questions].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    const sorted = [...state.questions].sort((left, right) => (
+      left.localNumber - right.localNumber || left.id.localeCompare(right.id)
+    ));
     const filtered = sorted.filter((question) => {
       if (!keyword) return true;
       const searchable = [
@@ -913,9 +954,10 @@ if (root) {
     localId: question.id,
   });
 
-  const redirectToLibrary = () => {
+  const redirectToLibrary = (searchId = '') => {
     if (!libraryUrl || hasUnpersistedState) return;
     const target = new URL(libraryUrl);
+    if (searchId) target.searchParams.set('focus', String(searchId).slice(0, 200));
     target.hash = 'question-list-section';
     window.location.assign(target.toString());
   };
@@ -980,7 +1022,7 @@ if (root) {
         pendingPublicAction = null;
         publicChallenge.hidden = true;
         resetForm();
-        redirectToLibrary();
+        redirectToLibrary(`shared:${published.id}`);
       } catch (error) {
         status.textContent = `公开发布失败：${error?.message || '共享题库暂时不可用'}。题目仍在当前浏览器，可以重新发布。`;
       } finally {
@@ -1009,7 +1051,7 @@ if (root) {
       });
       if (!commit(next, '公开题修改已同步，题库刷新后即可看到。')) return;
       resetForm();
-      redirectToLibrary();
+      redirectToLibrary(`shared:${question.remoteId}`);
     } finally {
       setPublishing(false);
     }
@@ -1080,7 +1122,7 @@ if (root) {
           await deletePublicQuestion(previousQuestion);
           if (!commit(next, '题目已改为私人，并从共享题库下架。')) return;
           resetForm();
-          redirectToLibrary();
+          redirectToLibrary(`local:${savedQuestion.id}`);
         } catch (error) {
           formStatus.textContent = `没有改为私人，公开版本仍然可见：${error?.message || '共享题库暂时不可用'}。`;
         } finally {
@@ -1099,7 +1141,7 @@ if (root) {
       }
 
       resetForm();
-      redirectToLibrary();
+      redirectToLibrary(`local:${savedQuestion.id}`);
     } catch (error) {
       handleSaveError(error);
     }
@@ -1162,18 +1204,15 @@ if (root) {
       return;
     }
     if (action === 'delete') {
+      const deletionPlan = resolveQuestionDeletionPlan(question, publicationTokens);
       const unsaved = formDirty && idInput.value === question.id
         ? ' 当前正在编辑的尚未保存文字也会丢失。'
         : '';
-      const scope = question.remoteId ? '这会从公开题库撤回，并删除当前浏览器中的副本。' : '此操作无法撤销。';
-      if (!window.confirm(`删除题目“${question.title}”？${scope}${unsaved}`)) return;
+      if (!window.confirm(`删除题目“${question.title}”？${deletionPlan.scope}${unsaved}`)) return;
       try {
-        if (question.remoteId) await deletePublicQuestion(question);
+        if (deletionPlan.deleteRemote) await deletePublicQuestion(question);
         const next = deleteQuestionDraft(state, question.id, { repositoryId, now: new Date().toISOString() });
-        const message = question.remoteId
-          ? '这道题已从公开题库撤回，并从当前浏览器删除。'
-          : '这道题已从当前浏览器删除。';
-        if (commit(next, message) && idInput.value === question.id) resetForm();
+        if (commit(next, deletionPlan.success) && idInput.value === question.id) resetForm();
       } catch (error) {
         status.textContent = `没有删除：${error?.message || '共享题库暂时不可用'}。`;
       }
@@ -1200,8 +1239,8 @@ if (root) {
       const messages = {
         'copy-question': '题目已复制。',
         'copy-answer-prompt': '补答指令已复制；生成结果需要你检查后再粘贴回来。',
-        'copy-markdown': 'Markdown 已复制；它还没有上传或发布。',
-        'download-markdown': 'Markdown 文件已下载；它还没有上传或发布。',
+        'copy-markdown': '未发布的仓库草稿 Markdown 已复制；上传后请在 Pages CMS 分配“当前最大题号 + 1”，再确认发布。',
+        'download-markdown': '未发布的仓库草稿 Markdown 已下载；上传后请在 Pages CMS 分配“当前最大题号 + 1”，再确认发布。',
       };
       status.textContent = messages[action] || '操作已完成。';
     } catch (error) {
@@ -1247,8 +1286,9 @@ if (root) {
       const conflictText = report.conflicts.length
         ? `有 ${report.conflicts.length} 道冲突题将保留本机现有版本。`
         : '没有内容冲突。';
+      const numberingText = '已有本机题号不会改变；重复题号会自动续排。';
       const formWarning = formDirty ? ' 当前表单中尚未保存的文字会被清空。' : '';
-      if (!window.confirm(`${sourceText} 将新增 ${report.added} 道题；${conflictText}${formWarning} 确认恢复吗？`)) return;
+      if (!window.confirm(`${sourceText} 将新增 ${report.added} 道题；${conflictText}${numberingText}${formWarning} 确认恢复吗？`)) return;
       if (commit(report.data, `已恢复 ${report.added} 道题；${report.conflicts.length} 道冲突题保留了本机版本。`)) {
         resetForm();
       }
@@ -1268,10 +1308,10 @@ if (root) {
     }
     const formWarning = formDirty ? ' 当前表单中尚未保存的文字也会被清空。' : '';
     if (!window.confirm(`彻底删除当前浏览器中的 ${state.questions.length} 道本机题目？建议先导出 JSON。此操作无法撤销。${formWarning}`)) return;
-    const next = {
-      ...createEmptyQuestionDrafts(repositoryId),
-      revision: state.revision + 1,
-    };
+    const next = clearQuestionDrafts(state, {
+      repositoryId,
+      now: new Date().toISOString(),
+    });
     if (commit(next, '当前浏览器中的本机题目已全部删除。', { requirePersistence: true })) resetForm();
   });
 

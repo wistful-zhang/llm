@@ -1,5 +1,6 @@
 ---
 title: "Self-Attention 为什么要除以 √dₖ？"
+question_number: 232
 source: "经典高频题；技术依据：Attention Is All You Need"
 verified: true
 category: "LLM 基础"

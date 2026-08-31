@@ -1,5 +1,6 @@
 ---
 title: "梯度累积如何影响有效 Batch、学习率与分布式同步？"
+question_number: 112
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练工程"

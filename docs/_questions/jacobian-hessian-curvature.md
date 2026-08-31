@@ -1,5 +1,6 @@
 ---
 title: "Jacobian、Hessian 分别描述什么，为什么大模型训练很少显式构造 Hessian？"
+question_number: 104
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "数学基础"

@@ -1,5 +1,6 @@
 ---
 title: "大模型多 GPU 推理中，张量、流水线和数据并行应该如何组合？"
+question_number: 215
 source: "公开 LLM 推理面试题整理；依据 Megatron 与推理系统论文原创整理"
 review_status: "待复习"
 category: "工程实践"

@@ -1,5 +1,6 @@
 ---
 title: "AdamW 为什么要把 Weight Decay 与梯度更新解耦？"
+question_number: 159
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练与对齐"

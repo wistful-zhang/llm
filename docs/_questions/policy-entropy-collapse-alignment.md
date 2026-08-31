@@ -1,5 +1,6 @@
 ---
 title: "强化对齐中策略熵为什么会下降，如何识别与缓解模式坍缩？"
+question_number: 53
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练与对齐"

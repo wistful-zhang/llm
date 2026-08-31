@@ -1,5 +1,6 @@
 ---
 title: "多图与视频输入相比单图 VLM 增加了哪些困难？"
+question_number: 67
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据原论文整理"
 review_status: "待复习"
 category: "多模态"

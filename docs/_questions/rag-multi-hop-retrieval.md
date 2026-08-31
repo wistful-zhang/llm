@@ -1,5 +1,6 @@
 ---
 title: "RAG 如何处理需要多跳证据的问题？"
+question_number: 176
 source: "Datawhale 公开真实面试题整理；答案依据原论文原创整理"
 review_status: "待复习"
 category: "RAG"

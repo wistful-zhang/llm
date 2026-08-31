@@ -1,5 +1,6 @@
 ---
 title: "领域继续预训练与 SFT 应该如何选择和衔接？"
+question_number: 127
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练与对齐"

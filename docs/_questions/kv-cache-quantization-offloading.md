@@ -1,5 +1,6 @@
 ---
 title: "KV Cache 量化与 CPU/NVMe Offload 应如何取舍？"
+question_number: 100
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "推理与部署"

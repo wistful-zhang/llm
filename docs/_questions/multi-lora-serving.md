@@ -1,5 +1,6 @@
 ---
 title: "S-LoRA 如何用分页 Adapter 内存高效服务数百个 LoRA？"
+question_number: 66
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "推理与部署"

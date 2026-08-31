@@ -1,5 +1,6 @@
 ---
 title: "MFU、HFU 与 Tokens/s 应如何衡量训练效率？"
+question_number: 13
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练工程"

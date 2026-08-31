@@ -58,9 +58,9 @@ export async function handleAdminApi(request, env, url) {
         .bind(env.SITE_ID)
         .all(),
       env.DB.prepare(
-        `SELECT id, title, category, difficulty, answer_status, answer, follow_ups_json,
+        `SELECT id, library_number, title, category, difficulty, answer_status, answer, follow_ups_json,
                 tags_json, source, author, local_id, status, created_at, updated_at, deleted_at
-         FROM public_questions WHERE site_id = ? ORDER BY created_at ASC, id ASC`,
+         FROM public_questions WHERE site_id = ? ORDER BY library_number ASC, id ASC`,
       )
         .bind(env.SITE_ID)
         .all(),
@@ -104,6 +104,7 @@ export async function handleAdminApi(request, env, url) {
         })),
         publicQuestions: publicQuestions.results.map((row) => ({
           id: row.id,
+          libraryNumber: Number(row.library_number),
           title: row.title,
           category: row.category,
           difficulty: row.difficulty,

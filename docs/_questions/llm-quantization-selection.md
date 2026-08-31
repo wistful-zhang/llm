@@ -1,5 +1,6 @@
 ---
 title: "大模型量化中的 INT8、INT4、PTQ 和 QAT 应该如何理解与选择？"
+question_number: 196
 source: "公开 AI 工程面试题库；原论文与官方文档核验后原创整理"
 review_status: "待复习"
 category: "工程实践"

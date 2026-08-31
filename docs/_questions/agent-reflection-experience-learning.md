@@ -1,5 +1,6 @@
 ---
 title: "Reflexion 如何让 Agent 从失败轨迹中学习而不更新模型参数？"
+question_number: 154
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

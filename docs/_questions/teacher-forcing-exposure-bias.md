@@ -1,5 +1,6 @@
 ---
 title: "Teacher Forcing 是什么，为什么会产生 Exposure Bias？"
+question_number: 17
 source: "用户提供的分级面试题单；具体公司归属未独立核验，技术答案依据原论文整理"
 verified: true
 review_status: "待复习"

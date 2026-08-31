@@ -1,5 +1,6 @@
 ---
 title: "VLM 如何用坐标 Token 实现短语定位与视觉 Grounding？"
+question_number: 4
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

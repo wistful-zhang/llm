@@ -1,5 +1,6 @@
 ---
 title: "语音大模型如何把音频变成 Token，并同时支持理解与生成？"
+question_number: 149
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

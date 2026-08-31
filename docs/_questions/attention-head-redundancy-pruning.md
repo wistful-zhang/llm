@@ -1,5 +1,6 @@
 ---
 title: "多头注意力的 Head 是否都必要，如何分析与剪枝？"
+question_number: 150
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "LLM 基础"
