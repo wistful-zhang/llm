@@ -1,5 +1,6 @@
 ---
 title: "高质量数据有限时，重复训练多少轮才合理？"
+question_number: 32
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "预训练与数据"

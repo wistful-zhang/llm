@@ -1,5 +1,6 @@
 ---
 title: "项目复盘：模型升级后 P99 延迟翻倍，应该如何排查？"
+question_number: 88
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "系统设计"

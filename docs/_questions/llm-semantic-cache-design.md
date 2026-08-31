@@ -1,5 +1,6 @@
 ---
 title: "大模型语义缓存应该怎样设计，如何避免错误命中和数据越权？"
+question_number: 195
 source: "公开 LLM 系统设计题库；依据语义缓存论文原创整理"
 review_status: "待复习"
 category: "系统设计"

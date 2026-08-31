@@ -1,5 +1,6 @@
 ---
 title: "Scaling Laws 与计算最优训练说明了什么？"
+question_number: 167
 source: "公开真实面试问题汇总中的 Scaling Laws 高频题；答案依据 Kaplan 与 Chinchilla 论文原创整理"
 review_status: "待复习"
 category: "LLM 基础"

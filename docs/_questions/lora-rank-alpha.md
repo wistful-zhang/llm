@@ -1,5 +1,6 @@
 ---
 title: "LoRA 的 Rank 和 Alpha 如何影响容量与更新尺度？"
+question_number: 75
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文或官方文档整理"
 verified: true
 review_status: "待复习"

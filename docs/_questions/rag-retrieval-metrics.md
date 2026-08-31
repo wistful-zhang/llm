@@ -1,5 +1,6 @@
 ---
 title: "如何用 Recall@K、MRR 和 nDCG 评估 RAG 检索？"
+question_number: 175
 source: "Datawhale 公开真实面试题整理；答案依据检索基准论文原创整理"
 review_status: "待复习"
 category: "RAG"

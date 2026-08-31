@@ -1,5 +1,6 @@
 ---
 title: "线上大模型应用应该观测哪些指标，怎样做到可排障又不泄露数据？"
+question_number: 197
 source: "公开 AI 工程面试题库；依据 OpenTelemetry 与推理框架文档原创整理"
 review_status: "待复习"
 category: "工程实践"

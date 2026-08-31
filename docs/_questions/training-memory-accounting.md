@@ -1,5 +1,6 @@
 ---
 title: "如何估算大模型训练显存，Gradient Checkpointing 省了什么？"
+question_number: 14
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文或官方文档整理"
 verified: true
 review_status: "待复习"

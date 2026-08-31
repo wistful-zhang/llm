@@ -1,5 +1,6 @@
 ---
 title: "如何设计可取消、可恢复的异步大模型长任务系统？"
+question_number: 218
 source: "公开 AI 系统设计面试题；依据后台任务与持久工作流官方文档原创整理"
 review_status: "待复习"
 category: "系统设计"

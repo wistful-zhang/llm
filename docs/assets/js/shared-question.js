@@ -31,6 +31,7 @@ if (root) {
   const errorMessage = root.querySelector('[data-shared-question-error-message]');
   const retryButton = root.querySelector('[data-shared-question-retry]');
   const content = root.querySelector('[data-shared-question-content]');
+  const questionNumber = root.querySelector('[data-shared-question-number]');
   const eyebrow = root.querySelector('[data-shared-question-eyebrow]');
   const title = root.querySelector('[data-shared-question-title]');
   const answerBadge = root.querySelector('[data-shared-question-answer-badge]');
@@ -135,6 +136,7 @@ if (root) {
 
   const renderQuestion = (question, revision) => {
     if (revision !== requestRevision) return;
+    questionNumber.textContent = `公开题 公${String(question.libraryNumber).padStart(3, '0')}`;
     eyebrow.textContent = question.difficulty === '待评估'
       ? (question.category === '待整理' ? '未分类' : question.category)
       : `${question.category === '待整理' ? '未分类' : question.category} · ${question.difficulty}`;

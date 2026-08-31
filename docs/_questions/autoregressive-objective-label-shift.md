@@ -1,5 +1,6 @@
 ---
 title: "自回归语言模型的训练目标与 Label Shift 是什么？"
+question_number: 148
 source: "用户提供的分级面试题单；具体公司归属未独立核验，技术答案依据原论文整理"
 verified: true
 review_status: "待复习"

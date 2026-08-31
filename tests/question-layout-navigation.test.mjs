@@ -39,7 +39,7 @@ test('题目翻页只从相同备考层级的已发布题目中寻找相邻项',
 
   assert.match(
     navigation,
-    /site\.questions \| where: 'published', true \| where: 'study_tier', study_tier \| sort: 'date' \| reverse/,
+    /site\.questions \| where: 'published', true \| where: 'study_tier', study_tier \| sort: 'question_number'/,
   );
   assert.match(
     navigation,
@@ -52,4 +52,13 @@ test('题目翻页只从相同备考层级的已发布题目中寻找相邻项',
   assert.match(navigation, /aria-label="同一备考层级的题目翻页"/);
   assert.match(navigation, /previous_same_tier\.url[\s\S]*?next_same_tier\.url/);
   assert.doesNotMatch(navigation, /page\.(?:previous|next)/);
+});
+
+test('题目详情顶部显示三位固定题号', async () => {
+  const layout = await readLayout();
+
+  assert.match(
+    layout,
+    /<div class="eyebrow">第 \{% if page\.question_number < 10 %\}00\{% elsif page\.question_number < 100 %\}0\{% endif %\}\{\{ page\.question_number \}\} 题/,
+  );
 });

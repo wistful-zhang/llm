@@ -1,5 +1,6 @@
 ---
 title: "为什么 GPU 还有空闲显存却 OOM，如何分析分配器碎片与内存池？"
+question_number: 113
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "推理与部署"

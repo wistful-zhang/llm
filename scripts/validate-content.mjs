@@ -43,6 +43,7 @@ const requiredVerifiedSections = [
 const seenTitles = new Map();
 const seenNormalizedTitles = new Map();
 const guidancePrefixOwners = new Map();
+const assignedQuestionNumbers = [];
 const errors = [];
 let publishedCount = 0;
 let verifiedCount = 0;
@@ -103,6 +104,24 @@ export const findDuplicateQuestionSlugErrors = (filenames) => {
   return duplicateErrors;
 };
 
+export const findDuplicateQuestionNumberErrors = (entries) => {
+  const owners = new Map();
+  const duplicateErrors = [];
+
+  for (const { filename, questionNumber } of entries) {
+    if (!Number.isSafeInteger(questionNumber) || questionNumber < 1) continue;
+    if (owners.has(questionNumber)) {
+      duplicateErrors.push(
+        `${filename}: question_number ${questionNumber} 与 ${owners.get(questionNumber)} 重复；固定题号必须全局唯一`,
+      );
+    } else {
+      owners.set(questionNumber, filename);
+    }
+  }
+
+  return duplicateErrors;
+};
+
 errors.push(...findDuplicateQuestionSlugErrors(files));
 
 for (const filename of files) {
@@ -125,6 +144,7 @@ for (const filename of files) {
   const verified = values.get('verified');
   const answerStatus = value('answer_status');
   const date = value('date');
+  const questionNumber = values.get('question_number');
   const followUps = Array.isArray(values.get('followups')) ? values.get('followups') : [];
   const isPublished = published === true;
   const isVerified = verified === true;
@@ -192,6 +212,10 @@ for (const filename of files) {
   if (![true, false].includes(published)) {
     errors.push(`${filename}: published 必须是未加引号的 YAML 布尔值 true 或 false`);
   }
+  if (isPublished && (!Number.isSafeInteger(questionNumber) || questionNumber < 1)) {
+    errors.push(`${filename}: published: true 时必须填写有效的 question_number 固定题号`);
+  }
+  assignedQuestionNumbers.push({ filename, questionNumber });
   const parsedDate = new Date(`${date}T00:00:00Z`);
   const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(date) &&
     !Number.isNaN(parsedDate.valueOf()) &&
@@ -289,6 +313,8 @@ for (const filename of files) {
     }
   }
 }
+
+errors.push(...findDuplicateQuestionNumberErrors(assignedQuestionNumbers));
 
 for (const [prefix, owners] of guidancePrefixOwners) {
   if (owners.size >= 3) {

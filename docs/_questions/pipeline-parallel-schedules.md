@@ -1,5 +1,6 @@
 ---
 title: "GPipe、1F1B 与交错流水线如何影响 Bubble？"
+question_number: 54
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练工程"

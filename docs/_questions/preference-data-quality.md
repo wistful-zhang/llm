@@ -1,5 +1,6 @@
 ---
 title: "偏好数据中的 chosen / rejected 样本应该如何构造？"
+question_number: 184
 source: "公开真实面试问题汇总中的偏好数据与奖励模型题；答案依据 InstructGPT 与 DPO 论文原创整理"
 review_status: "待复习"
 category: "训练与对齐"

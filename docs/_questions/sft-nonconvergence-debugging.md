@@ -1,5 +1,6 @@
 ---
 title: "SFT 模型不收敛时应该如何定位问题？"
+question_number: 26
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文或官方文档整理"
 verified: true
 review_status: "待复习"

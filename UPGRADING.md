@@ -39,6 +39,14 @@
 
 1.6.0 当时把题目评论改为正文下方的内嵌输入框，并使用 [utterances](https://github.com/apps/utterances) 显示 GitHub Issue 回复。这段只用于识别旧副本：该方案已经退役，不要再为新副本安装评论应用。旧 Issue 和回复仍保留在 GitHub，但不会自动出现在新的站内评论数据库中。
 
+## 升级到 1.9.5 的固定题号
+
+1.9.5 要求每道已发布的仓库正式题在 front matter 中拥有唯一正整数 `question_number`。升级自己的内容时，先保留当前希望展示的顺序并一次性编号；以后新增题只使用当前最大题号加一，不要重排旧题，也不要复用删除后留下的空号。上游自带的 232 道题已经固定为 `1–232`；如果副本还有自定义正式题，应从 `233` 起继续分配。完成后运行 `npm run validate` 检查缺号和重复号。
+
+已经部署共享公开题服务的站点，需要先对原 D1 应用 `comments-worker/migrations/0003_stable_question_numbers.sql`，再部署同版本 Worker，最后发布 Pages 前端。迁移会按原始创建时间为已有公开题分配稳定编号，并保留撤回、下架和删除记录占用过的号；不要手工删除这些行来“整理序号”。旧前端可继续读取升级后的服务，因此按这个先后顺序不会中断已有页面。未启用 `QUESTIONS_API_URL` 的副本不需要 D1 操作。
+
+本机题目不需要手工改格式；网页会把旧数据按创建顺序迁移成持久的 `私NNN`。修改、删除或同仓恢复备份都不会复用旧号；跨仓恢复会从目标题库末尾重新编号。网页下载的单题 Markdown 始终是 `published: false` 的仓库草稿，请先在 Pages CMS 填写当前最大的 `question_number + 1`，检查答案后再发布。练习进度仍兼容旧会话，只是界面把随机队列位置改称“本轮第 x / y 题”，并另行显示固定题库号。
+
 ## 升级到 1.9.4 的评论公式
 
 1.9.4 不修改 D1、Worker API 或已有评论数据。升级时一起合并 `comment-math-core.mjs`、`latex-input-core.mjs`、`question-comments.js`、`question-math.js`、`math-render.mjs`、`math-render-core.mjs`、`public-questions.js`、`shared-question.js`、`question-capture.js`、`scripts/math-format.mjs`、`scripts/validate-content.mjs`、评论 include、样式和相关测试；已有纯文字评论保持不变，已有正文中的合法 `$$...$$` 会自动按公式显示。若公式不完整或超出评论专用预算，网页会继续按原文显示，不会丢弃内容。

@@ -1,5 +1,6 @@
 ---
 title: "代码模型的 pass@k 应该如何计算，为什么不能只看 pass@1？"
+question_number: 138
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

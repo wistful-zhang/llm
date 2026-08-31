@@ -1,5 +1,6 @@
 ---
 title: "梯度裁剪为什么常按 Global Norm 做，应该在训练流程的哪个位置执行？"
+question_number: 111
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练工程"

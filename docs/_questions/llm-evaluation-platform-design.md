@@ -1,5 +1,6 @@
 ---
 title: "如何设计一个可复现的大模型评测平台？"
+question_number: 93
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "系统设计"

@@ -44,7 +44,7 @@ layout: default
   {% if source_note != empty %}{% assign show_provenance = true %}{% endif %}
   <a class="back-link" href="{{ '/' | relative_url }}">← 返回题库</a>
   <header class="question-header">
-    <div class="eyebrow">{{ category_label | escape }}{% if page.difficulty != '待评估' %} · {{ page.difficulty | escape }}{% endif %}</div>
+    <div class="eyebrow">第 {% if page.question_number < 10 %}00{% elsif page.question_number < 100 %}0{% endif %}{{ page.question_number }} 题 · {{ category_label | escape }}{% if page.difficulty != '待评估' %} · {{ page.difficulty | escape }}{% endif %}</div>
     <h1>{{ page.title | escape }}</h1>
     <div class="question-study-tier">
       <span class="study-tier-badge study-tier-{{ study_tier | escape }}">{{ study_tier_label }}</span>
@@ -158,7 +158,7 @@ layout: default
     {% endif %}
     <p class="content-utility-status" data-share-status role="status" aria-live="polite"></p>
   </aside>
-  {% assign same_tier_questions = site.questions | where: 'published', true | where: 'study_tier', study_tier | sort: 'date' | reverse %}
+  {% assign same_tier_questions = site.questions | where: 'published', true | where: 'study_tier', study_tier | sort: 'question_number' %}
   {% assign previous_same_tier = nil %}
   {% assign next_same_tier = nil %}
   {% assign current_question_found = false %}

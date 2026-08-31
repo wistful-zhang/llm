@@ -1,5 +1,6 @@
 ---
 title: "训练中维护参数 EMA 有什么作用，它与 Polyak Averaging 有何区别？"
+question_number: 118
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练与对齐"

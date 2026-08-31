@@ -1,5 +1,6 @@
 ---
 title: "Prefill 与 Decode 的计算和访存特征有什么不同？"
+question_number: 51
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文整理"
 verified: true
 review_status: "待复习"

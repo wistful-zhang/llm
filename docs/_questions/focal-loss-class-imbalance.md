@@ -1,5 +1,6 @@
 ---
 title: "类别不平衡除了换指标，还可以怎样训练，Focal Loss 有什么作用？"
+question_number: 116
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "NLP 与机器学习"

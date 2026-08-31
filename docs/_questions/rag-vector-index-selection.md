@@ -1,5 +1,6 @@
 ---
 title: "向量检索中如何选择 Flat、HNSW、IVF 和 PQ？"
+question_number: 173
 source: "公开 RAG 面试题整理；答案依据原论文和官方实现文档原创整理"
 review_status: "待复习"
 category: "RAG"

@@ -1,5 +1,6 @@
 ---
 title: "如何估算大模型功能的成本，并在不明显降质的前提下降本？"
+question_number: 202
 source: "公开 AI 工程面试题库；依据官方计费与缓存文档原创整理"
 review_status: "待复习"
 category: "工程实践"

@@ -148,6 +148,7 @@ title: 题库
     </div>
   </div>
   <noscript>
+    <style>.question-source-statuses,.toolbar,.library-results-bar{display:none!important}</style>
     <p class="library-noscript">当前浏览器未启用 JavaScript，下面仍会显示全部 {{ published_questions.size }} 道题；搜索、筛选和分批显示暂不可用。</p>
   </noscript>
 
@@ -155,9 +156,7 @@ title: 题库
        class="question-list"
        data-search-index-url="{{ '/search-index.json' | relative_url }}"
        data-repository-id="{{ site.github.repository_nwo | default: site.baseurl | default: site.title | escape }}">
-    <div class="dynamic-question-cards" data-local-questions-list></div>
-    <div class="dynamic-question-cards" data-public-questions-list></div>
-    {% assign questions = published_questions | sort: 'date' | reverse %}
+    {% assign questions = published_questions | sort: 'question_number' %}
     {% for question in questions %}
       {% assign search_tags = question.tags | join: ' ' %}
       {% assign answer_text = question.content | strip_html | strip_newlines | strip %}
@@ -182,9 +181,10 @@ title: 题库
          data-verified="{{ question.verified | default: false }}"
          data-answer-status="{% if answer_ready %}complete{% else %}pending{% endif %}"
          data-study-tier="{{ study_tier | escape }}"
+         data-question-number="{{ question.question_number }}"
          data-search-id="{{ question.url | escape }}"
          data-search="{{ question.title | append: ' ' | append: question.category | append: ' ' | append: study_tier_label | append: ' ' | append: search_tags | downcase | escape }}">
-        <div class="card-number">{% if forloop.index < 10 %}0{% endif %}{{ forloop.index }}</div>
+        <div class="card-number" aria-label="固定题号 {{ question.question_number }}">{% if question.question_number < 10 %}00{% elsif question.question_number < 100 %}0{% endif %}{{ question.question_number }}</div>
         <div class="card-body">
           <div class="card-meta">
             <span>{% if question.category == '待整理' %}未分类{% else %}{{ question.category | escape }}{% endif %}</span>
@@ -202,6 +202,8 @@ title: 题库
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
     {% endfor %}
+    <div class="dynamic-question-cards" data-public-questions-list></div>
+    <div class="dynamic-question-cards" data-local-questions-list></div>
   </div>
   <div class="library-results-bar">
     <p id="library-result-summary">正在整理当前可见题目…</p>

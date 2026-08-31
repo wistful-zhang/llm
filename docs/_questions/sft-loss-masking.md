@@ -1,5 +1,6 @@
 ---
 title: "SFT 为什么常只计算回答部分的损失？"
+question_number: 166
 source: "大厂公开真实面试案例中的 SFT Loss Mask 高频题；答案依据 InstructGPT 论文与 TRL 官方文档原创整理"
 review_status: "待复习"
 category: "训练与对齐"

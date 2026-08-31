@@ -1,5 +1,6 @@
 ---
 title: "怎样提高 LLM Agent 的可靠性？"
+question_number: 230
 source: "公开面经高频主题；答案依据论文原创整理"
 verified: true
 category: "Agent"

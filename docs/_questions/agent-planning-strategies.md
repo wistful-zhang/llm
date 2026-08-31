@@ -1,5 +1,6 @@
 ---
 title: "Agent 常见的规划策略有哪些，如何选择？"
+question_number: 224
 source: "Datawhale 公开真实面试题整理；答案依据原论文原创整理"
 review_status: "待复习"
 category: "Agent"

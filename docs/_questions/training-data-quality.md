@@ -1,5 +1,6 @@
 ---
 title: "大模型微调数据应该如何清洗、去重和配比？"
+question_number: 162
 source: "大厂公开真实面试案例中的 SFT 数据构建题；答案依据 LIMA 与 Llama 3 技术报告原创整理"
 review_status: "待复习"
 category: "训练与对齐"

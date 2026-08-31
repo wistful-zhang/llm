@@ -64,6 +64,14 @@ test('共享 API 公开题直接显示在统一题库，不再存在 Issue 或�
 
   assert.match(publicScript, /buildPublicQuestionsApiUrl/);
   assert.match(publicScript, /fetchAllQuestions/);
+  assert.match(publicScript, /page < MAX_PUBLIC_QUESTION_PAGES/);
+  assert.match(publicScript, /MAX_PUBLIC_QUESTION_PAGES = 500/);
+  assert.match(publicScript, /seenCursors\.has\(cursor\)/);
+  assert.doesNotMatch(publicScript, /page < 20/);
+  assert.match(publicScript, /const fetchQuestionPage = async \(cursor\)/);
+  assert.match(publicScript, /window\.setTimeout\(\(\) => controller\.abort\(\), PUBLIC_QUESTIONS_TIMEOUT_MS\)/);
+  assert.match(publicScript, /nextCursor <= cursor/);
+  assert.match(publicScript, /question-library:public-settled/);
   assert.match(publicScript, /question-card question-card-public/);
   assert.match(publicScript, /question-library:public-loaded/);
   assert.match(publicScript, /remoteIds:/);
@@ -116,6 +124,7 @@ test('公开题共享 API 地址与响应执行白名单清洗', async () => {
       source: '应用岗',
       author: '匿名用户',
       localId: 'question_local_1',
+      libraryNumber: 7,
       status: 'visible',
     }, {
       id: '123e4567-e89b-42d3-a456-426614174001',
@@ -125,9 +134,36 @@ test('公开题共享 API 地址与响应执行白名单清洗', async () => {
   });
   assert.equal(questions.length, 1);
   assert.equal(questions[0].answerStatus, 'complete');
+  assert.equal(questions[0].libraryNumber, 7);
   assert.equal(questions[0].followUps[0], '缓存何时失效？');
   assert.equal(questions[0].localId, 'question_local_1');
   assert.equal(Object.hasOwn(questions[0], 'url'), false);
+});
+
+test('公开题固定编号只接受正安全整数，并按编号稳定排序', async () => {
+  const { normalizePublicQuestions } = await importCore();
+  const makeQuestion = (suffix, libraryNumber) => ({
+    id: `123e4567-e89b-42d3-a456-4266141740${suffix}`,
+    title: `公开题 ${libraryNumber}`,
+    libraryNumber,
+    status: 'visible',
+  });
+  const questions = normalizePublicQuestions({
+    questions: [
+      makeQuestion('03', 3),
+      makeQuestion('01', 1),
+      makeQuestion('02', 2),
+      makeQuestion('04', 2),
+      makeQuestion('05', 0),
+      makeQuestion('06', -1),
+      makeQuestion('07', 1.5),
+      makeQuestion('08', '4'),
+      makeQuestion('09', Number.MAX_SAFE_INTEGER + 1),
+    ],
+  });
+
+  assert.deepEqual(questions.map((question) => question.libraryNumber), [1, 2, 3]);
+  assert.deepEqual(questions.map((question) => question.id.slice(-2)), ['01', '02', '03']);
 });
 
 test('公开保存直接 POST，修改与删除使用编辑凭证且响应丢失可幂等重试', async () => {

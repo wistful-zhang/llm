@@ -1,5 +1,6 @@
 ---
 title: "RAG 中如何选择 Chunk 大小和重叠长度？"
+question_number: 181
 source: "Datawhale 公开真实面试题整理；答案依据官方文档原创整理"
 review_status: "待复习"
 category: "RAG"

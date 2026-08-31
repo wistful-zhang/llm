@@ -1,5 +1,6 @@
 ---
 title: "Agent 如何设计 Human-in-the-Loop 审批、中断与可恢复执行？"
+question_number: 156
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

@@ -1,5 +1,6 @@
 ---
 title: "BPE、WordPiece、Unigram 和 SentencePiece 有什么区别？"
+question_number: 163
 source: "公开面试题整理中的高频分词主题；答案依据原论文与 Hugging Face 官方文档原创整理"
 review_status: "待复习"
 category: "LLM 基础"

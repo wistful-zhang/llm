@@ -1,5 +1,6 @@
 ---
 title: "Embedding 模型升级时，如何重建索引、双写并无损切换？"
+question_number: 41
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "RAG"

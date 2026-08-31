@@ -1,5 +1,6 @@
 ---
 title: "微调模型上线时，LoRA 适配器应动态加载还是合并权重？"
+question_number: 193
 source: "公开 LLM 工程面试题整理；依据 PEFT 文档与适配器服务论文原创整理"
 review_status: "待复习"
 category: "工程实践"

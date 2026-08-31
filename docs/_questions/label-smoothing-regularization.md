@@ -1,5 +1,6 @@
 ---
 title: "Label Smoothing 如何修改训练目标，为什么可能改善泛化却损害校准或蒸馏？"
+question_number: 99
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "训练与对齐"

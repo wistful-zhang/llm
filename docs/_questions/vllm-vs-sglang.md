@@ -1,5 +1,6 @@
 ---
 title: "vLLM 与 SGLang 的设计侧重点有什么不同，应该如何选择？"
+question_number: 6
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文整理"
 verified: true
 review_status: "待复习"

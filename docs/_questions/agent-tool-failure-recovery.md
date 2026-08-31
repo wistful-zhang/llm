@@ -1,5 +1,6 @@
 ---
 title: "Agent 的工具调用失败后应该如何恢复？"
+question_number: 220
 source: "公开 Agent 工程面试题整理；答案依据原论文和官方可靠性文档原创整理"
 review_status: "待复习"
 category: "Agent"

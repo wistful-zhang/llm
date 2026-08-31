@@ -108,6 +108,8 @@ Turnstile 本地调试请使用 Cloudflare 提供的测试 key。公开题 actio
 - `PATCH /v1/questions/{id}`：使用发布时的 `editToken` 修改自己的题目。
 - `DELETE /v1/questions/{id}`：使用 `editToken` 下架并清空自己的题目正文。
 
+公开题响应中的 `libraryNumber` 是当前站点内固定、递增且不会因编辑或软删除而复用的题号。列表按该字段升序返回；`cursor` 是上一页最后一道题的 `libraryNumber`，不是数组偏移量。隐藏或删除会留下题号空缺，客户端不应假设号码连续。
+
 发布正文示例：
 
 ```json

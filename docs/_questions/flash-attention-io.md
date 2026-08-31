@@ -1,5 +1,6 @@
 ---
 title: "FlashAttention 为什么更快，它改变了注意力复杂度吗？"
+question_number: 213
 source: "2025—2026 公开大模型面试题整理中的 FlashAttention 高频题；答案依据原论文原创整理"
 review_status: "待复习"
 category: "LLM 基础"

@@ -1,5 +1,6 @@
 ---
 title: "允许 Agent 执行代码时，如何设计 Sandbox、网络和资源隔离？"
+question_number: 153
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "Agent"

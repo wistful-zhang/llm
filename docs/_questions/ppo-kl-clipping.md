@@ -1,5 +1,6 @@
 ---
 title: "LLM 的 PPO 对齐流程中，Clip、KL 和四个模型分别做什么？"
+question_number: 186
 source: "公开真实面试案例中的 PPO 流程与损失函数高频题；答案依据 PPO 与 InstructGPT 论文原创整理"
 review_status: "待复习"
 category: "训练与对齐"

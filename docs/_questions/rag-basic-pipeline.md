@@ -1,5 +1,6 @@
 ---
 title: "一个完整的 RAG 流水线包含哪些步骤？"
+question_number: 182
 source: "Datawhale 公开真实面试题整理；答案依据原论文和官方文档原创整理"
 review_status: "待复习"
 category: "RAG"

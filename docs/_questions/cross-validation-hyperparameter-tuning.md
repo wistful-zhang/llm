@@ -1,5 +1,6 @@
 ---
 title: "交叉验证与超参数搜索如何避免选择偏差和数据泄漏？"
+question_number: 134
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "NLP 与机器学习"

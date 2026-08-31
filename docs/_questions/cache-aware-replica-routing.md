@@ -1,5 +1,6 @@
 ---
 title: "多副本推理如何在 Prefix Cache 命中与负载均衡间取舍？"
+question_number: 142
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "推理与部署"

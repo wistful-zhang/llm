@@ -1,5 +1,6 @@
 ---
 title: "如何系统评估越狱攻击，并建立分层防御而不是只靠系统提示词？"
+question_number: 90
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

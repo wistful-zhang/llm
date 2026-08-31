@@ -1,5 +1,6 @@
 ---
 title: "为什么用了 RAG 仍会产生幻觉，如何治理？"
+question_number: 179
 source: "公开真实面经整理；答案依据原论文原创整理"
 review_status: "待复习"
 category: "RAG"

@@ -1,5 +1,6 @@
 ---
 title: "大模型训练中 FP16、BF16 和 FP32 应该如何配合？"
+question_number: 191
 source: "大厂公开真实面试案例中的 BF16 与 FP16 对比题；答案依据混合精度论文与 Google Cloud 官方文档原创整理"
 review_status: "待复习"
 category: "训练与对齐"

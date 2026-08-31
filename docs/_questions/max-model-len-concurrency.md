@@ -1,5 +1,6 @@
 ---
 title: "为什么 max_model_len 越大，可用并发可能越低？"
+question_number: 72
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据官方文档整理"
 verified: true
 review_status: "待复习"

@@ -1,5 +1,6 @@
 ---
 title: "RoPE 如何表示相对位置，为什么会遇到长上下文外推问题？"
+question_number: 30
 source: "用户提供的分级面试题单；具体公司归属未独立核验，技术答案依据原论文整理"
 verified: true
 review_status: "待复习"

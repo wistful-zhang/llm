@@ -13,6 +13,7 @@ export const MAX_QUESTION_FOLLOWUP_LENGTH = 300;
 
 const ALLOWED_FIELDS = new Set([
   'title',
+  'question_number',
   'source',
   'verified',
   'category',
@@ -28,6 +29,23 @@ const ALLOWED_FIELDS = new Set([
 
 const BOOLEAN_FIELDS = new Set(['verified', 'published']);
 const LIST_FIELDS = new Set(['tags', 'followups']);
+const INTEGER_FIELDS = new Set(['question_number']);
+
+const parsePositiveInteger = (rawValue, fieldName, lineNumber, filename, errors) => {
+  const raw = String(rawValue || '').trim();
+  const prefix = `${filename}: frontmatter 第 ${lineNumber} 行字段 ${fieldName}`;
+  if (!/^[1-9]\d*$/.test(raw)) {
+    errors.push(`${prefix} 必须是未加引号的正整数`);
+    return null;
+  }
+
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1) {
+    errors.push(`${prefix} 必须是 JavaScript 可安全表示的正整数`);
+    return null;
+  }
+  return value;
+};
 
 const parseSafeScalar = (rawValue, fieldName, lineNumber, filename, errors) => {
   const raw = String(rawValue || '').trim();
@@ -176,6 +194,11 @@ const parseSafeFrontmatter = (frontmatter, filename) => {
         errors.push(`${filename}: ${key} 必须是未加引号的 YAML 布尔值 true 或 false`);
         values.set(key, null);
       }
+      return;
+    }
+
+    if (INTEGER_FIELDS.has(key)) {
+      values.set(key, parsePositiveInteger(rawValue, key, lineNumber, filename, errors));
       return;
     }
 

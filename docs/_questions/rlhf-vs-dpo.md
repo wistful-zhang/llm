@@ -1,5 +1,6 @@
 ---
 title: "经典 RLHF 路线与标准离线 DPO 有什么区别？"
+question_number: 169
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
 verified: true
 review_status: "待复习"

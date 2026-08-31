@@ -1,5 +1,6 @@
 ---
 title: "RAG 中如何组合 BM25 与向量检索？"
+question_number: 178
 source: "公开真实面试题整理；答案依据原论文和官方文档原创整理"
 review_status: "待复习"
 category: "RAG"

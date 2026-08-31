@@ -1,5 +1,6 @@
 ---
 title: "如何按风险等级设计大模型发布门禁？"
+question_number: 84
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "评测与安全"

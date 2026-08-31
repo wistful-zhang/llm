@@ -17,6 +17,7 @@ import {
   addQuestionDraft,
   buildQuestionAnswerPrompt,
   buildQuestionMarkdown,
+  clearQuestionDrafts,
   createEmptyQuestionDrafts,
   createQuestionDraftBackup,
   deleteQuestionDraft,
@@ -64,7 +65,7 @@ const add = (state, values = {}, options = {}) => addQuestionDraft(
   },
 );
 
-test('schema v3 与稳定 storage key 按 repositoryId 严格隔离', () => {
+test('schema v4 与稳定 storage key 按 repositoryId 严格隔离', () => {
   const empty = createEmptyQuestionDrafts('Owner/Repo', FIRST_TIME);
 
   assert.deepEqual(empty, {
@@ -73,6 +74,7 @@ test('schema v3 与稳定 storage key 按 repositoryId 严格隔离', () => {
     repositoryId: 'owner/repo',
     revision: 0,
     updatedAt: FIRST_TIME,
+    nextLocalNumber: 1,
     questions: [],
   });
   assert.notEqual(
@@ -91,28 +93,35 @@ test('schema v3 与稳定 storage key 按 repositoryId 严格隔离', () => {
   );
 });
 
-test('schema v1/v2 本机数据与备份无损迁移到 v3，未来版本会安全拒绝', () => {
+test('schema v1-v3 本机数据与备份无损迁移到 v4，未来版本会安全拒绝', () => {
   const current = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
     visibility: 'public',
   });
   const legacy = structuredClone(current);
   legacy.schemaVersion = 1;
+  delete legacy.nextLocalNumber;
+  delete legacy.questions[0].localNumber;
   delete legacy.questions[0].followUps;
 
   const migrated = sanitizeQuestionDrafts(legacy, { repositoryId: 'owner/repo' });
   assert.equal(migrated.schemaVersion, QUESTION_DRAFTS_SCHEMA_VERSION);
   assert.deepEqual(migrated.questions[0].followUps, []);
   assert.equal(migrated.questions[0].visibility, 'public');
+  assert.equal(migrated.questions[0].localNumber, 1);
+  assert.equal(migrated.nextLocalNumber, 2);
 
   const legacyBackup = createQuestionDraftBackup(legacy, { now: SECOND_TIME });
   legacyBackup.schemaVersion = 1;
   legacyBackup.data.schemaVersion = 1;
+  delete legacyBackup.data.nextLocalNumber;
+  delete legacyBackup.data.questions[0].localNumber;
   delete legacyBackup.data.questions[0].followUps;
   const restored = parseQuestionDraftBackup(JSON.stringify(legacyBackup), {
     repositoryId: 'owner/repo',
   });
   assert.equal(restored.data.schemaVersion, QUESTION_DRAFTS_SCHEMA_VERSION);
   assert.deepEqual(restored.data.questions[0].followUps, []);
+  assert.equal(restored.data.questions[0].localNumber, 1);
 
   const future = { ...current, schemaVersion: QUESTION_DRAFTS_SCHEMA_VERSION + 1 };
   assert.throws(
@@ -126,6 +135,69 @@ test('schema v1/v2 本机数据与备份无损迁移到 v3，未来版本会安�
   assert.throws(
     () => parseQuestionDraftBackup(JSON.stringify(futureBackup)),
     (error) => error instanceof QuestionDraftDataError && error.code === 'future_version',
+  );
+});
+
+test('旧 schema 按 createdAt 与 id 确定性回填固定本机题号', () => {
+  const base = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME)).questions[0];
+  for (const schemaVersion of [1, 2, 3]) {
+    const legacy = {
+      ...createEmptyQuestionDrafts('owner/repo', SECOND_TIME),
+      schemaVersion,
+      questions: [{
+        ...base,
+        id: 'question_z',
+        title: '同一时刻的 Z 题',
+      }, {
+        ...base,
+        id: 'question_later',
+        title: '稍后创建的题',
+        createdAt: SECOND_TIME,
+        updatedAt: SECOND_TIME,
+      }, {
+        ...base,
+        id: 'question_a',
+        title: '同一时刻的 A 题',
+      }],
+    };
+    delete legacy.nextLocalNumber;
+    legacy.questions.forEach((question) => { delete question.localNumber; });
+
+    const migrated = sanitizeQuestionDrafts(legacy, { repositoryId: 'owner/repo' });
+    assert.deepEqual(
+      Object.fromEntries(migrated.questions.map((question) => [question.id, question.localNumber])),
+      { question_z: 2, question_later: 3, question_a: 1 },
+    );
+    assert.equal(migrated.nextLocalNumber, 4);
+  }
+});
+
+test('schema v4 拒绝缺失、重复或会复用的本机题号', () => {
+  const state = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME));
+  const missing = structuredClone(state);
+  delete missing.questions[0].localNumber;
+  assert.throws(
+    () => sanitizeQuestionDrafts(missing),
+    (error) => error instanceof QuestionDraftDataError && error.code === 'invalid_local_number',
+  );
+
+  const duplicate = structuredClone(state);
+  duplicate.questions.push({
+    ...duplicate.questions[0],
+    id: 'question_duplicate_number',
+    title: '另一道题',
+  });
+  assert.throws(
+    () => sanitizeQuestionDrafts(duplicate),
+    (error) => error instanceof QuestionDraftDataError && error.code === 'duplicate_local_number',
+  );
+
+  const reusableNext = structuredClone(state);
+  reusableNext.nextLocalNumber = 1;
+  assert.throws(
+    () => sanitizeQuestionDrafts(reusableNext),
+    (error) => error instanceof QuestionDraftDataError
+      && error.code === 'invalid_next_local_number',
   );
 });
 
@@ -143,6 +215,7 @@ test('新增题目会清理空白、去重标签，且不修改原对象', () =>
   assert.equal(next.updatedAt, FIRST_TIME);
   assert.deepEqual(next.questions[0], {
     id: 'question_1',
+    localNumber: 1,
     title: 'ＫＶ Cache 为什么有用？',
     answer: '第一行\n第二行',
     followUps: [],
@@ -157,6 +230,7 @@ test('新增题目会清理空白、去重标签，且不修改原对象', () =>
     createdAt: FIRST_TIME,
     updatedAt: FIRST_TIME,
   });
+  assert.equal(next.nextLocalNumber, 2);
   assert.equal(
     add(empty, { title: 'L₂、x²、ℝ 与 𝔼 分别表示什么？' }).questions[0].title,
     'L₂、x²、ℝ 与 𝔼 分别表示什么？',
@@ -302,6 +376,57 @@ test('重复题目会被拒绝，更新和删除均保持不可变更新', () =>
   );
 });
 
+test('编辑与删除不改变题号，删除后的编号永不复用', () => {
+  let state = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '第一题',
+  }, { idFactory: makeIds('first') });
+  state = add(state, { title: '第二题' }, {
+    idFactory: makeIds('second'),
+    now: '2026-07-20T02:00:00.000Z',
+  });
+  state = add(state, { title: '第三题' }, {
+    idFactory: makeIds('third'),
+    now: '2026-07-20T03:00:00.000Z',
+  });
+  assert.deepEqual(state.questions.map((question) => question.localNumber), [1, 2, 3]);
+
+  state = updateQuestionDraft(state, 'question_first', { answer: '补充答案' }, {
+    now: SECOND_TIME,
+  });
+  assert.equal(state.questions[0].localNumber, 1);
+  state = deleteQuestionDraft(state, 'question_second', { now: SECOND_TIME });
+  assert.equal(state.nextLocalNumber, 4);
+  state = add(state, { title: '删除后新增的题' }, {
+    idFactory: makeIds('fourth'),
+    now: '2026-07-22T00:00:00.000Z',
+  });
+  assert.deepEqual(state.questions.map((question) => question.localNumber), [1, 3, 4]);
+  assert.equal(state.nextLocalNumber, 5);
+});
+
+test('删除全部本机题目只清空内容，不重置题号高水位', () => {
+  let state = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '曾经存在的第一题',
+  }, { idFactory: makeIds('first') });
+  state = add(state, { title: '曾经存在的第二题' }, {
+    idFactory: makeIds('second'),
+    now: SECOND_TIME,
+  });
+
+  const cleared = clearQuestionDrafts(state, {
+    repositoryId: 'owner/repo',
+    now: '2026-07-22T00:00:00.000Z',
+  });
+  assert.equal(cleared.questions.length, 0);
+  assert.equal(cleared.nextLocalNumber, 3);
+  assert.equal(cleared.revision, state.revision + 1);
+  const addedAfterClear = add(cleared, { title: '清空后新增的题' }, {
+    idFactory: makeIds('third'),
+    now: '2026-07-23T00:00:00.000Z',
+  });
+  assert.equal(addedAfterClear.questions[0].localNumber, 3);
+});
+
 test('清洗备份时拒绝重复 id、非法时间和超量数据', () => {
   const state = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME));
   const duplicate = structuredClone(state);
@@ -380,10 +505,12 @@ test('写入前拒绝超过自身读取上限的数据，并仍允许在备份�
     questions: Array.from({ length: questionCount }, (_, index) => ({
       ...base,
       id: `question_large_${index}`,
+      localNumber: index + 1,
       title: `超长答案边界题 ${index}`,
       answer,
       answerStatus: 'complete',
     })),
+    nextLocalNumber: questionCount + 1,
   };
 
   assert.throws(
@@ -454,6 +581,48 @@ test('跨仓库备份恢复必须显式允许并指定目标，storage JSON 仍�
   );
 });
 
+test('跨仓导入忽略源题号与高水位，从目标 next 续排并清除 remoteId', () => {
+  let target = add(createEmptyQuestionDrafts('learner/notes', FIRST_TIME), {
+    title: '目标第一题',
+  }, { repositoryId: 'learner/notes', idFactory: makeIds('target_1') });
+  target = add(target, { title: '目标已删除占号题' }, {
+    repositoryId: 'learner/notes',
+    idFactory: makeIds('target_2'),
+    now: '2026-07-20T02:00:00.000Z',
+  });
+  target = deleteQuestionDraft(target, 'question_target_2', {
+    repositoryId: 'learner/notes',
+    now: SECOND_TIME,
+  });
+
+  let source = add(createEmptyQuestionDrafts('source/library', FIRST_TIME), {
+    title: '源仓私人第 400 题',
+  }, { repositoryId: 'source/library', idFactory: makeIds('private_400') });
+  source.questions[0].localNumber = 400;
+  source.nextLocalNumber = 401;
+  source = add(source, {
+    title: '源仓已公开第 401 题',
+    visibility: 'public',
+    remoteId: '123e4567-e89b-42d3-a456-426614174000',
+  }, {
+    repositoryId: 'source/library',
+    idFactory: makeIds('public_401'),
+    now: '2026-07-20T02:00:00.000Z',
+  });
+  source.nextLocalNumber = 900;
+
+  const report = importQuestionDraftsJson(
+    target,
+    exportQuestionDraftsJson(source, { now: SECOND_TIME }),
+    { allowCrossRepository: true, now: '2026-07-22T00:00:00.000Z' },
+  );
+  const imported = report.data.questions.filter((question) => question.id.startsWith('question_')
+    && question.id !== 'question_target_1');
+  assert.deepEqual(imported.map((question) => question.localNumber), [3, 4]);
+  assert.deepEqual(imported.map((question) => question.remoteId), ['', '']);
+  assert.equal(report.data.nextLocalNumber, 5);
+});
+
 test('导入合并只新增新题，id 或标题冲突均保留本机并报告', () => {
   const local = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
     answer: '本机答案',
@@ -470,7 +639,8 @@ test('导入合并只新增新题，id 或标题冲突均保留本机并报告',
     title: '为什么 KV Cache 能加速推理？',
     answer: '另一个标题冲突版本',
   }, { idFactory: makeIds('different'), now: SECOND_TIME });
-  incoming.questions.push(titleConflict.questions[0]);
+  incoming.questions.push({ ...titleConflict.questions[0], localNumber: 3 });
+  incoming.nextLocalNumber = 4;
 
   const report = mergeQuestionDrafts(local, incoming, { now: SECOND_TIME });
   assert.equal(report.added, 1);
@@ -491,9 +661,59 @@ test('导入合并只新增新题，id 或标题冲突均保留本机并报告',
   assert.equal(imported.data.questions[0].answer, '本机答案');
 });
 
-test('相同题目在合并时计为未变更，不无效增加 revision', () => {
+test('导入保留现有题号，并把冲突编号安全续排到末尾', () => {
+  let local = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '本机保留题',
+  }, { idFactory: makeIds('local') });
+  local = add(local, { title: '即将删除的占号题' }, {
+    idFactory: makeIds('deleted'),
+    now: '2026-07-20T02:00:00.000Z',
+  });
+  local = deleteQuestionDraft(local, 'question_deleted', { now: SECOND_TIME });
+
+  let incoming = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '导入题一',
+  }, { idFactory: makeIds('incoming_1') });
+  incoming = add(incoming, { title: '导入题二' }, {
+    idFactory: makeIds('incoming_2'),
+    now: '2026-07-20T02:00:00.000Z',
+  });
+  incoming = add(incoming, { title: '导入题三' }, {
+    idFactory: makeIds('incoming_3'),
+    now: '2026-07-20T03:00:00.000Z',
+  });
+
+  const report = mergeQuestionDrafts(local, incoming, { now: SECOND_TIME });
+  assert.equal(report.data.questions.find((question) => question.id === 'question_local').localNumber, 1);
+  assert.deepEqual(
+    report.data.questions
+      .filter((question) => question.id.startsWith('question_incoming'))
+      .map((question) => question.localNumber),
+    [3, 4, 5],
+  );
+  assert.equal(report.data.nextLocalNumber, 6);
+});
+
+test('导入的未冲突高位题号与历史空位保持不变', () => {
+  const local = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '本机第一题',
+  }, { idFactory: makeIds('local') });
+  const incoming = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '备份中的第五题',
+  }, { idFactory: makeIds('incoming') });
+  incoming.questions[0].localNumber = 5;
+  incoming.nextLocalNumber = 6;
+
+  const report = mergeQuestionDrafts(local, incoming, { now: SECOND_TIME });
+  assert.deepEqual(report.data.questions.map((question) => question.localNumber), [1, 5]);
+  assert.equal(report.data.nextLocalNumber, 6);
+});
+
+test('相同题目合并时内容不变，但更高题号水位会持久化一次 revision', () => {
   const local = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME));
   const incoming = structuredClone(local);
+  incoming.questions[0].localNumber = 7;
+  incoming.nextLocalNumber = 8;
   incoming.questions[0].updatedAt = SECOND_TIME;
   incoming.updatedAt = SECOND_TIME;
 
@@ -501,8 +721,39 @@ test('相同题目在合并时计为未变更，不无效增加 revision', () =>
   assert.equal(report.unchanged, 1);
   assert.equal(report.added, 0);
   assert.equal(report.conflicts.length, 0);
-  assert.equal(report.data.revision, local.revision);
-  assert.equal(report.data.updatedAt, local.updatedAt);
+  assert.equal(report.data.revision, local.revision + 1);
+  assert.equal(report.data.updatedAt, SECOND_TIME);
+  assert.equal(report.data.questions[0].localNumber, 1);
+  assert.equal(report.data.nextLocalNumber, 8);
+});
+
+test('同仓恢复被删除题目的备份高水位，后续新增不会复用旧号', () => {
+  const local = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
+    title: '两端都有的第一题',
+  }, { idFactory: makeIds('shared') });
+  let backupState = structuredClone(local);
+  backupState = add(backupState, { title: '备份中后来删除的第二题' }, {
+    idFactory: makeIds('deleted'),
+    now: SECOND_TIME,
+  });
+  backupState = deleteQuestionDraft(backupState, 'question_deleted', {
+    now: '2026-07-22T00:00:00.000Z',
+  });
+
+  const restored = importQuestionDraftsJson(
+    local,
+    exportQuestionDraftsJson(backupState, { now: '2026-07-23T00:00:00.000Z' }),
+    { now: '2026-07-24T00:00:00.000Z' },
+  );
+  assert.equal(restored.added, 0);
+  assert.equal(restored.unchanged, 1);
+  assert.equal(restored.data.nextLocalNumber, 3);
+  assert.equal(restored.data.revision, local.revision + 1);
+  const next = add(restored.data, { title: '恢复后新题' }, {
+    idFactory: makeIds('third'),
+    now: '2026-07-25T00:00:00.000Z',
+  });
+  assert.equal(next.questions.at(-1).localNumber, 3);
 });
 
 test('合并时追问差异属于内容冲突，不能被当作未变化而丢失', () => {
@@ -521,7 +772,7 @@ test('合并时追问差异属于内容冲突，不能被当作未变化而丢�
   assert.deepEqual(report.data.questions[0].followUps, local.questions[0].followUps);
 });
 
-test('生成的 Markdown 正确转义 YAML，并严格遵循用户选择的 answerStatus', () => {
+test('生成的 Markdown 一律是未发布仓库草稿，并严格遵循 answerStatus', () => {
   const pendingState = add(createEmptyQuestionDrafts('owner/repo', FIRST_TIME), {
     title: "为什么 key: value 与 O'Reilly 需要转义？",
     answer: '',
@@ -551,7 +802,8 @@ test('生成的 Markdown 正确转义 YAML，并严格遵循用户选择的 answ
   });
   const publicPendingParsed = parseQuestionDocument(publicPending, 'generated-public.md');
   assert.equal(publicPendingParsed.errors.length, 0);
-  assert.equal(publicPendingParsed.values.get('published'), true);
+  assert.equal(publicPendingParsed.values.get('published'), false);
+  assert.equal(publicPendingParsed.values.has('question_number'), false);
   assert.equal(publicPendingParsed.values.get('answer_status'), 'pending');
   assert.deepEqual(publicPendingParsed.values.get('followups'), pendingQuestion.followUps);
 

@@ -15,8 +15,10 @@ const document = ({
   published = 'true',
   body = '这是一段普通的公开题目答案。',
   followups = [],
+  questionNumber = '1',
 } = {}) => `---
 title: "Transformer 为什么使用多头注意力？"
+question_number: ${questionNumber}
 source: "公开题库整理"
 verified: true
 category: "Transformer"
@@ -40,11 +42,27 @@ test('安全题目 frontmatter 可以解析，支持两种 Markdown 扩展名和
   const result = parseQuestionDocument(document(), 'nested/example.markdown');
   assert.deepEqual(result.errors, []);
   assert.equal(result.values.get('published'), true);
+  assert.equal(result.values.get('question_number'), 1);
   assert.deepEqual(result.values.get('tags'), ['Attention', 'Transformer']);
   assert.deepEqual(result.values.get('followups'), []);
   assert.equal(isQuestionDocumentPath('nested/example.md'), true);
   assert.equal(isQuestionDocumentPath('nested/example.markdown'), true);
   assert.equal(isQuestionDocumentPath('nested/example.txt'), false);
+});
+
+test('固定题号只接受未加引号的正安全整数', () => {
+  const valid = parseQuestionDocument(document({ questionNumber: '233' }), 'valid-number.md');
+  assert.deepEqual(valid.errors, []);
+  assert.equal(valid.values.get('question_number'), 233);
+
+  ['"233"', "'233'", '0', '008', '-1', '1.5', '1e3', '9007199254740992'].forEach((questionNumber) => {
+    const parsed = parseQuestionDocument(document({ questionNumber }), `invalid-${questionNumber}.md`);
+    assert.ok(
+      parsed.errors.some((message) => message.includes('question_number') && message.includes('正整数')),
+      questionNumber,
+    );
+    assert.equal(parsed.values.get('question_number'), null);
+  });
 });
 
 test('现场追问使用扁平字符串列表，并限制为 10 条、每条 300 字', () => {

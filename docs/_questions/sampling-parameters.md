@@ -1,5 +1,6 @@
 ---
 title: "temperature、top_p 和 max_tokens 分别有什么作用？"
+question_number: 168
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
 verified: true
 review_status: "待复习"

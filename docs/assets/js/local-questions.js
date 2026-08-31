@@ -3,6 +3,7 @@ import {
   questionDraftsStorageKey,
 } from './question-drafts-core.mjs';
 import { groupFollowUpsForDisplay } from './follow-up-display-core.mjs';
+import { compareLocalQuestionNumber } from './local-questions-core.mjs';
 
 const PREVIEW_LIMIT = 6;
 const VALID_VISIBILITIES = new Set(['private', 'public']);
@@ -14,7 +15,7 @@ export function selectLocalQuestions(questions, options = {}) {
     : PREVIEW_LIMIT;
   const filtered = (Array.isArray(questions) ? questions : [])
     .filter((question) => !visibility || question.visibility === visibility)
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    .sort(compareLocalQuestionNumber);
 
   return {
     total: filtered.length,
@@ -59,6 +60,7 @@ if (roots.length > 0) {
   });
 
   const createQuestionCard = (question, context) => {
+    const localNumber = question.localNumber;
     const card = makeElement('a', 'question-card question-card-local');
     card.href = editUrl(context.captureUrl, question.id);
     card.dataset.category = question.category;
@@ -69,6 +71,7 @@ if (roots.length > 0) {
     card.dataset.searchId = `local:${question.id}`;
     card.dataset.source = 'local';
     card.dataset.localId = question.id;
+    card.dataset.questionNumber = `private:${localNumber}`;
     if (question.remoteId) card.dataset.remoteId = question.remoteId;
     card.dataset.search = [
       question.title,
@@ -79,7 +82,13 @@ if (roots.length > 0) {
       ...(question.tags || []),
     ].join(' ');
 
-    card.append(makeElement('div', 'card-number', ''));
+    const number = makeElement(
+      'div',
+      'card-number card-number-private',
+      `私${String(localNumber).padStart(3, '0')}`,
+    );
+    number.setAttribute('aria-label', `本机题第 ${localNumber} 题`);
+    card.append(number);
     const body = makeElement('div', 'card-body');
     const meta = makeElement('div', 'card-meta');
     meta.append(makeElement('span', '', question.category === '待整理' ? '未分类' : question.category));

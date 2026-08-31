@@ -109,6 +109,7 @@ test("公开题分页最多返回 100 条，题目路径只接受 UUID", () => {
 test("D1 行只映射公开字段，删除记录不会再泄露原题内容", () => {
   const row = {
     id: requestId,
+    library_number: 17,
     title: "题目",
     category: "基础",
     difficulty: "简单",
@@ -127,6 +128,7 @@ test("D1 行只映射公开字段，删除记录不会再泄露原题内容", ()
   };
   assert.deepEqual(toPublicQuestion(row), {
     id: requestId,
+    libraryNumber: 17,
     title: "题目",
     category: "基础",
     difficulty: "简单",
@@ -162,6 +164,120 @@ test("公开题迁移只有 visible、hidden、deleted，没有发布审核状�
   assert.match(sql, /target_type IN \('comment', 'report', 'thread', 'question'\)/);
 });
 
+test("固定题号迁移按站点和创建顺序回填，隐藏删除占号且旧 INSERT 继续递增", async (t) => {
+  let DatabaseSync;
+  try {
+    ({ DatabaseSync } = await import("node:sqlite"));
+  } catch {
+    t.skip("当前 Node 版本没有内置 SQLite，保留静态与 HTTP 测试覆盖");
+    return;
+  }
+
+  const sqlite = new DatabaseSync(":memory:");
+  let insertLegacyQuestion;
+  const insert = ({ id, siteId = "stable-site", status, createdAt }) => {
+    insertLegacyQuestion.run(
+      id,
+      siteId,
+      `题目 ${id.slice(-2)}`,
+      status,
+      `hash-${id}`,
+      id,
+      createdAt,
+      createdAt,
+    );
+  };
+
+  try {
+    sqlite.exec(await read("comments-worker/migrations/0001_initial.sql"));
+    sqlite.exec(await read("comments-worker/migrations/0002_public_questions.sql"));
+    insertLegacyQuestion = sqlite.prepare(
+      `INSERT INTO public_questions
+        (id, site_id, title, category, difficulty, answer_status, answer, follow_ups_json,
+         tags_json, source, author, local_id, status, edit_token_hash, request_id,
+         created_at, updated_at)
+       VALUES (?, ?, ?, '基础', '简单', 'pending', '', '[]', '[]', '', '匿名用户', '', ?, ?, ?, ?, ?)`,
+    );
+    insert({
+      id: "550e8400-e29b-41d4-a716-446655440003",
+      status: "visible",
+      createdAt: "2026-08-03T00:00:00.000Z",
+    });
+    insert({
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      status: "hidden",
+      createdAt: "2026-08-01T00:00:00.000Z",
+    });
+    insert({
+      id: "550e8400-e29b-41d4-a716-446655440002",
+      status: "deleted",
+      createdAt: "2026-08-01T00:00:00.000Z",
+    });
+    insert({
+      id: "550e8400-e29b-41d4-a716-446655440010",
+      siteId: "other-site",
+      status: "visible",
+      createdAt: "2026-08-02T00:00:00.000Z",
+    });
+
+    sqlite.exec(await read("comments-worker/migrations/0003_stable_question_numbers.sql"));
+    const backfilled = sqlite.prepare(
+      "SELECT id, site_id, status, library_number FROM public_questions ORDER BY site_id, library_number",
+    ).all().map((row) => ({ ...row }));
+    assert.deepEqual(backfilled, [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440010",
+        site_id: "other-site",
+        status: "visible",
+        library_number: 1,
+      },
+      {
+        id: "550e8400-e29b-41d4-a716-446655440001",
+        site_id: "stable-site",
+        status: "hidden",
+        library_number: 1,
+      },
+      {
+        id: "550e8400-e29b-41d4-a716-446655440002",
+        site_id: "stable-site",
+        status: "deleted",
+        library_number: 2,
+      },
+      {
+        id: "550e8400-e29b-41d4-a716-446655440003",
+        site_id: "stable-site",
+        status: "visible",
+        library_number: 3,
+      },
+    ]);
+
+    insert({
+      id: "550e8400-e29b-41d4-a716-446655440004",
+      status: "visible",
+      createdAt: "2026-08-04T00:00:00.000Z",
+    });
+    assert.equal(sqlite.prepare(
+      "SELECT library_number FROM public_questions WHERE id = ?",
+    ).get("550e8400-e29b-41d4-a716-446655440004").library_number, 4);
+
+    sqlite.prepare("UPDATE public_questions SET status = 'deleted' WHERE id = ?")
+      .run("550e8400-e29b-41d4-a716-446655440004");
+    insert({
+      id: "550e8400-e29b-41d4-a716-446655440005",
+      status: "visible",
+      createdAt: "2026-08-05T00:00:00.000Z",
+    });
+    assert.equal(sqlite.prepare(
+      "SELECT library_number FROM public_questions WHERE id = ?",
+    ).get("550e8400-e29b-41d4-a716-446655440005").library_number, 5);
+    assert.throws(() => sqlite.prepare(
+      "UPDATE public_questions SET library_number = 1 WHERE id = ?",
+    ).run("550e8400-e29b-41d4-a716-446655440005"), /UNIQUE constraint failed/);
+  } finally {
+    sqlite.close();
+  }
+});
+
 test("公开题路由发布前完成蜜罐、幂等、Turnstile 和每日限流", async () => {
   const worker = await read("comments-worker/src/index.js");
   assert.match(worker, /url\.pathname === "\/v1\/questions"/);
@@ -184,7 +300,7 @@ test("公开读取只返回 visible，作者删除会清空正文，管理员可
     read("comments-worker/src/admin.js"),
     read("comments-worker/src/admin-assets.js"),
   ]);
-  assert.match(db, /FROM public_questions[\s\S]*status = 'visible'[\s\S]*ORDER BY updated_at DESC/);
+  assert.match(db, /FROM public_questions[\s\S]*status = 'visible' AND library_number > \?[\s\S]*ORDER BY library_number ASC/);
   assert.match(db, /deleteOwnQuestion[\s\S]*title = '已删除'[\s\S]*status = 'deleted'/);
   assert.match(db, /getOwnedQuestionDeletionState[\s\S]*SELECT id, status, updated_at[\s\S]*status IN \('visible', 'hidden', 'deleted'\)/);
   assert.match(db, /deleteOwnQuestion[\s\S]*SELECT id, status, updated_at[\s\S]*status = 'deleted'/);
@@ -197,6 +313,8 @@ test("公开读取只返回 visible，作者删除会清空正文，管理员可
   assert.match(admin, /listAdminPublicQuestions/);
   assert.match(adminAssets, /data-view="questions"/);
   assert.match(adminAssets, /function renderQuestion/);
+  assert.match(adminAssets, /item\.libraryNumber/);
+  assert.match(adminAssets, /padStart\(3,"0"\)/);
   assert.match(adminAssets, /\/v1\/admin\/public-questions/);
   assert.match(adminAssets, /下架隐藏/);
   assert.doesNotMatch(adminAssets, /待审核|通过审核|拒绝发布/);
@@ -204,6 +322,8 @@ test("公开读取只返回 visible，作者删除会清空正文，管理员可
   const exportEnd = admin.indexOf('url.pathname === "/v1/admin/comments"', exportStart);
   const exportSection = admin.slice(exportStart, exportEnd);
   assert.match(exportSection, /publicQuestions:/);
+  assert.match(exportSection, /libraryNumber: Number\(row\.library_number\)/);
+  assert.match(exportSection, /ORDER BY library_number ASC, id ASC/);
   assert.doesNotMatch(exportSection, /edit_token_hash|request_id/);
 });
 
@@ -231,6 +351,7 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
     "2026-08-06T00:00:00.000Z",
   );
   sqlite.exec(await read("comments-worker/migrations/0002_public_questions.sql"));
+  sqlite.exec(await read("comments-worker/migrations/0003_stable_question_numbers.sql"));
   const preservedLog = sqlite.prepare(
     "SELECT action, target_type, reason FROM moderation_log WHERE id = ?",
   ).get("550e8400-e29b-41d4-a716-446655440099");
@@ -344,6 +465,7 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
     const createdPayload = await first.json();
     assert.equal(createdPayload.question.status, "visible");
     assert.equal(createdPayload.question.author, "匿名用户");
+    assert.equal(createdPayload.question.libraryNumber, 1);
     assert.equal(createdPayload.idempotent, false);
     const questionId = createdPayload.question.id;
 
@@ -353,7 +475,9 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
       body: JSON.stringify(postBody),
     }), env);
     assert.equal(retry.status, 200);
-    assert.equal((await retry.json()).idempotent, true);
+    const retryPayload = await retry.json();
+    assert.equal(retryPayload.idempotent, true);
+    assert.equal(retryPayload.question.libraryNumber, 1);
     assert.equal(turnstileCalls, 1, "幂等重试不能重复消耗 Turnstile 和限流额度");
 
     const list = await worker.fetch(new Request("https://api.example.workers.dev/v1/questions", {
@@ -362,6 +486,7 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
     const listed = await list.json();
     assert.equal(listed.total, 1);
     assert.equal(listed.questions[0].id, questionId);
+    assert.equal(listed.questions[0].libraryNumber, 1);
 
     const commentResponse = await worker.fetch(new Request(
       `https://api.example.workers.dev/v1/questions/${questionId}/comments`,
@@ -410,7 +535,48 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
       },
     ), env);
     assert.equal(edited.status, 200);
-    assert.equal((await edited.json()).question.answerStatus, "complete");
+    const editedQuestion = (await edited.json()).question;
+    assert.equal(editedQuestion.answerStatus, "complete");
+    assert.equal(editedQuestion.libraryNumber, 1);
+
+    const concurrentBodies = [
+      validQuestion({
+        title: "第二道公开题",
+        localId: "question_second",
+        requestId: "550e8400-e29b-41d4-a716-446655440002",
+      }),
+      validQuestion({
+        title: "第三道公开题",
+        localId: "question_third",
+        requestId: "550e8400-e29b-41d4-a716-446655440003",
+      }),
+    ];
+    const concurrentResponses = await Promise.all(concurrentBodies.map((body) => worker.fetch(
+      new Request("https://api.example.workers.dev/v1/questions", {
+        method: "POST",
+        headers: siteHeaders,
+        body: JSON.stringify(body),
+      }),
+      env,
+    )));
+    assert.deepEqual(concurrentResponses.map((response) => response.status), [201, 201]);
+    const concurrentQuestions = await Promise.all(concurrentResponses.map(async (response) => (
+      (await response.json()).question
+    )));
+    assert.deepEqual(
+      concurrentQuestions.map((question) => question.libraryNumber).sort((left, right) => left - right),
+      [2, 3],
+    );
+    const highestQuestion = concurrentQuestions.find((question) => question.libraryNumber === 3);
+
+    const firstPage = await worker.fetch(new Request(
+      "https://api.example.workers.dev/v1/questions?cursor=0&limit=1",
+      { headers: { origin: "https://notes.example.com" } },
+    ), env);
+    const firstPagePayload = await firstPage.json();
+    assert.equal(firstPagePayload.total, 3);
+    assert.deepEqual(firstPagePayload.questions.map((question) => question.libraryNumber), [1]);
+    assert.equal(firstPagePayload.nextCursor, 1);
 
     const hidden = await worker.fetch(new Request(
       `https://api.example.workers.dev/v1/admin/public-questions/${questionId}`,
@@ -442,7 +608,17 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
     const hiddenList = await worker.fetch(new Request("https://api.example.workers.dev/v1/questions", {
       headers: { origin: "https://notes.example.com" },
     }), env);
-    assert.equal((await hiddenList.json()).total, 0);
+    const hiddenListPayload = await hiddenList.json();
+    assert.equal(hiddenListPayload.total, 2);
+    assert.deepEqual(hiddenListPayload.questions.map((question) => question.libraryNumber), [2, 3]);
+
+    const nextPage = await worker.fetch(new Request(
+      `https://api.example.workers.dev/v1/questions?cursor=${firstPagePayload.nextCursor}&limit=1`,
+      { headers: { origin: "https://notes.example.com" } },
+    ), env);
+    const nextPagePayload = await nextPage.json();
+    assert.deepEqual(nextPagePayload.questions.map((question) => question.libraryNumber), [2]);
+    assert.equal(nextPagePayload.nextCursor, 2, "隐藏前一页题目后，keyset 分页不能跳过下一题");
 
     const shown = await worker.fetch(new Request(
       `https://api.example.workers.dev/v1/admin/public-questions/${questionId}`,
@@ -457,6 +633,50 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
       },
     ), env);
     assert.equal(shown.status, 200);
+    assert.equal((await shown.json()).question.libraryNumber, 1);
+
+    const removedHighest = await worker.fetch(new Request(
+      `https://api.example.workers.dev/v1/questions/${highestQuestion.id}`,
+      {
+        method: "DELETE",
+        headers: siteHeaders,
+        body: JSON.stringify({ editToken }),
+      },
+    ), env);
+    assert.equal(removedHighest.status, 200);
+    assert.deepEqual({ ...sqlite.prepare(
+      "SELECT library_number, status FROM public_questions WHERE id = ?",
+    ).get(highestQuestion.id) }, { library_number: 3, status: "deleted" });
+
+    const fourth = await worker.fetch(new Request("https://api.example.workers.dev/v1/questions", {
+      method: "POST",
+      headers: siteHeaders,
+      body: JSON.stringify(validQuestion({
+        title: "删除最大题号后的新增题",
+        localId: "question_fourth",
+        requestId: "550e8400-e29b-41d4-a716-446655440004",
+      })),
+    }), env);
+    assert.equal(fourth.status, 201);
+    assert.equal((await fourth.json()).question.libraryNumber, 4, "软删除的最大题号不能被复用");
+
+    const exported = await worker.fetch(new Request(
+      "https://api.example.workers.dev/v1/admin/export",
+      {
+        headers: {
+          origin: "https://api.example.workers.dev",
+          authorization: `Bearer ${env.ADMIN_TOKEN}`,
+        },
+      },
+    ), env);
+    assert.equal(exported.status, 200);
+    const exportPayload = await exported.json();
+    assert.deepEqual(
+      exportPayload.publicQuestions
+        .map((question) => question.libraryNumber)
+        .sort((left, right) => left - right),
+      [1, 2, 3, 4],
+    );
 
     const removed = await worker.fetch(new Request(
       `https://api.example.workers.dev/v1/questions/${questionId}`,
@@ -472,10 +692,11 @@ test("公开题 HTTP 契约端到端完成直发、幂等、修改、事后下�
     assert.deepEqual(Object.keys(removedPayload.question).sort(), ["id", "status", "updatedAt"]);
 
     const deletedRow = sqlite.prepare(
-      `SELECT title, answer, follow_ups_json, tags_json, source, local_id, status
+      `SELECT library_number, title, answer, follow_ups_json, tags_json, source, local_id, status
        FROM public_questions WHERE id = ?`,
     ).get(questionId);
     assert.deepEqual({ ...deletedRow }, {
+      library_number: 1,
       title: "已删除",
       answer: "",
       follow_ups_json: "[]",

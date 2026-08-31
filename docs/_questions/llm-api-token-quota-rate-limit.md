@@ -1,5 +1,6 @@
 ---
 title: "大模型 API 网关如何按 Token 做限流、配额、预留与用量结算？"
+question_number: 97
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "系统设计"

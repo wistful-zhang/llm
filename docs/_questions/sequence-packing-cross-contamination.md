@@ -1,5 +1,6 @@
 ---
 title: "Sequence Packing 如何用 Block-diagonal Mask 提速并避免样本污染？"
+question_number: 27
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "预训练与数据"

@@ -1,5 +1,6 @@
 ---
 title: "Transformer 为什么比 RNN 更适合训练大模型？"
+question_number: 9
 source: "用户提供的分级面试题单；具体公司归属未独立核验，技术答案依据原论文整理"
 verified: true
 review_status: "待复习"

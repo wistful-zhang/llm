@@ -38,11 +38,13 @@ test('使用者公开题不会伪装成待重整层级或资料已核验题', ()
       title: 'LoRA 的原理是什么？',
       answerStatus: 'complete',
       answer: '只训练低秩增量。',
+      libraryNumber: 12,
       status: 'visible',
     }],
   });
   assert.equal(question.studyTier, 'unclassified');
   assert.equal(question.verified, false);
+  assert.equal(question.libraryNumber, 12);
   assert.equal(normalizePublicQuestions({
     questions: [
       { id: '123e4567-e89b-42d3-a456-426614174001', title: '已隐藏', status: 'hidden' },
@@ -85,6 +87,7 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(page, /data-shared-question-loading/);
   assert.match(page, /data-shared-question-error/);
   assert.match(page, /data-shared-question-content hidden/);
+  assert.match(page, /data-shared-question-number/);
   assert.doesNotMatch(page, /data-public-question="true"/);
   assert.doesNotMatch(page, /data-shared-question-title tabindex/);
   assert.match(page, /data-shared-question-owner-actions hidden/);
@@ -124,6 +127,7 @@ test('公开题详情壳覆盖加载、成功、下架、重试、公式、编�
   assert.match(script, /PUBLIC_QUESTIONS_TIMEOUT_MS/);
   assert.match(script, /response\.status === 404/);
   assert.match(script, /normalizePublicQuestionResponse/);
+  assert.match(script, /questionNumber\.textContent = `公开题 公\$\{String\(question\.libraryNumber\)\.padStart\(3, '0'\)\}`/);
   assert.match(script, /retryButton\.addEventListener/);
   assert.match(script, /window\.history\.replaceState/);
   assert.match(script, /link\[rel="canonical"\]/);

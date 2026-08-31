@@ -1,5 +1,6 @@
 ---
 title: "Chunked Prefill 如何兼顾 TTFT 与 TPOT？"
+question_number: 140
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 review_status: "待复习"
 category: "推理与部署"

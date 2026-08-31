@@ -1,7 +1,7 @@
 import { HttpError } from "./validation.js";
 
 const PUBLIC_STATUSES = "('visible', 'deleted')";
-const QUESTION_COLUMNS = `id, title, category, difficulty, answer_status, answer,
+const QUESTION_COLUMNS = `id, library_number, title, category, difficulty, answer_status, answer,
   follow_ups_json, tags_json, source, author, local_id, status, created_at, updated_at`;
 
 export async function listPublicQuestions(db, siteId, cursor, limit) {
@@ -9,19 +9,20 @@ export async function listPublicQuestions(db, siteId, cursor, limit) {
     .prepare(
       `SELECT ${QUESTION_COLUMNS}
        FROM public_questions
-       WHERE site_id = ? AND status = 'visible'
-       ORDER BY updated_at DESC, id DESC
-       LIMIT ? OFFSET ?`,
+       WHERE site_id = ? AND status = 'visible' AND library_number > ?
+       ORDER BY library_number ASC
+       LIMIT ?`,
     )
-    .bind(siteId, limit + 1, cursor)
+    .bind(siteId, cursor, limit + 1)
     .all();
   const total = await countPublicQuestions(db, siteId);
   const hasMore = rows.results.length > limit;
   const visibleRows = hasMore ? rows.results.slice(0, limit) : rows.results;
+  const questions = visibleRows.map(toPublicQuestion);
   return {
-    questions: visibleRows.map(toPublicQuestion),
+    questions,
     total,
-    nextCursor: hasMore ? cursor + visibleRows.length : null,
+    nextCursor: hasMore ? questions.at(-1).libraryNumber : null,
   };
 }
 
@@ -286,6 +287,7 @@ export function toPublicQuestion(row) {
   const question = toQuestionRecord(row);
   return {
     id: question.id,
+    libraryNumber: question.libraryNumber,
     title: question.title,
     category: question.category,
     difficulty: question.difficulty,
@@ -305,6 +307,7 @@ export function toPublicQuestion(row) {
 function toQuestionRecord(row) {
   return {
     id: row.id,
+    libraryNumber: parseStoredLibraryNumber(row.library_number),
     title: row.title,
     category: row.category,
     difficulty: row.difficulty,
@@ -319,6 +322,14 @@ function toQuestionRecord(row) {
     updatedAt: row.updated_at,
     status: row.status,
   };
+}
+
+function parseStoredLibraryNumber(value) {
+  const libraryNumber = Number(value);
+  if (!Number.isSafeInteger(libraryNumber) || libraryNumber < 1) {
+    throw new HttpError(500, "question_number_invalid", "公开题目的固定题号无效");
+  }
+  return libraryNumber;
 }
 
 function parseStoredStringList(value) {

@@ -1,5 +1,6 @@
 ---
 title: "大模型为什么会记忆并泄露训练数据，如何评估提取风险？"
+question_number: 79
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

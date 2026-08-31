@@ -1,5 +1,6 @@
 ---
 title: "如何为大模型平台设计跨地域容灾与降级？"
+question_number: 189
 source: "公开 LLM 系统设计面试题；依据云架构与 NIST 容灾文档原创整理"
 review_status: "待复习"
 category: "系统设计"

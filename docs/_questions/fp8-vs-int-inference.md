@@ -1,5 +1,6 @@
 ---
 title: "FP8 推理与 INT8、INT4 推理有什么区别？"
+question_number: 115
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据论文整理"
 verified: true
 review_status: "待复习"

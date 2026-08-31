@@ -1,5 +1,6 @@
 ---
 title: "Vision Encoder 与 LLM 之间为什么通常需要 Projector？"
+question_number: 7
 source: "用户提供的分级面试题单；公司归属未独立核验，技术答案依据原论文整理"
 review_status: "待复习"
 category: "多模态"

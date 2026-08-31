@@ -1,5 +1,6 @@
 ---
 title: "恶意图片如何劫持 VLM 指令，视觉 Prompt Injection 怎样防御？"
+question_number: 61
 source: "公开面经题库主题；公司归属未独立核验，技术答案依据原论文或官方文档整理"
 verified: true
 review_status: "待复习"

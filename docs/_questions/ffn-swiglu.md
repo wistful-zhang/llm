@@ -1,5 +1,6 @@
 ---
 title: "Transformer 中的 FFN 有什么作用，SwiGLU 为什么常见？"
+question_number: 214
 source: "公开大模型高频面试题整理中的 FFN 题；答案依据 Transformer 与 GLU 变体论文原创整理"
 review_status: "待复习"
 category: "LLM 基础"

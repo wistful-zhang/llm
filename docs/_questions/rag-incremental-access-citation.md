@@ -1,5 +1,6 @@
 ---
 title: "如何让 RAG 支持增量更新、权限过滤和引用溯源？"
+question_number: 177
 source: "公开面经高频主题；答案依据论文和官方文档原创整理"
 verified: true
 review_status: "待复习"
